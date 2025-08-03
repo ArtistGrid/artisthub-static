@@ -69,11 +69,17 @@
             background: #181818;
             padding: 0 2rem;
         }
-        .song-list.open {
-            padding-bottom: 1.2rem;
-            max-height: 1000px;
-            transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
-        }
+.song-list.open {
+    padding-bottom: 1.2rem;
+    max-height: 350px; /* adjust as needed */
+    overflow-y: auto;
+    transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+}
+.song-list.open::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+}
         .song {
             background: #222;
             border-radius: 8px;
