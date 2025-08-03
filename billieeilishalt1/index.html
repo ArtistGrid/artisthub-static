@@ -1,0 +1,667 @@
+<!doctype html>
+<html>
+<head>
+    <title>ArtistHub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #121212;
+            color: #fff;
+        }
+.container {
+    padding: 2rem;
+    padding-bottom: 120px; /* Add space for the player */
+}
+        .era {
+            margin-bottom: 2.2rem;
+            background: #181818;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px #0003;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .era-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2.1rem 2rem 2.1rem 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.18s;
+            border-bottom: 1px solid #232323;
+        }
+        .era-header:hover {
+            background: #232323;
+        }
+        .era-cover {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .era-title {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #1db954;
+            flex: 1;
+            letter-spacing: 0.01em;
+        }
+        .chevron {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(.4,2,.6,1), color 0.2s;
+            color: #aaa;
+        }
+        .chevron.open {
+            transform: rotate(90deg);
+            color: #1db954;
+        }
+        .song-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(.4,2,.6,1);
+            background: #181818;
+            padding: 0 2rem;
+        }
+        .song-list.open {
+            padding-bottom: 1.2rem;
+            max-height: 1000px;
+            transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
+        }
+        .song {
+            background: #222;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.18s, color 0.18s;
+            box-shadow: 0 1px 4px #0002;
+            margin-top: 0.7rem;
+        }
+        .song:first-child { margin-top: 1.2rem; }
+        .song:hover {
+            background: #1db95433;
+            color: #1db954;
+        }
+        /* Hide the inline description, we use JS tooltip instead */
+        .song .song-description {
+            display: none !important;
+        }
+        .song.playing {
+            background: #1db954 !important;
+            color: #181818 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 12px #1db95455;
+        }
+        .player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #181818;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #222;
+            box-shadow: 0 -2px 8px #0003;
+            z-index: 100;
+            gap: 1.5rem;
+        }
+        .player-cover {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .player-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .player-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.2rem;
+            text-shadow: 0 1px 2px #0008;
+        }
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .player-btn, .player-skip-btn {
+            background: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px #0003;
+            margin-right: 0.5rem;
+        }
+        .player-btn:hover, .player-skip-btn:hover {
+            background: #1ed760;
+        }
+        .player-skip-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        .player-time {
+            font-size: 0.98rem;
+            color: #ccc;
+            min-width: 40px;
+            text-align: right;
+        }
+        .seek-bar {
+            flex: 1;
+            accent-color: #1db954;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            margin: 0 0.5rem;
+        }
+        .seek-bar::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-ms-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar:focus {
+            outline: none;
+        }
+        /* Tooltip style */
+        .floating-song-description {
+            position: fixed;
+            background: #222;
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px #000b;
+            z-index: 99999;
+            min-width: 250px;
+            max-width: 400px;
+            font-size: 0.97rem;
+            white-space: pre-line;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+        .floating-song-description.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #1db954;">ArtistHub</h1>
+        
+            <div class="era" id="era-0">
+                <div class="era-header" onclick="toggleEra(0)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhZCyF5Or_BqOrRMM4ZeX7L-qJw10NgJ8Jcrv9EzItxM5A5TENy4ntJsm2TX7e0BtUxiEeeHwnnFRQHn7Gj58UDiiRHavzbCeq6MxYL1D2CT7DiM7-SVGjOY8YotaOul0zDjiDUAGkuS6BIgsY4aY-i0nKSlKbkfxneCZGvh=w127-h125" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">don't smile at me</span>
+                    <span class="chevron" id="chevron-0">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-0">
+                    
+                        <div class="song" 
+                             id="song-don't_smile_at_me-0" 
+                             data-description="The only known live performance was on September 14th, 2016 at the Tenants Of The Trees in Los Angeles, California."
+                             onclick="playSong(&quot;don't smile at me&quot;, 0)">
+                            another stupid song*(prod. FINNEAS & Justin Raisen)
+                            <div class="song-description">The only known live performance was on September 14th, 2016 at the Tenants Of The Trees in Los Angeles, California.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-don't_smile_at_me-1" 
+                             data-description="Was Leaked Under The File Name “Freaks (Scratch Of All Scratches)” Which Could Be An Alternate Title For The Track, It Believed To Be A Throwaway From dont smile at me, However Nothing Is Currently Known About The Track, It Was Leaked Alongside “Theme Song”."
+                             onclick="playSong(&quot;don't smile at me&quot;, 1)">
+                            Freaks(scratch of all scratches)
+                            <div class="song-description">Was Leaked Under The File Name “Freaks (Scratch Of All Scratches)” Which Could Be An Alternate Title For The Track, It Believed To Be A Throwaway From dont smile at me, However Nothing Is Currently Known About The Track, It Was Leaked Alongside “Theme Song”.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-don't_smile_at_me-2" 
+                             data-description="&#34;Ken&#34; Was Leaked On Leaked.cx, Billie Has Confirmed After Much Speculation That The Track Is Real. Billie Wrote It With Denzel Curry And Jay (Possibly Jay Z) When She Was 14-15Yrs Old Which Matches The &#34;dont smile at me&#34; Era. Billie Also Confirmed That Only That One Verse Of The Song Was Ever Written."
+                             onclick="playSong(&quot;don't smile at me&quot;, 2)">
+                            ⭐ Ken
+                            <div class="song-description">"Ken" Was Leaked On Leaked.cx, Billie Has Confirmed After Much Speculation That The Track Is Real. Billie Wrote It With Denzel Curry And Jay (Possibly Jay Z) When She Was 14-15Yrs Old Which Matches The "dont smile at me" Era. Billie Also Confirmed That Only That One Verse Of The Song Was Ever Written.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-don't_smile_at_me-3" 
+                             data-description="A throwaway from &#39;don&#39;t smile at me&#39;, written with Emmit Fenn, who also features on the track."
+                             onclick="playSong(&quot;don't smile at me&quot;, 3)">
+                            ⭐ Limbo(prod. FINNEAS)(7 DAYS)
+                            <div class="song-description">A throwaway from 'don't smile at me', written with Emmit Fenn, who also features on the track.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-don't_smile_at_me-4" 
+                             data-description="A throwaway from &#39;don&#39;t smile at me&#39;, meant for the record but taken off last minute and replaced by a different song. It has an unknown feature."
+                             onclick="playSong(&quot;don't smile at me&quot;, 4)">
+                            Ride [V1](feat. ???) (prod. FINNEAS)
+                            <div class="song-description">A throwaway from 'don't smile at me', meant for the record but taken off last minute and replaced by a different song. It has an unknown feature.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-don't_smile_at_me-5" 
+                             data-description="OG Filename: TearMySelfApart Mix2 Gain A throwaway from &#39;don&#39;t smile at me&#39;, later given to Tate McRae."
+                             onclick="playSong(&quot;don't smile at me&quot;, 5)">
+                            TearMySelfApart(tear myself apart)
+                            <div class="song-description">OG Filename: TearMySelfApart Mix2 Gain A throwaway from 'don't smile at me', later given to Tate McRae.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-don't_smile_at_me-6" 
+                             data-description="A throwaway from &#39;don&#39;t smile at me&#39;. was remastered, edited and released on &#39;HIT ME HARD AND SOFT&#39;"
+                             onclick="playSong(&quot;don't smile at me&quot;, 6)">
+                            True Blue [V1](prod. FINNEAS)
+                            <div class="song-description">A throwaway from 'don't smile at me'. was remastered, edited and released on 'HIT ME HARD AND SOFT'</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-don't_smile_at_me-7" 
+                             data-description="A throwaway from &#39;don&#39;t smile at me&#39; sessions, made on January 12th, 2016."
+                             onclick="playSong(&quot;don't smile at me&quot;, 7)">
+                            Vertigo(with Cheat Codes) (prod. Cheat Codes)
+                            <div class="song-description">A throwaway from 'don't smile at me' sessions, made on January 12th, 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-don't_smile_at_me-8" 
+                             data-description="A throwaway from &#39;don&#39;t smile at me&#39; sessions, made on January 12th, 2016."
+                             onclick="playSong(&quot;don't smile at me&quot;, 8)">
+                            Welcome(with Cheat Codes) (prod. Cheat Codes)
+                            <div class="song-description">A throwaway from 'don't smile at me' sessions, made on January 12th, 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-don't_smile_at_me-9" 
+                             data-description="“Winner” is an unreleased song by Billie Eilish which is listed on ASCAP . In an Instagram conversation with a fan , Billie stated that the song was made when she was 14, and “NEVER was on the table to come out.”"
+                             onclick="playSong(&quot;don't smile at me&quot;, 9)">
+                            Winner(prod. FINNEAS)
+                            <div class="song-description">“Winner” is an unreleased song by Billie Eilish which is listed on ASCAP . In an Instagram conversation with a fan , Billie stated that the song was made when she was 14, and “NEVER was on the table to come out.”</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-1">
+                <div class="era-header" onclick="toggleEra(1)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhaFywdAsdzyDoBkxWHEjoYJbV3ogTsb-saaNO4Gl41RTdm5Kd7pbw2Zju9uaoKePBgxcngHEeSLnD4E8bqDYJ1CKwlFrCYOSjF_hBAp0WijxybIZGXcuQ27LcHI9W6CCeiBsKdSNp-IypqFW9c_tDLhml041uwU0RvAghf1=w127-h121" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">When We All Fall Asleep, Where Do We Go?</span>
+                    <span class="chevron" id="chevron-1">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-1">
+                    
+                        <div class="song" 
+                             id="song-When_We_All_Fall_Asleep,_Where_Do_We_Go?-0" 
+                             data-description="6.18.18 was written as a tribute to XXXTentacion, whom Billie was good friends with. He was shot and killed on June 18th, 2018, hence the title of the song. She first performed this song at a concert in Oakland on October 20th, 2018, as part of her 1 By 1 Tour."
+                             onclick="playSong(&quot;When We All Fall Asleep, Where Do We Go?&quot;, 0)">
+                            6.18.18* [V1]
+                            <div class="song-description">6.18.18 was written as a tribute to XXXTentacion, whom Billie was good friends with. He was shot and killed on June 18th, 2018, hence the title of the song. She first performed this song at a concert in Oakland on October 20th, 2018, as part of her 1 By 1 Tour.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-When_We_All_Fall_Asleep,_Where_Do_We_Go?-1" 
+                             data-description="Unknown leak, found on leaked.cx"
+                             onclick="playSong(&quot;When We All Fall Asleep, Where Do We Go?&quot;, 1)">
+                            🏆 6.18.18* [V2]
+                            <div class="song-description">Unknown leak, found on leaked.cx</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-When_We_All_Fall_Asleep,_Where_Do_We_Go?-2" 
+                             data-description="Originally teased on an Instagram story and was intended to be on WHEN WE ALL FALL ASLEEP, WHERE DO WE GO?, however, it was eventually scrapped because it didn&#39;t flow with the album acccording to FINNEAS at a meet and greet."
+                             onclick="playSong(&quot;When We All Fall Asleep, Where Do We Go?&quot;, 2)">
+                            Bad Company(prod. FINNEAS)(so n so)
+                            <div class="song-description">Originally teased on an Instagram story and was intended to be on WHEN WE ALL FALL ASLEEP, WHERE DO WE GO?, however, it was eventually scrapped because it didn't flow with the album acccording to FINNEAS at a meet and greet.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-When_We_All_Fall_Asleep,_Where_Do_We_Go?-3" 
+                             data-description="Uploaded to her Instagram account"
+                             onclick="playSong(&quot;When We All Fall Asleep, Where Do We Go?&quot;, 3)">
+                            because i'm in love with you
+                            <div class="song-description">Uploaded to her Instagram account</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-When_We_All_Fall_Asleep,_Where_Do_We_Go?-4" 
+                             data-description="Finneas O&#39;Connell posted a snippet of the song on his Instagram story. In June of 2019, MadeinTYO confirmed via Instagram that the song would not be coming out, however, the two may collaborate again in the future."
+                             onclick="playSong(&quot;When We All Fall Asleep, Where Do We Go?&quot;, 4)">
+                            Daddy [V2](feat. MadeInTYO) (prod. FINNEAS)
+                            <div class="song-description">Finneas O'Connell posted a snippet of the song on his Instagram story. In June of 2019, MadeinTYO confirmed via Instagram that the song would not be coming out, however, the two may collaborate again in the future.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-When_We_All_Fall_Asleep,_Where_Do_We_Go?-5" 
+                             data-description="A throwaway from &#39;WWAFAWDWG&#39;, performed live at an event."
+                             onclick="playSong(&quot;When We All Fall Asleep, Where Do We Go?&quot;, 5)">
+                            Make Up Your Mind(feat. Melvv)
+                            <div class="song-description">A throwaway from 'WWAFAWDWG', performed live at an event.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-When_We_All_Fall_Asleep,_Where_Do_We_Go?-6" 
+                             data-description="A throwaway from &#39;WWAFAWDWG&#39;. Remixes exist with multiple rappers but Billie has confirmed that it was not a legitimate collaboration."
+                             onclick="playSong(&quot;When We All Fall Asleep, Where Do We Go?&quot;, 6)">
+                            lyin'2 ya(feat.
+                            <div class="song-description">A throwaway from 'WWAFAWDWG'. Remixes exist with multiple rappers but Billie has confirmed that it was not a legitimate collaboration.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-When_We_All_Fall_Asleep,_Where_Do_We_Go?-7" 
+                             data-description="A throwaway from &#39;WWAFAWDWG&#39;, confirmed to once be on the album."
+                             onclick="playSong(&quot;When We All Fall Asleep, Where Do We Go?&quot;, 7)">
+                            Strange(shady)
+                            <div class="song-description">A throwaway from 'WWAFAWDWG', confirmed to once be on the album.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-When_We_All_Fall_Asleep,_Where_Do_We_Go?-8" 
+                             data-description="Billie Posted A Snippet Of This Song On April 21st 2019, It Was Believed To Be Titled &#34;Underneath&#34; Due To Only One Line Of The Song Being Shown, However A Recording Of The Full Track Which Was Titled &#34;Theme Song&#34; Was Leaked Alongside “Freaks”. It Is Likely a Throwaway From WWAFAWDWG As Billie Posted A Snippet Of This Shortly After The Albums Release."
+                             onclick="playSong(&quot;When We All Fall Asleep, Where Do We Go?&quot;, 8)">
+                            Theme Song(Underneath)
+                            <div class="song-description">Billie Posted A Snippet Of This Song On April 21st 2019, It Was Believed To Be Titled "Underneath" Due To Only One Line Of The Song Being Shown, However A Recording Of The Full Track Which Was Titled "Theme Song" Was Leaked Alongside “Freaks”. It Is Likely a Throwaway From WWAFAWDWG As Billie Posted A Snippet Of This Shortly After The Albums Release.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-2">
+                <div class="era-header" onclick="toggleEra(2)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhaCZKPm5D8x5bQoPnDOCxhgWgjNgM3K7iLveNwMu8znfa4g7Tz-b6Eg7kbJUuEq8dv1wBCu_gMk4576hdE0k8HD8vY1dAYZdvAY3AhGgqbEPxXzmQBGlvFSKseCv4ALL_s8GHl-UC1jz1SU_QY5UVx0rH0Of7HwKHEzxbDI=w127-h99" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">HIT ME HARD AND SOFT</span>
+                    <span class="chevron" id="chevron-2">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-2">
+                    
+                        <div class="song" 
+                             id="song-HIT_ME_HARD_AND_SOFT-0" 
+                             data-description="In the leadup to &#39;HIT ME HARD AND SOFT&#39; SKINNY was leaked. However This Version Was Missing Multiple Background Aspects That Were In The Final Version"
+                             onclick="playSong(&quot;HIT ME HARD AND SOFT&quot;, 0)">
+                            SKINNY [Unmastered]
+                            <div class="song-description">In the leadup to 'HIT ME HARD AND SOFT' SKINNY was leaked. However This Version Was Missing Multiple Background Aspects That Were In The Final Version</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-HIT_ME_HARD_AND_SOFT-1" 
+                             data-description="In the leadup to &#39;HIT ME HARD AND SOFT&#39; the second half of BLUE was leaked. However This Version Was Missing Multiple Background Aspects That Were In The Final Version"
+                             onclick="playSong(&quot;HIT ME HARD AND SOFT&quot;, 1)">
+                            BLUE [Unmastered]
+                            <div class="song-description">In the leadup to 'HIT ME HARD AND SOFT' the second half of BLUE was leaked. However This Version Was Missing Multiple Background Aspects That Were In The Final Version</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+    </div>
+    <!-- Spotify-style player with skip buttons -->
+    <div class="player">
+        <img id="player-cover" src=cover alt="cover" class="player-cover">
+        <div class="player-info">
+            <div id="player-title" class="player-title">Select a song</div>
+            <div class="player-controls">
+                <button id="prev-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="15,4 7,11 15,18"></polygon></svg>
+                </button>
+                <button id="play-btn" class="player-btn">
+                    <svg id="play-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff"><polygon points="6,4 24,14 6,24"></polygon></svg>
+                    <svg id="pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff" style="display:none;"><rect x="6" y="4" width="5" height="20"></rect><rect x="17" y="4" width="5" height="20"></rect></svg>
+                </button>
+                <button id="next-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="7,4 15,11 7,18"></polygon></svg>
+                </button>
+                <span id="current-time" class="player-time">0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" value="0" min="0" max="100" step="1">
+                <span id="duration" class="player-time">0:00</span>
+            </div>
+        </div>
+        <audio id="player" preload="metadata"></audio>
+    </div>
+    <script>
+    // All eras and songs as a JS object
+    const eras = {"don't smile at me": [{"era": "don't smile at me", "name": "another stupid song*(prod. FINNEAS & Justin Raisen)", "description": "The only known live performance was on September 14th, 2016 at the Tenants Of The Trees in Los Angeles, California.", "file_id": "8a6675b7b3b1d17d42687b24e0d2750a", "stream_url": "https://api.pillows.su/api/download/8a6675b7b3b1d17d42687b24e0d2750a", "download_url": "https://api.pillows.su/api/download/8a6675b7b3b1d17d42687b24e0d2750a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZCyF5Or_BqOrRMM4ZeX7L-qJw10NgJ8Jcrv9EzItxM5A5TENy4ntJsm2TX7e0BtUxiEeeHwnnFRQHn7Gj58UDiiRHavzbCeq6MxYL1D2CT7DiM7-SVGjOY8YotaOul0zDjiDUAGkuS6BIgsY4aY-i0nKSlKbkfxneCZGvh=w127-h125"}, {"era": "don't smile at me", "name": "Freaks(scratch of all scratches)", "description": "Was Leaked Under The File Name \u201cFreaks (Scratch Of All Scratches)\u201d Which Could Be An Alternate Title For The Track, It Believed To Be A Throwaway From dont smile at me, However Nothing Is Currently Known About The Track, It Was Leaked Alongside \u201cTheme Song\u201d.", "file_id": "cd7a7a787b5da45db1d035c5a6039a30", "stream_url": "https://api.pillows.su/api/download/cd7a7a787b5da45db1d035c5a6039a30", "download_url": "https://api.pillows.su/api/download/cd7a7a787b5da45db1d035c5a6039a30", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZCyF5Or_BqOrRMM4ZeX7L-qJw10NgJ8Jcrv9EzItxM5A5TENy4ntJsm2TX7e0BtUxiEeeHwnnFRQHn7Gj58UDiiRHavzbCeq6MxYL1D2CT7DiM7-SVGjOY8YotaOul0zDjiDUAGkuS6BIgsY4aY-i0nKSlKbkfxneCZGvh=w127-h125"}, {"era": "don't smile at me", "name": "\u2b50 Ken", "description": "\"Ken\" Was Leaked On Leaked.cx, Billie Has Confirmed After Much Speculation That The Track Is Real. Billie Wrote It With Denzel Curry And Jay (Possibly Jay Z) When She Was 14-15Yrs Old Which Matches The \"dont smile at me\" Era. Billie Also Confirmed That Only That One Verse Of The Song Was Ever Written.", "file_id": "4074ee3e76045eba1fa0c81ad2ec1b8a", "stream_url": "https://api.pillows.su/api/download/4074ee3e76045eba1fa0c81ad2ec1b8a", "download_url": "https://api.pillows.su/api/download/4074ee3e76045eba1fa0c81ad2ec1b8a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZCyF5Or_BqOrRMM4ZeX7L-qJw10NgJ8Jcrv9EzItxM5A5TENy4ntJsm2TX7e0BtUxiEeeHwnnFRQHn7Gj58UDiiRHavzbCeq6MxYL1D2CT7DiM7-SVGjOY8YotaOul0zDjiDUAGkuS6BIgsY4aY-i0nKSlKbkfxneCZGvh=w127-h125"}, {"era": "don't smile at me", "name": "\u2b50 Limbo(prod. FINNEAS)(7 DAYS)", "description": "A throwaway from 'don't smile at me', written with Emmit Fenn, who also features on the track.", "file_id": "f211b2c5d66ca2b9b046d884a80dafc6", "stream_url": "https://api.pillows.su/api/download/f211b2c5d66ca2b9b046d884a80dafc6", "download_url": "https://api.pillows.su/api/download/f211b2c5d66ca2b9b046d884a80dafc6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZCyF5Or_BqOrRMM4ZeX7L-qJw10NgJ8Jcrv9EzItxM5A5TENy4ntJsm2TX7e0BtUxiEeeHwnnFRQHn7Gj58UDiiRHavzbCeq6MxYL1D2CT7DiM7-SVGjOY8YotaOul0zDjiDUAGkuS6BIgsY4aY-i0nKSlKbkfxneCZGvh=w127-h125"}, {"era": "don't smile at me", "name": "Ride [V1](feat. ???) (prod. FINNEAS)", "description": "A throwaway from 'don't smile at me', meant for the record but taken off last minute and replaced by a different song. It has an unknown feature.", "file_id": "7586bacd512c7c77c4d898d71961f053", "stream_url": "https://api.pillows.su/api/download/7586bacd512c7c77c4d898d71961f053", "download_url": "https://api.pillows.su/api/download/7586bacd512c7c77c4d898d71961f053", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZCyF5Or_BqOrRMM4ZeX7L-qJw10NgJ8Jcrv9EzItxM5A5TENy4ntJsm2TX7e0BtUxiEeeHwnnFRQHn7Gj58UDiiRHavzbCeq6MxYL1D2CT7DiM7-SVGjOY8YotaOul0zDjiDUAGkuS6BIgsY4aY-i0nKSlKbkfxneCZGvh=w127-h125"}, {"era": "don't smile at me", "name": "TearMySelfApart(tear myself apart)", "description": "OG Filename: TearMySelfApart Mix2 Gain A throwaway from 'don't smile at me', later given to Tate McRae.", "file_id": "894a6fdfaa0cc8699cc52de8881990f3", "stream_url": "https://api.pillows.su/api/download/894a6fdfaa0cc8699cc52de8881990f3", "download_url": "https://api.pillows.su/api/download/894a6fdfaa0cc8699cc52de8881990f3", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZCyF5Or_BqOrRMM4ZeX7L-qJw10NgJ8Jcrv9EzItxM5A5TENy4ntJsm2TX7e0BtUxiEeeHwnnFRQHn7Gj58UDiiRHavzbCeq6MxYL1D2CT7DiM7-SVGjOY8YotaOul0zDjiDUAGkuS6BIgsY4aY-i0nKSlKbkfxneCZGvh=w127-h125"}, {"era": "don't smile at me", "name": "True Blue [V1](prod. FINNEAS)", "description": "A throwaway from 'don't smile at me'. was remastered, edited and released on 'HIT ME HARD AND SOFT'", "file_id": "b3eadc93ae79209396bd80f01f792558", "stream_url": "https://api.pillows.su/api/download/b3eadc93ae79209396bd80f01f792558", "download_url": "https://api.pillows.su/api/download/b3eadc93ae79209396bd80f01f792558", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZCyF5Or_BqOrRMM4ZeX7L-qJw10NgJ8Jcrv9EzItxM5A5TENy4ntJsm2TX7e0BtUxiEeeHwnnFRQHn7Gj58UDiiRHavzbCeq6MxYL1D2CT7DiM7-SVGjOY8YotaOul0zDjiDUAGkuS6BIgsY4aY-i0nKSlKbkfxneCZGvh=w127-h125"}, {"era": "don't smile at me", "name": "Vertigo(with Cheat Codes) (prod. Cheat Codes)", "description": "A throwaway from 'don't smile at me' sessions, made on January 12th, 2016.", "file_id": "e7acc356d811699ffc0b747740f960b4", "stream_url": "https://api.pillows.su/api/download/e7acc356d811699ffc0b747740f960b4", "download_url": "https://api.pillows.su/api/download/e7acc356d811699ffc0b747740f960b4", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZCyF5Or_BqOrRMM4ZeX7L-qJw10NgJ8Jcrv9EzItxM5A5TENy4ntJsm2TX7e0BtUxiEeeHwnnFRQHn7Gj58UDiiRHavzbCeq6MxYL1D2CT7DiM7-SVGjOY8YotaOul0zDjiDUAGkuS6BIgsY4aY-i0nKSlKbkfxneCZGvh=w127-h125"}, {"era": "don't smile at me", "name": "Welcome(with Cheat Codes) (prod. Cheat Codes)", "description": "A throwaway from 'don't smile at me' sessions, made on January 12th, 2016.", "file_id": "d9d841081009ef54f9394591d406a854", "stream_url": "https://api.pillows.su/api/download/d9d841081009ef54f9394591d406a854", "download_url": "https://api.pillows.su/api/download/d9d841081009ef54f9394591d406a854", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZCyF5Or_BqOrRMM4ZeX7L-qJw10NgJ8Jcrv9EzItxM5A5TENy4ntJsm2TX7e0BtUxiEeeHwnnFRQHn7Gj58UDiiRHavzbCeq6MxYL1D2CT7DiM7-SVGjOY8YotaOul0zDjiDUAGkuS6BIgsY4aY-i0nKSlKbkfxneCZGvh=w127-h125"}, {"era": "don't smile at me", "name": "Winner(prod. FINNEAS)", "description": "\u201cWinner\u201d is an unreleased song by Billie Eilish which is listed on ASCAP . In an Instagram conversation with a fan , Billie stated that the song was made when she was 14, and \u201cNEVER was on the table to come out.\u201d", "file_id": "1bb727f41f44517f0c96dbb27cfa5366", "stream_url": "https://api.pillows.su/api/download/1bb727f41f44517f0c96dbb27cfa5366", "download_url": "https://api.pillows.su/api/download/1bb727f41f44517f0c96dbb27cfa5366", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZCyF5Or_BqOrRMM4ZeX7L-qJw10NgJ8Jcrv9EzItxM5A5TENy4ntJsm2TX7e0BtUxiEeeHwnnFRQHn7Gj58UDiiRHavzbCeq6MxYL1D2CT7DiM7-SVGjOY8YotaOul0zDjiDUAGkuS6BIgsY4aY-i0nKSlKbkfxneCZGvh=w127-h125"}], "When We All Fall Asleep, Where Do We Go?": [{"era": "When We All Fall Asleep, Where Do We Go?", "name": "6.18.18* [V1]", "description": "6.18.18 was written as a tribute to XXXTentacion, whom Billie was good friends with. He was shot and killed on June 18th, 2018, hence the title of the song. She first performed this song at a concert in Oakland on October 20th, 2018, as part of her 1 By 1 Tour.", "file_id": "91752012729387554e5b95ef84ac1669", "stream_url": "https://api.pillows.su/api/download/91752012729387554e5b95ef84ac1669", "download_url": "https://api.pillows.su/api/download/91752012729387554e5b95ef84ac1669", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaFywdAsdzyDoBkxWHEjoYJbV3ogTsb-saaNO4Gl41RTdm5Kd7pbw2Zju9uaoKePBgxcngHEeSLnD4E8bqDYJ1CKwlFrCYOSjF_hBAp0WijxybIZGXcuQ27LcHI9W6CCeiBsKdSNp-IypqFW9c_tDLhml041uwU0RvAghf1=w127-h121"}, {"era": "When We All Fall Asleep, Where Do We Go?", "name": "\ud83c\udfc6 6.18.18* [V2]", "description": "Unknown leak, found on leaked.cx", "file_id": "f1f0d1cc929a8cd2330ca1d85fad44e9", "stream_url": "https://api.pillows.su/api/download/f1f0d1cc929a8cd2330ca1d85fad44e9", "download_url": "https://api.pillows.su/api/download/f1f0d1cc929a8cd2330ca1d85fad44e9", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaFywdAsdzyDoBkxWHEjoYJbV3ogTsb-saaNO4Gl41RTdm5Kd7pbw2Zju9uaoKePBgxcngHEeSLnD4E8bqDYJ1CKwlFrCYOSjF_hBAp0WijxybIZGXcuQ27LcHI9W6CCeiBsKdSNp-IypqFW9c_tDLhml041uwU0RvAghf1=w127-h121"}, {"era": "When We All Fall Asleep, Where Do We Go?", "name": "Bad Company(prod. FINNEAS)(so n so)", "description": "Originally teased on an Instagram story and was intended to be on WHEN WE ALL FALL ASLEEP, WHERE DO WE GO?, however, it was eventually scrapped because it didn't flow with the album acccording to FINNEAS at a meet and greet.", "file_id": "97bc2a68f5db383b30a1c729677247c2", "stream_url": "https://api.pillows.su/api/download/97bc2a68f5db383b30a1c729677247c2", "download_url": "https://api.pillows.su/api/download/97bc2a68f5db383b30a1c729677247c2", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaFywdAsdzyDoBkxWHEjoYJbV3ogTsb-saaNO4Gl41RTdm5Kd7pbw2Zju9uaoKePBgxcngHEeSLnD4E8bqDYJ1CKwlFrCYOSjF_hBAp0WijxybIZGXcuQ27LcHI9W6CCeiBsKdSNp-IypqFW9c_tDLhml041uwU0RvAghf1=w127-h121"}, {"era": "When We All Fall Asleep, Where Do We Go?", "name": "because i'm in love with you", "description": "Uploaded to her Instagram account", "file_id": "06c4d16a415f3c3da0c42ee9f2170a36", "stream_url": "https://api.pillows.su/api/download/06c4d16a415f3c3da0c42ee9f2170a36", "download_url": "https://api.pillows.su/api/download/06c4d16a415f3c3da0c42ee9f2170a36", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaFywdAsdzyDoBkxWHEjoYJbV3ogTsb-saaNO4Gl41RTdm5Kd7pbw2Zju9uaoKePBgxcngHEeSLnD4E8bqDYJ1CKwlFrCYOSjF_hBAp0WijxybIZGXcuQ27LcHI9W6CCeiBsKdSNp-IypqFW9c_tDLhml041uwU0RvAghf1=w127-h121"}, {"era": "When We All Fall Asleep, Where Do We Go?", "name": "Daddy [V2](feat. MadeInTYO) (prod. FINNEAS)", "description": "Finneas O'Connell posted a snippet of the song on his Instagram story. In June of 2019, MadeinTYO confirmed via Instagram that the song would not be coming out, however, the two may collaborate again in the future.", "file_id": "d2a895d2f87eab5373db48bc99c6a92c", "stream_url": "https://api.pillows.su/api/download/d2a895d2f87eab5373db48bc99c6a92c", "download_url": "https://api.pillows.su/api/download/d2a895d2f87eab5373db48bc99c6a92c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaFywdAsdzyDoBkxWHEjoYJbV3ogTsb-saaNO4Gl41RTdm5Kd7pbw2Zju9uaoKePBgxcngHEeSLnD4E8bqDYJ1CKwlFrCYOSjF_hBAp0WijxybIZGXcuQ27LcHI9W6CCeiBsKdSNp-IypqFW9c_tDLhml041uwU0RvAghf1=w127-h121"}, {"era": "When We All Fall Asleep, Where Do We Go?", "name": "Make Up Your Mind(feat. Melvv)", "description": "A throwaway from 'WWAFAWDWG', performed live at an event.", "file_id": "d12775a875aeb7858c1007d5017fb1b0", "stream_url": "https://api.pillows.su/api/download/d12775a875aeb7858c1007d5017fb1b0", "download_url": "https://api.pillows.su/api/download/d12775a875aeb7858c1007d5017fb1b0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaFywdAsdzyDoBkxWHEjoYJbV3ogTsb-saaNO4Gl41RTdm5Kd7pbw2Zju9uaoKePBgxcngHEeSLnD4E8bqDYJ1CKwlFrCYOSjF_hBAp0WijxybIZGXcuQ27LcHI9W6CCeiBsKdSNp-IypqFW9c_tDLhml041uwU0RvAghf1=w127-h121"}, {"era": "When We All Fall Asleep, Where Do We Go?", "name": "lyin'2 ya(feat.", "description": "A throwaway from 'WWAFAWDWG'. Remixes exist with multiple rappers but Billie has confirmed that it was not a legitimate collaboration.", "file_id": "1cdce8310d5b01f5bc180aa08b512b44", "stream_url": "https://api.pillows.su/api/download/1cdce8310d5b01f5bc180aa08b512b44", "download_url": "https://api.pillows.su/api/download/1cdce8310d5b01f5bc180aa08b512b44", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaFywdAsdzyDoBkxWHEjoYJbV3ogTsb-saaNO4Gl41RTdm5Kd7pbw2Zju9uaoKePBgxcngHEeSLnD4E8bqDYJ1CKwlFrCYOSjF_hBAp0WijxybIZGXcuQ27LcHI9W6CCeiBsKdSNp-IypqFW9c_tDLhml041uwU0RvAghf1=w127-h121"}, {"era": "When We All Fall Asleep, Where Do We Go?", "name": "Strange(shady)", "description": "A throwaway from 'WWAFAWDWG', confirmed to once be on the album.", "file_id": "e3cefd2bdd1668113e03b52039081cc2", "stream_url": "https://api.pillows.su/api/download/e3cefd2bdd1668113e03b52039081cc2", "download_url": "https://api.pillows.su/api/download/e3cefd2bdd1668113e03b52039081cc2", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaFywdAsdzyDoBkxWHEjoYJbV3ogTsb-saaNO4Gl41RTdm5Kd7pbw2Zju9uaoKePBgxcngHEeSLnD4E8bqDYJ1CKwlFrCYOSjF_hBAp0WijxybIZGXcuQ27LcHI9W6CCeiBsKdSNp-IypqFW9c_tDLhml041uwU0RvAghf1=w127-h121"}, {"era": "When We All Fall Asleep, Where Do We Go?", "name": "Theme Song(Underneath)", "description": "Billie Posted A Snippet Of This Song On April 21st 2019, It Was Believed To Be Titled \"Underneath\" Due To Only One Line Of The Song Being Shown, However A Recording Of The Full Track Which Was Titled \"Theme Song\" Was Leaked Alongside \u201cFreaks\u201d. It Is Likely a Throwaway From WWAFAWDWG As Billie Posted A Snippet Of This Shortly After The Albums Release.", "file_id": "7e0fedd1a87f41e6c15df10a939600f0", "stream_url": "https://api.pillows.su/api/download/7e0fedd1a87f41e6c15df10a939600f0", "download_url": "https://api.pillows.su/api/download/7e0fedd1a87f41e6c15df10a939600f0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaFywdAsdzyDoBkxWHEjoYJbV3ogTsb-saaNO4Gl41RTdm5Kd7pbw2Zju9uaoKePBgxcngHEeSLnD4E8bqDYJ1CKwlFrCYOSjF_hBAp0WijxybIZGXcuQ27LcHI9W6CCeiBsKdSNp-IypqFW9c_tDLhml041uwU0RvAghf1=w127-h121"}], "HIT ME HARD AND SOFT": [{"era": "HIT ME HARD AND SOFT", "name": "SKINNY [Unmastered]", "description": "In the leadup to 'HIT ME HARD AND SOFT' SKINNY was leaked. However This Version Was Missing Multiple Background Aspects That Were In The Final Version", "file_id": "3d087d10cbe8f8a5f0e4babcd5f3f585", "stream_url": "https://api.pillows.su/api/download/3d087d10cbe8f8a5f0e4babcd5f3f585", "download_url": "https://api.pillows.su/api/download/3d087d10cbe8f8a5f0e4babcd5f3f585", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCZKPm5D8x5bQoPnDOCxhgWgjNgM3K7iLveNwMu8znfa4g7Tz-b6Eg7kbJUuEq8dv1wBCu_gMk4576hdE0k8HD8vY1dAYZdvAY3AhGgqbEPxXzmQBGlvFSKseCv4ALL_s8GHl-UC1jz1SU_QY5UVx0rH0Of7HwKHEzxbDI=w127-h99"}, {"era": "HIT ME HARD AND SOFT", "name": "BLUE [Unmastered]", "description": "In the leadup to 'HIT ME HARD AND SOFT' the second half of BLUE was leaked. However This Version Was Missing Multiple Background Aspects That Were In The Final Version", "file_id": "a98986a043420a4ed784666e6a71c0af", "stream_url": "https://api.pillows.su/api/download/a98986a043420a4ed784666e6a71c0af", "download_url": "https://api.pillows.su/api/download/a98986a043420a4ed784666e6a71c0af", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCZKPm5D8x5bQoPnDOCxhgWgjNgM3K7iLveNwMu8znfa4g7Tz-b6Eg7kbJUuEq8dv1wBCu_gMk4576hdE0k8HD8vY1dAYZdvAY3AhGgqbEPxXzmQBGlvFSKseCv4ALL_s8GHl-UC1jz1SU_QY5UVx0rH0Of7HwKHEzxbDI=w127-h99"}]};
+    let currentEra = null;
+    let currentIndex = null;
+    let currentSong = null;
+    let playlist = [];
+
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const seekBar = document.getElementById('seek-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const playerTitle = document.getElementById('player-title');
+    const playerCover = document.getElementById('player-cover');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    function playSong(era, index) {
+        playlist = eras[era];
+        currentEra = era;
+        currentIndex = index;
+        loadAndPlayCurrent();
+    }
+
+    function highlightCurrentSong() {
+        document.querySelectorAll('.song.playing').forEach(el => el.classList.remove('playing'));
+        if (currentEra !== null && currentIndex !== null) {
+            const songId = `song-${currentEra.replace(/ /g, '_')}-${currentIndex}`;
+            const songEl = document.getElementById(songId);
+            if (songEl) songEl.classList.add('playing');
+        }
+    }
+
+    function loadAndPlayCurrent() {
+        if (!playlist || currentIndex === null || !playlist[currentIndex]) return;
+        const song = playlist[currentIndex];
+        player.src = song.stream_url;
+        playerTitle.textContent = song.name;
+        playerCover.src = song.cover || 'https://via.placeholder.com/60x60?text=No+Cover';
+        currentSong = song.stream_url;
+        player.play();
+        updateSkipButtons();
+        updateMediaSession(song);
+        highlightCurrentSong();
+    }
+
+    function updateSkipButtons() {
+        prevBtn.disabled = (currentIndex <= 0);
+        nextBtn.disabled = (currentIndex >= playlist.length - 1);
+    }
+
+    playBtn.onclick = function() {
+        if (player.src) {
+            if (player.paused) player.play();
+            else player.pause();
+        }
+    };
+
+    prevBtn.onclick = function() {
+        if (playlist && currentIndex > 0) {
+            currentIndex -= 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    nextBtn.onclick = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    player.onplay = function() {
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "";
+    };
+    player.onpause = function() {
+        playIcon.style.display = "";
+        pauseIcon.style.display = "none";
+    };
+
+    player.ontimeupdate = function() {
+        seekBar.value = player.currentTime || 0;
+        currentTimeEl.textContent = formatTime(player.currentTime);
+    };
+    player.onloadedmetadata = function() {
+        seekBar.max = player.duration || 0;
+        durationEl.textContent = formatTime(player.duration);
+    };
+    seekBar.oninput = function() {
+        player.currentTime = seekBar.value;
+    };
+
+    player.onended = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    function formatTime(sec) {
+        sec = Math.floor(sec);
+        return Math.floor(sec/60) + ":" + String(sec%60).padStart(2, '0');
+    }
+    function updateMediaSession(song) {
+        if ('mediaSession' in navigator && song) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.name,
+                artist: song.era,
+                album: "Unreleased",
+                artwork: [
+                    { src: song.cover || 'https://via.placeholder.com/90x90?text=No+Cover', sizes: '90x90', type: 'image/png' }
+                ]
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (playlist && currentIndex > 0) {
+                    currentIndex -= 1;
+                    loadAndPlayCurrent();
+                }
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                if (playlist && currentIndex < playlist.length - 1) {
+                    currentIndex += 1;
+                    loadAndPlayCurrent();
+                }
+            });
+        }
+    }
+
+    // --- Collapsible Eras ---
+    function toggleEra(idx) {
+        const songList = document.getElementById('song-list-' + idx);
+        const chevron = document.getElementById('chevron-' + idx);
+        const isOpen = songList.classList.contains('open');
+        if (isOpen) {
+            songList.classList.remove('open');
+            chevron.classList.remove('open');
+        } else {
+            songList.classList.add('open');
+            chevron.classList.add('open');
+        }
+    }
+    // Collapse all on load
+    window.addEventListener('DOMContentLoaded', function() {
+        
+            document.getElementById('song-list-0').classList.remove('open');
+            document.getElementById('chevron-0').classList.remove('open');
+        
+            document.getElementById('song-list-1').classList.remove('open');
+            document.getElementById('chevron-1').classList.remove('open');
+        
+            document.getElementById('song-list-2').classList.remove('open');
+            document.getElementById('chevron-2').classList.remove('open');
+        
+
+        // Tooltip logic
+        let tooltip = null;
+        let tooltipTimeout = null;
+
+        document.querySelectorAll('.song').forEach(song => {
+            song.addEventListener('mouseenter', function(e) {
+                const desc = song.getAttribute('data-description');
+                if (!desc) return;
+                if (tooltip) tooltip.remove();
+                tooltip = document.createElement('div');
+                tooltip.className = 'floating-song-description';
+                tooltip.innerHTML = desc;
+                document.body.appendChild(tooltip);
+
+                // Position tooltip
+                const rect = song.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 6) + 'px';
+                tooltip.style.minWidth = rect.width + 'px';
+
+                // Fade in
+                setTimeout(() => {
+                    if (tooltip) tooltip.classList.add('visible');
+                }, 10);
+            });
+            song.addEventListener('mouseleave', function(e) {
+                if (tooltip) {
+                    tooltip.classList.remove('visible');
+                    setTimeout(() => {
+                        if (tooltip) tooltip.remove();
+                        tooltip = null;
+                    }, 120);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

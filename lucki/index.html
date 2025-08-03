@@ -1,0 +1,915 @@
+<!doctype html>
+<html>
+<head>
+    <title>ArtistHub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #121212;
+            color: #fff;
+        }
+.container {
+    padding: 2rem;
+    padding-bottom: 120px; /* Add space for the player */
+}
+        .era {
+            margin-bottom: 2.2rem;
+            background: #181818;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px #0003;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .era-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2.1rem 2rem 2.1rem 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.18s;
+            border-bottom: 1px solid #232323;
+        }
+        .era-header:hover {
+            background: #232323;
+        }
+        .era-cover {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .era-title {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #1db954;
+            flex: 1;
+            letter-spacing: 0.01em;
+        }
+        .chevron {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(.4,2,.6,1), color 0.2s;
+            color: #aaa;
+        }
+        .chevron.open {
+            transform: rotate(90deg);
+            color: #1db954;
+        }
+        .song-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(.4,2,.6,1);
+            background: #181818;
+            padding: 0 2rem;
+        }
+        .song-list.open {
+            padding-bottom: 1.2rem;
+            max-height: 1000px;
+            transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
+        }
+        .song {
+            background: #222;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.18s, color 0.18s;
+            box-shadow: 0 1px 4px #0002;
+            margin-top: 0.7rem;
+        }
+        .song:first-child { margin-top: 1.2rem; }
+        .song:hover {
+            background: #1db95433;
+            color: #1db954;
+        }
+        /* Hide the inline description, we use JS tooltip instead */
+        .song .song-description {
+            display: none !important;
+        }
+        .song.playing {
+            background: #1db954 !important;
+            color: #181818 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 12px #1db95455;
+        }
+        .player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #181818;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #222;
+            box-shadow: 0 -2px 8px #0003;
+            z-index: 100;
+            gap: 1.5rem;
+        }
+        .player-cover {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .player-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .player-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.2rem;
+            text-shadow: 0 1px 2px #0008;
+        }
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .player-btn, .player-skip-btn {
+            background: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px #0003;
+            margin-right: 0.5rem;
+        }
+        .player-btn:hover, .player-skip-btn:hover {
+            background: #1ed760;
+        }
+        .player-skip-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        .player-time {
+            font-size: 0.98rem;
+            color: #ccc;
+            min-width: 40px;
+            text-align: right;
+        }
+        .seek-bar {
+            flex: 1;
+            accent-color: #1db954;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            margin: 0 0.5rem;
+        }
+        .seek-bar::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-ms-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar:focus {
+            outline: none;
+        }
+        /* Tooltip style */
+        .floating-song-description {
+            position: fixed;
+            background: #222;
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px #000b;
+            z-index: 99999;
+            min-width: 250px;
+            max-width: 400px;
+            font-size: 0.97rem;
+            white-space: pre-line;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+        .floating-song-description.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #1db954;">ArtistHub</h1>
+        
+            <div class="era" id="era-0">
+                <div class="era-header" onclick="toggleEra(0)">
+                    <img class="era-cover" src="" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Unknown</span>
+                    <span class="chevron" id="chevron-0">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-0">
+                    
+                        <div class="song" 
+                             id="song-Unknown-0" 
+                             data-description="Snippet leaked on August 13, 2024."
+                             onclick="playSong(&quot;Unknown&quot;, 0)">
+                            ???
+                            <div class="song-description">Snippet leaked on August 13, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-1" 
+                             data-description="Snippet leaked on May 6, 2025."
+                             onclick="playSong(&quot;Unknown&quot;, 1)">
+                            ???
+                            <div class="song-description">Snippet leaked on May 6, 2025.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-1">
+                <div class="era-header" onclick="toggleEra(1)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbx2tQQNl7r7rtItySGjrxSlfa4MOFOWue8jvYbbwtfD_EJR9fOQxpmB6HDltmMbEXyZDZpdCIMbUR9fg44c2F4uXVtkko7-DYteRXTao2c42Y1VnTxS9yQ_tIljtjwtsUdHMIaKW413HXCyGKyUqkXXmGdUOno69f_Qg=w91-h103" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Watch My Back(Almighty So 2)</span>
+                    <span class="chevron" id="chevron-1">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-1">
+                    
+                        <div class="song" 
+                             id="song-Watch_My_Back(Almighty_So_2)-0" 
+                             data-description="OG Filename: lucki demo 1 Features an alternative beat. Leaked on June 1, 2021. Contains the same lyrics as &#34;Program&#34; released in 2016 featuring JayChris, but file-date says was made in 2017."
+                             onclick="playSong(&quot;Watch My Back(Almighty So 2)&quot;, 0)">
+                            Program [V?](Spin Off)
+                            <div class="song-description">OG Filename: lucki demo 1 Features an alternative beat. Leaked on June 1, 2021. Contains the same lyrics as "Program" released in 2016 featuring JayChris, but file-date says was made in 2017.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-2">
+                <div class="era-header" onclick="toggleEra(2)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhb5muG1zlx3CFQDp_bR1sc1i1u28UZe5hiPLj5r-TO4bU-3b-m0gZKxY7HbmPt1CgfbJXIIA9iVPmA9yLvTxuyclVl8rMOwZK-sHQAwuHvqQLRx4_f-ts2Ih7VnDSNp52COaieVwidbF5Ubn1LOU5mhds28F8owjwzHWrkE=w91-h103" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">DAYS B4 II EP(Better Days)</span>
+                    <span class="chevron" id="chevron-2">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-2">
+                    
+                        <div class="song" 
+                             id="song-DAYS_B4_II_EP(Better_Days)-0" 
+                             data-description="OG Filename: Lucki_chase_29_KK1 Previewed in 2018 via LUCKI&#39;s Instagram story. Leaked on July 29, 2023."
+                             onclick="playSong(&quot;DAYS B4 II EP(Better Days)&quot;, 0)">
+                            Nothing For Certain(prod. CHASETHEMONEY)
+                            <div class="song-description">OG Filename: Lucki_chase_29_KK1 Previewed in 2018 via LUCKI's Instagram story. Leaked on July 29, 2023.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-3">
+                <div class="era-header" onclick="toggleEra(3)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhY2PKMM-uwZCYaYX3ELiNEspuFBhQmu8ncFsfxZpLOVOv52z8GSTTZ6maKpLZ2oKqbf7G22y0gHE6pmptwst7AqVpbsqC0d04IOt2QTYmG7U0MT7ZpIenPmNU6OlVxQz9jhFCpIiVbp4SwtKbDfGT3bdHsEIDg2GOypL6zw=w91-h105" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Freewave 3</span>
+                    <span class="chevron" id="chevron-3">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-3">
+                    
+                        <div class="song" 
+                             id="song-Freewave_3-0" 
+                             data-description="Snippet leaked on February 10, 2025. From 2019, era unconfirmed."
+                             onclick="playSong(&quot;Freewave 3&quot;, 0)">
+                            Leeway*
+                            <div class="song-description">Snippet leaked on February 10, 2025. From 2019, era unconfirmed.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-4">
+                <div class="era-header" onclick="toggleEra(4)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">FLAWLESS LIKE ME [V1]</span>
+                    <span class="chevron" id="chevron-4">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-4">
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-0" 
+                             data-description="Previewed in June 2020. Previewed again on August 6, 2020 via LUCKI&#39;s Instagram live."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 0)">
+                            🏆Around My Way
+                            <div class="song-description">Previewed in June 2020. Previewed again on August 6, 2020 via LUCKI's Instagram live.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-1" 
+                             data-description="Previewed in June 2020. Previewed again on August 6, 2020 via LUCKI&#39;s Instagram live."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 1)">
+                            🏆Around My Way
+                            <div class="song-description">Previewed in June 2020. Previewed again on August 6, 2020 via LUCKI's Instagram live.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-2" 
+                             data-description="Previewed on October 4, 2020 via LUCKI&#39;s Instagram live. Snippet leaked on February 10, 2025."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 2)">
+                            Bury Me(prod. TheCrazyPart)(Luv Me)
+                            <div class="song-description">Previewed on October 4, 2020 via LUCKI's Instagram live. Snippet leaked on February 10, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-3" 
+                             data-description="Previewed on October 4, 2020 via LUCKI&#39;s Instagram live. Snippet leaked on February 10, 2025."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 3)">
+                            Bury Me(prod. TheCrazyPart)(Luv Me)
+                            <div class="song-description">Previewed on October 4, 2020 via LUCKI's Instagram live. Snippet leaked on February 10, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-4" 
+                             data-description="Previewed on October 4, 2020 via LUCKI&#39;s Instagram live. Higher quality snippet later leaked on July 27, 2023."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 4)">
+                            HellKat Boy(prod. Oogie Mane & Plu2o Nash)(Keep Up)
+                            <div class="song-description">Previewed on October 4, 2020 via LUCKI's Instagram live. Higher quality snippet later leaked on July 27, 2023.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-5" 
+                             data-description="Previewed on October 4, 2020 via LUCKI&#39;s Instagram live. Higher quality snippet later leaked on July 27, 2023."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 5)">
+                            HellKat Boy(prod. Oogie Mane & Plu2o Nash)(Keep Up)
+                            <div class="song-description">Previewed on October 4, 2020 via LUCKI's Instagram live. Higher quality snippet later leaked on July 27, 2023.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-6" 
+                             data-description="Previewed on July 27, 2020 via LUCKI&#39;s Instagram live."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 6)">
+                            High Together(Lowkey)
+                            <div class="song-description">Previewed on July 27, 2020 via LUCKI's Instagram live.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-7" 
+                             data-description="OG Filename: 01-28-21 {JAYME ROUGH MIX} Leaked on August 6, 2022."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 7)">
+                            Hunnid(prod. BrentRambo & Soldado)(100 Days 100 Nights, Pretty Girl)
+                            <div class="song-description">OG Filename: 01-28-21 {JAYME ROUGH MIX} Leaked on August 6, 2022.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-8" 
+                             data-description="OG Filename: 2 10-24-20 {JAYME MIX 1} Previewed on November 13, 2020 via LUCKI&#39;s Instagram live. Previewed again on December 17, 2020 via LUCKI&#39;s Instagram story. Previewed a third time on January 21, 2022. Leaked on March 28, 2024. OG file leaked on June 9, 2025."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 8)">
+                            ⭐️In My Feelings(Hardly Forget, Red Blood)
+                            <div class="song-description">OG Filename: 2 10-24-20 {JAYME MIX 1} Previewed on November 13, 2020 via LUCKI's Instagram live. Previewed again on December 17, 2020 via LUCKI's Instagram story. Previewed a third time on January 21, 2022. Leaked on March 28, 2024. OG file leaked on June 9, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-9" 
+                             data-description="OG Filename: 10-24-20 Previewed on November 13, 2020 via LUCKI&#39;s Instagram live. Previewed again on January 28, 2021 via LUCKI&#39;s Instagram story. Snippet leaked on June 5, 2025."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 9)">
+                            Like This(Feeling Like This, Booze)
+                            <div class="song-description">OG Filename: 10-24-20 Previewed on November 13, 2020 via LUCKI's Instagram live. Previewed again on January 28, 2021 via LUCKI's Instagram story. Snippet leaked on June 5, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-10" 
+                             data-description="Previewed on September 20, 2020 via LUCKI&#39;s Instagram live. Later previewed again on September 8, 2021 via LUCKI&#39;s Instagram live. Leaked on July 17, 2025."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 10)">
+                            ⭐️Money Phase(prod. BrentRambo)
+                            <div class="song-description">Previewed on September 20, 2020 via LUCKI's Instagram live. Later previewed again on September 8, 2021 via LUCKI's Instagram live. Leaked on July 17, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-11" 
+                             data-description="OG Filename: 2 09-30-20 {JAYME MIX 1} Leaked on August 6, 2022. OG File leaked on November 12, 2024."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 11)">
+                            ROXI(prod. BrentRambo & Okami)(Racks In, Racks Got Me, 100 Bands, Roxy)
+                            <div class="song-description">OG Filename: 2 09-30-20 {JAYME MIX 1} Leaked on August 6, 2022. OG File leaked on November 12, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-12" 
+                             data-description="Snippet leaked on June 5, 2025."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 12)">
+                            Tennessee
+                            <div class="song-description">Snippet leaked on June 5, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V1]-13" 
+                             data-description="Previewed on July 27, 2020 via LUCKI&#39;s Instagram live. Snippet leaked on March 7, 2025. Another snippet leaked on April 12, 2025. Later sold to Christ Dillinger and released on a new beat. Leaked on May 24, 2025."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V1]&quot;, 13)">
+                            ⭐️Tired Of Me [V1](prod. Yung Icey)(Tired, Superman)
+                            <div class="song-description">Previewed on July 27, 2020 via LUCKI's Instagram live. Snippet leaked on March 7, 2025. Another snippet leaked on April 12, 2025. Later sold to Christ Dillinger and released on a new beat. Leaked on May 24, 2025.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-5">
+                <div class="era-header" onclick="toggleEra(5)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhagSsjUABCAjvFmMYNc_WdjHMvocAyBJDP4xZ-NMjN_B6jb8zYgXuf3kgsWvxJBV4kFZ1O8uoS34bFb2cxhNYootUpBl8nt09X_i41PumSljTLGn3jgNEgIeNgOFwTstF1rBdeGEcPOSBIKY5ggf7RbhV9Csla5w0Gi2Q=w91-h104" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">WAKE UP LUCKI(Collaboration with F1lTHY)</span>
+                    <span class="chevron" id="chevron-5">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-5">
+                    
+                        <div class="song" 
+                             id="song-WAKE_UP_LUCKI(Collaboration_with_F1lTHY)-0" 
+                             data-description="OG Filename: F1lthy Lucki_according_kk1 Leaked on September 21, 2024. Open verse."
+                             onclick="playSong(&quot;WAKE UP LUCKI(Collaboration with F1lTHY)&quot;, 0)">
+                            According(prod. F1LTHY)(Leave Me)
+                            <div class="song-description">OG Filename: F1lthy Lucki_according_kk1 Leaked on September 21, 2024. Open verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-WAKE_UP_LUCKI(Collaboration_with_F1lTHY)-1" 
+                             data-description="OG Filename: 04-13-21 {JAYME MIX 1} Leaked on August 6, 2022."
+                             onclick="playSong(&quot;WAKE UP LUCKI(Collaboration with F1lTHY)&quot;, 1)">
+                            ⭐️Out My Body(prod. F1LTHY)(Percs Like Molly)
+                            <div class="song-description">OG Filename: 04-13-21 {JAYME MIX 1} Leaked on August 6, 2022.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-WAKE_UP_LUCKI(Collaboration_with_F1lTHY)-2" 
+                             data-description="Snippet leaked on April 13, 2022."
+                             onclick="playSong(&quot;WAKE UP LUCKI(Collaboration with F1lTHY)&quot;, 2)">
+                            ???(prod. F1LTHY)(Wake Up Neptune)
+                            <div class="song-description">Snippet leaked on April 13, 2022.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-6">
+                <div class="era-header" onclick="toggleEra(6)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYb15iwbN3ygQXCL87LvMFg1oSvfl-KSDsQugkrDJ7OgIDRlSuuuGAfoJ85hCQiS951iogVFyyCDi3GhjZfAj0xEdH6K4-2iUWLe8pCEZGdqyh9qmAUmtFLgmhlYsNBXlURnPENoH7OATr06Krn3WZ-n_vz8FVIFgTAbZ8q=w91-h104" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">FLAWLESS LIKE ME [V2](2 Neptune N Back)</span>
+                    <span class="chevron" id="chevron-6">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-6">
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V2](2_Neptune_N_Back)-0" 
+                             data-description="OG Filename: I can&#39;t even - lucki (prod. bobby n wheezy) Previewed on April 27, 2022 via LUCKI&#39;s Instagram live. Leaked on September 21, 2024. Open verse."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V2](2 Neptune N Back)&quot;, 0)">
+                            ⭐️I Can't Even(prod. Wheezy & Bobby Raps)(In The Mix, Ain't That Deep)
+                            <div class="song-description">OG Filename: I can't even - lucki (prod. bobby n wheezy) Previewed on April 27, 2022 via LUCKI's Instagram live. Leaked on September 21, 2024. Open verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V2](2_Neptune_N_Back)-1" 
+                             data-description="OG Filename: VEEZE SLAY TOON_121021_ Previewed on December 11, 2021 via LUCKI&#39;s Instagram live. Leaked on December 6, 2023. Original version with an open verse removed for the released version."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V2](2 Neptune N Back)&quot;, 1)">
+                            Japanese Denim [V1](feat. DaeMoney & Veeze) (prod. flansie & Ccured)(Purple Denim)
+                            <div class="song-description">OG Filename: VEEZE SLAY TOON_121021_ Previewed on December 11, 2021 via LUCKI's Instagram live. Leaked on December 6, 2023. Original version with an open verse removed for the released version.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V2](2_Neptune_N_Back)-2" 
+                             data-description="OG Filename: 3 02-16-22 {JAYME ROUGH MIX} Previewed on February 21, 2022 via LUCKI&#39;s Instagram live. CQ Quality snippet leaked in 2023. Recorded on February 16, 2022, along with BRAZY WEEKEND and other songs. Leaked on September 21, 2024."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V2](2 Neptune N Back)&quot;, 2)">
+                            ⭐️Got It Back(prod. Adio & Plu2o Nash)(Loss, Make It Back, RIght Back, Jiffy)
+                            <div class="song-description">OG Filename: 3 02-16-22 {JAYME ROUGH MIX} Previewed on February 21, 2022 via LUCKI's Instagram live. CQ Quality snippet leaked in 2023. Recorded on February 16, 2022, along with BRAZY WEEKEND and other songs. Leaked on September 21, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V2](2_Neptune_N_Back)-3" 
+                             data-description="OG Filename: Lucki - 6-24-22 Snippet leaked on April 2, 2024. Leaked on March 22, 2025."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V2](2 Neptune N Back)&quot;, 3)">
+                            Hemi(prod. Mayday)
+                            <div class="song-description">OG Filename: Lucki - 6-24-22 Snippet leaked on April 2, 2024. Leaked on March 22, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V2](2_Neptune_N_Back)-4" 
+                             data-description="OG Filename: 2 02-16-22 {JAYME ROUGH MIX} Leaked on September 21, 2024."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V2](2 Neptune N Back)&quot;, 4)">
+                            My Story(prod. BrentRambo & flansie)
+                            <div class="song-description">OG Filename: 2 02-16-22 {JAYME ROUGH MIX} Leaked on September 21, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-FLAWLESS_LIKE_ME_[V2](2_Neptune_N_Back)-5" 
+                             data-description="OG Filename: IM x Lucki - 1st 4.4.22 Previewed on April 27, 2022 via LUCKI&#39;s Instagram live. Leaked on March 22, 2025."
+                             onclick="playSong(&quot;FLAWLESS LIKE ME [V2](2 Neptune N Back)&quot;, 5)">
+                            Pretty Roxy(prod. Perdu & Synthetic)
+                            <div class="song-description">OG Filename: IM x Lucki - 1st 4.4.22 Previewed on April 27, 2022 via LUCKI's Instagram live. Leaked on March 22, 2025.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-7">
+                <div class="era-header" onclick="toggleEra(7)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">GEMIN!(DAYS AFTER, Gemini)</span>
+                    <span class="chevron" id="chevron-7">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-7">
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-0" 
+                             data-description="OG Filename: Track 1_Lucki_01.09.24_PRS.B... Previewed on February 7, 2025 via Underw6ter&#39;s Instagram live. Leaked on February 7, 2025."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 0)">
+                            ⭐️Recipe(prod Bhristo)
+                            <div class="song-description">OG Filename: Track 1_Lucki_01.09.24_PRS.B... Previewed on February 7, 2025 via Underw6ter's Instagram live. Leaked on February 7, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-1" 
+                             data-description="Previewed on July 21, 2024 via LUCKI&#39;s Twitter. Previewed again sometime in 2024. Previewed a third time on April 11, 2025 via LUCKI&#39;s Instagram story."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 1)">
+                            🏆Can't Celebrate(feat. Rylo Rodriguez & Veeze)(Black Belt. Can't B Nem)
+                            <div class="song-description">Previewed on July 21, 2024 via LUCKI's Twitter. Previewed again sometime in 2024. Previewed a third time on April 11, 2025 via LUCKI's Instagram story.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-2" 
+                             data-description="Previewed on July 21, 2024 via LUCKI&#39;s Twitter. Previewed again sometime in 2024. Previewed a third time on April 11, 2025 via LUCKI&#39;s Instagram story."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 2)">
+                            🏆Can't Celebrate(feat. Rylo Rodriguez & Veeze)(Black Belt. Can't B Nem)
+                            <div class="song-description">Previewed on July 21, 2024 via LUCKI's Twitter. Previewed again sometime in 2024. Previewed a third time on April 11, 2025 via LUCKI's Instagram story.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-3" 
+                             data-description="Previewed on July 21, 2024 via LUCKI&#39;s Twitter. Previewed again sometime in 2024. Previewed a third time on April 11, 2025 via LUCKI&#39;s Instagram story."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 3)">
+                            🏆Can't Celebrate(feat. Rylo Rodriguez & Veeze)(Black Belt. Can't B Nem)
+                            <div class="song-description">Previewed on July 21, 2024 via LUCKI's Twitter. Previewed again sometime in 2024. Previewed a third time on April 11, 2025 via LUCKI's Instagram story.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-4" 
+                             data-description="Previewed on April 5, 2025 via LUCKI&#39;s Instagram."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 4)">
+                            Higher Than Pluto [V1](prod. BrentRambo & T3rps)(no coming down, Widow, Higher Than The Dead)
+                            <div class="song-description">Previewed on April 5, 2025 via LUCKI's Instagram.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-5" 
+                             data-description="OG Filename: LUCKI - FAKE DEEP Previewed on December 17, 2024 via LUCKI&#39;s Instagram. Previewed again on December 19, 2024 via LUCKI&#39;s Instagram story. Snippet leaked on May 9, 2025. Track file-name shown on July 2, 2025."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 5)">
+                            🏆Fake Deep(Keep It 100 Or B Fake Deep)
+                            <div class="song-description">OG Filename: LUCKI - FAKE DEEP Previewed on December 17, 2024 via LUCKI's Instagram. Previewed again on December 19, 2024 via LUCKI's Instagram story. Snippet leaked on May 9, 2025. Track file-name shown on July 2, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-6" 
+                             data-description="Previewed on February 5, 2025 via Bhristo&#39;s Instagram story. Snippet leaked on May 14, 2025."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 6)">
+                            🏆Motivation*(prod. Bhristo)
+                            <div class="song-description">Previewed on February 5, 2025 via Bhristo's Instagram story. Snippet leaked on May 14, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-7" 
+                             data-description="Previewed on February 5, 2025 via Bhristo&#39;s Instagram story. Snippet leaked on May 14, 2025."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 7)">
+                            🏆Motivation*(prod. Bhristo)
+                            <div class="song-description">Previewed on February 5, 2025 via Bhristo's Instagram story. Snippet leaked on May 14, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-8" 
+                             data-description="Previewed on April 26, 2025 via LUCKI&#39;s Instagram story. Previewed again on April 28, 2025 via LUCKI&#39;s Vlog. Leaked on May 25, 2025."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 8)">
+                            ⭐️Never See The Day(DrugSex, Drug Sex, Perky N Xanny)
+                            <div class="song-description">Previewed on April 26, 2025 via LUCKI's Instagram story. Previewed again on April 28, 2025 via LUCKI's Vlog. Leaked on May 25, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-9" 
+                             data-description="OG Filename: one of one - lucki (04.25.25) Leaked on May 5, 2025."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 9)">
+                            ⭐️One Of One
+                            <div class="song-description">OG Filename: one of one - lucki (04.25.25) Leaked on May 5, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-10" 
+                             data-description="Previewed on December 23, 2024 via LUCKI&#39;s Instagram story. Snippet leaked on May 4, 2025. Leaked on May 5, 2025. Uses the same beat as Sexy Love by Max B."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 10)">
+                            Sexy Love (Remix)
+                            <div class="song-description">Previewed on December 23, 2024 via LUCKI's Instagram story. Snippet leaked on May 4, 2025. Leaked on May 5, 2025. Uses the same beat as Sexy Love by Max B.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-11" 
+                             data-description="Snippet leaked on April 14, 2025."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 11)">
+                            Silly Hoes*
+                            <div class="song-description">Snippet leaked on April 14, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-12" 
+                             data-description="OG Filename: Lucki Song 1_12.16.24 Previewed on December 20, 2024 via LUCKI&#39;s Instagram story. Previewed again on January 21, 2025 via nolimit_maneski&#39;s Instagram story. Snippet leaked on April 14, 2025. Untagged snippet leaked on April 30, 2025."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 12)">
+                            Tough On A Bitch(Telling The Bitch)
+                            <div class="song-description">OG Filename: Lucki Song 1_12.16.24 Previewed on December 20, 2024 via LUCKI's Instagram story. Previewed again on January 21, 2025 via nolimit_maneski's Instagram story. Snippet leaked on April 14, 2025. Untagged snippet leaked on April 30, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-GEMIN!(DAYS_AFTER,_Gemini)-13" 
+                             data-description="OG Filename: Gotit x Lucki - Turnt up Snippet leaked on April 30, 2025. Two more snippets leaked on May 1, 2025, leaked later the same day. Recorded on around April 10, 2025."
+                             onclick="playSong(&quot;GEMIN!(DAYS AFTER, Gemini)&quot;, 13)">
+                            Turnt Up(with Lil Gotit)
+                            <div class="song-description">OG Filename: Gotit x Lucki - Turnt up Snippet leaked on April 30, 2025. Two more snippets leaked on May 1, 2025, leaked later the same day. Recorded on around April 10, 2025.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+    </div>
+    <!-- Spotify-style player with skip buttons -->
+    <div class="player">
+        <img id="player-cover" src=cover alt="cover" class="player-cover">
+        <div class="player-info">
+            <div id="player-title" class="player-title">Select a song</div>
+            <div class="player-controls">
+                <button id="prev-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="15,4 7,11 15,18"></polygon></svg>
+                </button>
+                <button id="play-btn" class="player-btn">
+                    <svg id="play-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff"><polygon points="6,4 24,14 6,24"></polygon></svg>
+                    <svg id="pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff" style="display:none;"><rect x="6" y="4" width="5" height="20"></rect><rect x="17" y="4" width="5" height="20"></rect></svg>
+                </button>
+                <button id="next-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="7,4 15,11 7,18"></polygon></svg>
+                </button>
+                <span id="current-time" class="player-time">0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" value="0" min="0" max="100" step="1">
+                <span id="duration" class="player-time">0:00</span>
+            </div>
+        </div>
+        <audio id="player" preload="metadata"></audio>
+    </div>
+    <script>
+    // All eras and songs as a JS object
+    const eras = {"Unknown": [{"era": "Unknown", "name": "???", "description": "Snippet leaked on August 13, 2024.", "file_id": "ee8e48e80ddf4f693d6fd9fd81786d28", "stream_url": "https://api.pillows.su/api/download/ee8e48e80ddf4f693d6fd9fd81786d28", "download_url": "https://api.pillows.su/api/download/ee8e48e80ddf4f693d6fd9fd81786d28", "cover": ""}, {"era": "Unknown", "name": "???", "description": "Snippet leaked on May 6, 2025.", "file_id": "13e02f2c398563c941a9315ba823f00c", "stream_url": "https://api.pillows.su/api/download/13e02f2c398563c941a9315ba823f00c", "download_url": "https://api.pillows.su/api/download/13e02f2c398563c941a9315ba823f00c", "cover": ""}], "Watch My Back(Almighty So 2)": [{"era": "Watch My Back(Almighty So 2)", "name": "Program [V?](Spin Off)", "description": "OG Filename: lucki demo 1 Features an alternative beat. Leaked on June 1, 2021. Contains the same lyrics as \"Program\" released in 2016 featuring JayChris, but file-date says was made in 2017.", "file_id": "158cc067a6f0fe4e934fb06c21002cc3", "stream_url": "https://api.pillows.su/api/download/158cc067a6f0fe4e934fb06c21002cc3", "download_url": "https://api.pillows.su/api/download/158cc067a6f0fe4e934fb06c21002cc3", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbx2tQQNl7r7rtItySGjrxSlfa4MOFOWue8jvYbbwtfD_EJR9fOQxpmB6HDltmMbEXyZDZpdCIMbUR9fg44c2F4uXVtkko7-DYteRXTao2c42Y1VnTxS9yQ_tIljtjwtsUdHMIaKW413HXCyGKyUqkXXmGdUOno69f_Qg=w91-h103"}], "DAYS B4 II EP(Better Days)": [{"era": "DAYS B4 II EP(Better Days)", "name": "Nothing For Certain(prod. CHASETHEMONEY)", "description": "OG Filename: Lucki_chase_29_KK1 Previewed in 2018 via LUCKI's Instagram story. Leaked on July 29, 2023.", "file_id": "5f472176b64a8a870bbf90e8be7e4b65", "stream_url": "https://api.pillows.su/api/download/5f472176b64a8a870bbf90e8be7e4b65", "download_url": "https://api.pillows.su/api/download/5f472176b64a8a870bbf90e8be7e4b65", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb5muG1zlx3CFQDp_bR1sc1i1u28UZe5hiPLj5r-TO4bU-3b-m0gZKxY7HbmPt1CgfbJXIIA9iVPmA9yLvTxuyclVl8rMOwZK-sHQAwuHvqQLRx4_f-ts2Ih7VnDSNp52COaieVwidbF5Ubn1LOU5mhds28F8owjwzHWrkE=w91-h103"}], "Freewave 3": [{"era": "Freewave 3", "name": "Leeway*", "description": "Snippet leaked on February 10, 2025. From 2019, era unconfirmed.", "file_id": "8a0d3c4eadb5a1686624fcee45b892db", "stream_url": "https://api.pillows.su/api/download/8a0d3c4eadb5a1686624fcee45b892db", "download_url": "https://api.pillows.su/api/download/8a0d3c4eadb5a1686624fcee45b892db", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhY2PKMM-uwZCYaYX3ELiNEspuFBhQmu8ncFsfxZpLOVOv52z8GSTTZ6maKpLZ2oKqbf7G22y0gHE6pmptwst7AqVpbsqC0d04IOt2QTYmG7U0MT7ZpIenPmNU6OlVxQz9jhFCpIiVbp4SwtKbDfGT3bdHsEIDg2GOypL6zw=w91-h105"}], "FLAWLESS LIKE ME [V1]": [{"era": "FLAWLESS LIKE ME [V1]", "name": "\ud83c\udfc6Around My Way", "description": "Previewed in June 2020. Previewed again on August 6, 2020 via LUCKI's Instagram live.", "file_id": "539966561527f31b10ec9231cb25b57e", "stream_url": "https://api.pillows.su/api/download/539966561527f31b10ec9231cb25b57e", "download_url": "https://api.pillows.su/api/download/539966561527f31b10ec9231cb25b57e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "\ud83c\udfc6Around My Way", "description": "Previewed in June 2020. Previewed again on August 6, 2020 via LUCKI's Instagram live.", "file_id": "42706102ccd98dc3ed772ab57c21bc2c", "stream_url": "https://api.pillows.su/api/download/42706102ccd98dc3ed772ab57c21bc2c", "download_url": "https://api.pillows.su/api/download/42706102ccd98dc3ed772ab57c21bc2c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "Bury Me(prod. TheCrazyPart)(Luv Me)", "description": "Previewed on October 4, 2020 via LUCKI's Instagram live. Snippet leaked on February 10, 2025.", "file_id": "a3bdcefabe8cdbe2e1d371ee374e7c8d", "stream_url": "https://api.pillows.su/api/download/a3bdcefabe8cdbe2e1d371ee374e7c8d", "download_url": "https://api.pillows.su/api/download/a3bdcefabe8cdbe2e1d371ee374e7c8d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "Bury Me(prod. TheCrazyPart)(Luv Me)", "description": "Previewed on October 4, 2020 via LUCKI's Instagram live. Snippet leaked on February 10, 2025.", "file_id": "9f99f205e40b1dbd5d8367d058c63d58", "stream_url": "https://api.pillows.su/api/download/9f99f205e40b1dbd5d8367d058c63d58", "download_url": "https://api.pillows.su/api/download/9f99f205e40b1dbd5d8367d058c63d58", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "HellKat Boy(prod. Oogie Mane & Plu2o Nash)(Keep Up)", "description": "Previewed on October 4, 2020 via LUCKI's Instagram live. Higher quality snippet later leaked on July 27, 2023.", "file_id": "de51b6e9044840d44689b7b7b4524a1c", "stream_url": "https://api.pillows.su/api/download/de51b6e9044840d44689b7b7b4524a1c", "download_url": "https://api.pillows.su/api/download/de51b6e9044840d44689b7b7b4524a1c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "HellKat Boy(prod. Oogie Mane & Plu2o Nash)(Keep Up)", "description": "Previewed on October 4, 2020 via LUCKI's Instagram live. Higher quality snippet later leaked on July 27, 2023.", "file_id": "6c6f788b4f91d6397b71f7e1d066454b", "stream_url": "https://api.pillows.su/api/download/6c6f788b4f91d6397b71f7e1d066454b", "download_url": "https://api.pillows.su/api/download/6c6f788b4f91d6397b71f7e1d066454b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "High Together(Lowkey)", "description": "Previewed on July 27, 2020 via LUCKI's Instagram live.", "file_id": "58edaf0f935e453bf77096ec642278bc", "stream_url": "https://api.pillows.su/api/download/58edaf0f935e453bf77096ec642278bc", "download_url": "https://api.pillows.su/api/download/58edaf0f935e453bf77096ec642278bc", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "Hunnid(prod. BrentRambo & Soldado)(100 Days 100 Nights, Pretty Girl)", "description": "OG Filename: 01-28-21 {JAYME ROUGH MIX} Leaked on August 6, 2022.", "file_id": "aa4725bb843e428a8e76c3102025e1d1", "stream_url": "https://api.pillows.su/api/download/aa4725bb843e428a8e76c3102025e1d1", "download_url": "https://api.pillows.su/api/download/aa4725bb843e428a8e76c3102025e1d1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "\u2b50\ufe0fIn My Feelings(Hardly Forget, Red Blood)", "description": "OG Filename: 2 10-24-20 {JAYME MIX 1} Previewed on November 13, 2020 via LUCKI's Instagram live. Previewed again on December 17, 2020 via LUCKI's Instagram story. Previewed a third time on January 21, 2022. Leaked on March 28, 2024. OG file leaked on June 9, 2025.", "file_id": "9676c93696c7a36d3570ef67647da5c5", "stream_url": "https://api.pillows.su/api/download/9676c93696c7a36d3570ef67647da5c5", "download_url": "https://api.pillows.su/api/download/9676c93696c7a36d3570ef67647da5c5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "Like This(Feeling Like This, Booze)", "description": "OG Filename: 10-24-20 Previewed on November 13, 2020 via LUCKI's Instagram live. Previewed again on January 28, 2021 via LUCKI's Instagram story. Snippet leaked on June 5, 2025.", "file_id": "c4646461e74a61d149b45259f0d72cc0", "stream_url": "https://api.pillows.su/api/download/c4646461e74a61d149b45259f0d72cc0", "download_url": "https://api.pillows.su/api/download/c4646461e74a61d149b45259f0d72cc0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "\u2b50\ufe0fMoney Phase(prod. BrentRambo)", "description": "Previewed on September 20, 2020 via LUCKI's Instagram live. Later previewed again on September 8, 2021 via LUCKI's Instagram live. Leaked on July 17, 2025.", "file_id": "cf5d3d838138df39e37bb2c7a0e55a6c", "stream_url": "https://api.pillows.su/api/download/cf5d3d838138df39e37bb2c7a0e55a6c", "download_url": "https://api.pillows.su/api/download/cf5d3d838138df39e37bb2c7a0e55a6c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "ROXI(prod. BrentRambo & Okami)(Racks In, Racks Got Me, 100 Bands, Roxy)", "description": "OG Filename: 2 09-30-20 {JAYME MIX 1} Leaked on August 6, 2022. OG File leaked on November 12, 2024.", "file_id": "ae7842372c10b1e4d787e139df79aed9", "stream_url": "https://api.pillows.su/api/download/ae7842372c10b1e4d787e139df79aed9", "download_url": "https://api.pillows.su/api/download/ae7842372c10b1e4d787e139df79aed9", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "Tennessee", "description": "Snippet leaked on June 5, 2025.", "file_id": "1f3602906760dd6b74ee5015a8bc4eb8", "stream_url": "https://api.pillows.su/api/download/1f3602906760dd6b74ee5015a8bc4eb8", "download_url": "https://api.pillows.su/api/download/1f3602906760dd6b74ee5015a8bc4eb8", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}, {"era": "FLAWLESS LIKE ME [V1]", "name": "\u2b50\ufe0fTired Of Me [V1](prod. Yung Icey)(Tired, Superman)", "description": "Previewed on July 27, 2020 via LUCKI's Instagram live. Snippet leaked on March 7, 2025. Another snippet leaked on April 12, 2025. Later sold to Christ Dillinger and released on a new beat. Leaked on May 24, 2025.", "file_id": "f603efd774d0ab9d6334adf190bc52fd", "stream_url": "https://api.pillows.su/api/download/f603efd774d0ab9d6334adf190bc52fd", "download_url": "https://api.pillows.su/api/download/f603efd774d0ab9d6334adf190bc52fd", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbeAtfD8NUNR62l9ZwyfIGeETVU4VoT-9DD1Me8HYVDrVbecKUbNNrulyxVLteIHiR_1lYtjprbrcNfHEcXH6MD5pZ2YMEcPAJPjXLZmupruW-TytHA-4mDcAnvYhU34mfmOZz2WKMIgb6oxcHz4EJ7GoEA-gJD8e8byZWE=w91-h104"}], "WAKE UP LUCKI(Collaboration with F1lTHY)": [{"era": "WAKE UP LUCKI(Collaboration with F1lTHY)", "name": "According(prod. F1LTHY)(Leave Me)", "description": "OG Filename: F1lthy Lucki_according_kk1 Leaked on September 21, 2024. Open verse.", "file_id": "8b0209d226ead0bf20828f156b824a3a", "stream_url": "https://api.pillows.su/api/download/8b0209d226ead0bf20828f156b824a3a", "download_url": "https://api.pillows.su/api/download/8b0209d226ead0bf20828f156b824a3a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhagSsjUABCAjvFmMYNc_WdjHMvocAyBJDP4xZ-NMjN_B6jb8zYgXuf3kgsWvxJBV4kFZ1O8uoS34bFb2cxhNYootUpBl8nt09X_i41PumSljTLGn3jgNEgIeNgOFwTstF1rBdeGEcPOSBIKY5ggf7RbhV9Csla5w0Gi2Q=w91-h104"}, {"era": "WAKE UP LUCKI(Collaboration with F1lTHY)", "name": "\u2b50\ufe0fOut My Body(prod. F1LTHY)(Percs Like Molly)", "description": "OG Filename: 04-13-21 {JAYME MIX 1} Leaked on August 6, 2022.", "file_id": "6e636c80482ad6a3e86003ee9513da2e", "stream_url": "https://api.pillows.su/api/download/6e636c80482ad6a3e86003ee9513da2e", "download_url": "https://api.pillows.su/api/download/6e636c80482ad6a3e86003ee9513da2e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhagSsjUABCAjvFmMYNc_WdjHMvocAyBJDP4xZ-NMjN_B6jb8zYgXuf3kgsWvxJBV4kFZ1O8uoS34bFb2cxhNYootUpBl8nt09X_i41PumSljTLGn3jgNEgIeNgOFwTstF1rBdeGEcPOSBIKY5ggf7RbhV9Csla5w0Gi2Q=w91-h104"}, {"era": "WAKE UP LUCKI(Collaboration with F1lTHY)", "name": "???(prod. F1LTHY)(Wake Up Neptune)", "description": "Snippet leaked on April 13, 2022.", "file_id": "75176320b16577be3b1d38c0d32f0a4f", "stream_url": "https://api.pillows.su/api/download/75176320b16577be3b1d38c0d32f0a4f", "download_url": "https://api.pillows.su/api/download/75176320b16577be3b1d38c0d32f0a4f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhagSsjUABCAjvFmMYNc_WdjHMvocAyBJDP4xZ-NMjN_B6jb8zYgXuf3kgsWvxJBV4kFZ1O8uoS34bFb2cxhNYootUpBl8nt09X_i41PumSljTLGn3jgNEgIeNgOFwTstF1rBdeGEcPOSBIKY5ggf7RbhV9Csla5w0Gi2Q=w91-h104"}], "FLAWLESS LIKE ME [V2](2 Neptune N Back)": [{"era": "FLAWLESS LIKE ME [V2](2 Neptune N Back)", "name": "\u2b50\ufe0fI Can't Even(prod. Wheezy & Bobby Raps)(In The Mix, Ain't That Deep)", "description": "OG Filename: I can't even - lucki (prod. bobby n wheezy) Previewed on April 27, 2022 via LUCKI's Instagram live. Leaked on September 21, 2024. Open verse.", "file_id": "9dcc3b4033dd166e1a517d62695e84a6", "stream_url": "https://api.pillows.su/api/download/9dcc3b4033dd166e1a517d62695e84a6", "download_url": "https://api.pillows.su/api/download/9dcc3b4033dd166e1a517d62695e84a6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYb15iwbN3ygQXCL87LvMFg1oSvfl-KSDsQugkrDJ7OgIDRlSuuuGAfoJ85hCQiS951iogVFyyCDi3GhjZfAj0xEdH6K4-2iUWLe8pCEZGdqyh9qmAUmtFLgmhlYsNBXlURnPENoH7OATr06Krn3WZ-n_vz8FVIFgTAbZ8q=w91-h104"}, {"era": "FLAWLESS LIKE ME [V2](2 Neptune N Back)", "name": "Japanese Denim [V1](feat. DaeMoney & Veeze) (prod. flansie & Ccured)(Purple Denim)", "description": "OG Filename: VEEZE SLAY TOON_121021_ Previewed on December 11, 2021 via LUCKI's Instagram live. Leaked on December 6, 2023. Original version with an open verse removed for the released version.", "file_id": "a8ca470c56fb156f3e1c8e1772f96ccd", "stream_url": "https://api.pillows.su/api/download/a8ca470c56fb156f3e1c8e1772f96ccd", "download_url": "https://api.pillows.su/api/download/a8ca470c56fb156f3e1c8e1772f96ccd", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYb15iwbN3ygQXCL87LvMFg1oSvfl-KSDsQugkrDJ7OgIDRlSuuuGAfoJ85hCQiS951iogVFyyCDi3GhjZfAj0xEdH6K4-2iUWLe8pCEZGdqyh9qmAUmtFLgmhlYsNBXlURnPENoH7OATr06Krn3WZ-n_vz8FVIFgTAbZ8q=w91-h104"}, {"era": "FLAWLESS LIKE ME [V2](2 Neptune N Back)", "name": "\u2b50\ufe0fGot It Back(prod. Adio & Plu2o Nash)(Loss, Make It Back, RIght Back, Jiffy)", "description": "OG Filename: 3 02-16-22 {JAYME ROUGH MIX} Previewed on February 21, 2022 via LUCKI's Instagram live. CQ Quality snippet leaked in 2023. Recorded on February 16, 2022, along with BRAZY WEEKEND and other songs. Leaked on September 21, 2024.", "file_id": "11b4189373df9a0bd036d889d9a50ee6", "stream_url": "https://api.pillows.su/api/download/11b4189373df9a0bd036d889d9a50ee6", "download_url": "https://api.pillows.su/api/download/11b4189373df9a0bd036d889d9a50ee6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYb15iwbN3ygQXCL87LvMFg1oSvfl-KSDsQugkrDJ7OgIDRlSuuuGAfoJ85hCQiS951iogVFyyCDi3GhjZfAj0xEdH6K4-2iUWLe8pCEZGdqyh9qmAUmtFLgmhlYsNBXlURnPENoH7OATr06Krn3WZ-n_vz8FVIFgTAbZ8q=w91-h104"}, {"era": "FLAWLESS LIKE ME [V2](2 Neptune N Back)", "name": "Hemi(prod. Mayday)", "description": "OG Filename: Lucki - 6-24-22 Snippet leaked on April 2, 2024. Leaked on March 22, 2025.", "file_id": "b241a774e841a2fe57005e912d2f5b61", "stream_url": "https://api.pillows.su/api/download/b241a774e841a2fe57005e912d2f5b61", "download_url": "https://api.pillows.su/api/download/b241a774e841a2fe57005e912d2f5b61", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYb15iwbN3ygQXCL87LvMFg1oSvfl-KSDsQugkrDJ7OgIDRlSuuuGAfoJ85hCQiS951iogVFyyCDi3GhjZfAj0xEdH6K4-2iUWLe8pCEZGdqyh9qmAUmtFLgmhlYsNBXlURnPENoH7OATr06Krn3WZ-n_vz8FVIFgTAbZ8q=w91-h104"}, {"era": "FLAWLESS LIKE ME [V2](2 Neptune N Back)", "name": "My Story(prod. BrentRambo & flansie)", "description": "OG Filename: 2 02-16-22 {JAYME ROUGH MIX} Leaked on September 21, 2024.", "file_id": "24e3927861489f148736c84bba245537", "stream_url": "https://api.pillows.su/api/download/24e3927861489f148736c84bba245537", "download_url": "https://api.pillows.su/api/download/24e3927861489f148736c84bba245537", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYb15iwbN3ygQXCL87LvMFg1oSvfl-KSDsQugkrDJ7OgIDRlSuuuGAfoJ85hCQiS951iogVFyyCDi3GhjZfAj0xEdH6K4-2iUWLe8pCEZGdqyh9qmAUmtFLgmhlYsNBXlURnPENoH7OATr06Krn3WZ-n_vz8FVIFgTAbZ8q=w91-h104"}, {"era": "FLAWLESS LIKE ME [V2](2 Neptune N Back)", "name": "Pretty Roxy(prod. Perdu & Synthetic)", "description": "OG Filename: IM x Lucki - 1st 4.4.22 Previewed on April 27, 2022 via LUCKI's Instagram live. Leaked on March 22, 2025.", "file_id": "f376bea44936dd9ffa0dd4b952a97fde", "stream_url": "https://api.pillows.su/api/download/f376bea44936dd9ffa0dd4b952a97fde", "download_url": "https://api.pillows.su/api/download/f376bea44936dd9ffa0dd4b952a97fde", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYb15iwbN3ygQXCL87LvMFg1oSvfl-KSDsQugkrDJ7OgIDRlSuuuGAfoJ85hCQiS951iogVFyyCDi3GhjZfAj0xEdH6K4-2iUWLe8pCEZGdqyh9qmAUmtFLgmhlYsNBXlURnPENoH7OATr06Krn3WZ-n_vz8FVIFgTAbZ8q=w91-h104"}], "GEMIN!(DAYS AFTER, Gemini)": [{"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "\u2b50\ufe0fRecipe(prod Bhristo)", "description": "OG Filename: Track 1_Lucki_01.09.24_PRS.B... Previewed on February 7, 2025 via Underw6ter's Instagram live. Leaked on February 7, 2025.", "file_id": "cb369634c1cce0ca3e245a8af7807983", "stream_url": "https://api.pillows.su/api/download/cb369634c1cce0ca3e245a8af7807983", "download_url": "https://api.pillows.su/api/download/cb369634c1cce0ca3e245a8af7807983", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "\ud83c\udfc6Can't Celebrate(feat. Rylo Rodriguez & Veeze)(Black Belt. Can't B Nem)", "description": "Previewed on July 21, 2024 via LUCKI's Twitter. Previewed again sometime in 2024. Previewed a third time on April 11, 2025 via LUCKI's Instagram story.", "file_id": "2c83d8d510cf4dcccdf3c9ca2381adfb", "stream_url": "https://api.pillows.su/api/download/2c83d8d510cf4dcccdf3c9ca2381adfb", "download_url": "https://api.pillows.su/api/download/2c83d8d510cf4dcccdf3c9ca2381adfb", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "\ud83c\udfc6Can't Celebrate(feat. Rylo Rodriguez & Veeze)(Black Belt. Can't B Nem)", "description": "Previewed on July 21, 2024 via LUCKI's Twitter. Previewed again sometime in 2024. Previewed a third time on April 11, 2025 via LUCKI's Instagram story.", "file_id": "e291a6769870cd455397c61e68d4b4d5", "stream_url": "https://api.pillows.su/api/download/e291a6769870cd455397c61e68d4b4d5", "download_url": "https://api.pillows.su/api/download/e291a6769870cd455397c61e68d4b4d5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "\ud83c\udfc6Can't Celebrate(feat. Rylo Rodriguez & Veeze)(Black Belt. Can't B Nem)", "description": "Previewed on July 21, 2024 via LUCKI's Twitter. Previewed again sometime in 2024. Previewed a third time on April 11, 2025 via LUCKI's Instagram story.", "file_id": "bc2eda9c2cbec7369e9b74377b39aea3", "stream_url": "https://api.pillows.su/api/download/bc2eda9c2cbec7369e9b74377b39aea3", "download_url": "https://api.pillows.su/api/download/bc2eda9c2cbec7369e9b74377b39aea3", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "Higher Than Pluto [V1](prod. BrentRambo & T3rps)(no coming down, Widow, Higher Than The Dead)", "description": "Previewed on April 5, 2025 via LUCKI's Instagram.", "file_id": "5c02fe135a39c3283795fb9da798e7fd", "stream_url": "https://api.pillows.su/api/download/5c02fe135a39c3283795fb9da798e7fd", "download_url": "https://api.pillows.su/api/download/5c02fe135a39c3283795fb9da798e7fd", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "\ud83c\udfc6Fake Deep(Keep It 100 Or B Fake Deep)", "description": "OG Filename: LUCKI - FAKE DEEP Previewed on December 17, 2024 via LUCKI's Instagram. Previewed again on December 19, 2024 via LUCKI's Instagram story. Snippet leaked on May 9, 2025. Track file-name shown on July 2, 2025.", "file_id": "05a5a238bc59862d81946bdad3613f14", "stream_url": "https://api.pillows.su/api/download/05a5a238bc59862d81946bdad3613f14", "download_url": "https://api.pillows.su/api/download/05a5a238bc59862d81946bdad3613f14", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "\ud83c\udfc6Motivation*(prod. Bhristo)", "description": "Previewed on February 5, 2025 via Bhristo's Instagram story. Snippet leaked on May 14, 2025.", "file_id": "c2f4bda8cd3da76d9eb83cc9cdc9a365", "stream_url": "https://api.pillows.su/api/download/c2f4bda8cd3da76d9eb83cc9cdc9a365", "download_url": "https://api.pillows.su/api/download/c2f4bda8cd3da76d9eb83cc9cdc9a365", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "\ud83c\udfc6Motivation*(prod. Bhristo)", "description": "Previewed on February 5, 2025 via Bhristo's Instagram story. Snippet leaked on May 14, 2025.", "file_id": "cd47aff7bc8fc089f3a4e1b1343c5cbe", "stream_url": "https://api.pillows.su/api/download/cd47aff7bc8fc089f3a4e1b1343c5cbe", "download_url": "https://api.pillows.su/api/download/cd47aff7bc8fc089f3a4e1b1343c5cbe", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "\u2b50\ufe0fNever See The Day(DrugSex, Drug Sex, Perky N Xanny)", "description": "Previewed on April 26, 2025 via LUCKI's Instagram story. Previewed again on April 28, 2025 via LUCKI's Vlog. Leaked on May 25, 2025.", "file_id": "cdb4413111c6f0a9e0227c2ae7008700", "stream_url": "https://api.pillows.su/api/download/cdb4413111c6f0a9e0227c2ae7008700", "download_url": "https://api.pillows.su/api/download/cdb4413111c6f0a9e0227c2ae7008700", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "\u2b50\ufe0fOne Of One", "description": "OG Filename: one of one - lucki (04.25.25) Leaked on May 5, 2025.", "file_id": "c367f0003aecc45419586654179b80e3", "stream_url": "https://api.pillows.su/api/download/c367f0003aecc45419586654179b80e3", "download_url": "https://api.pillows.su/api/download/c367f0003aecc45419586654179b80e3", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "Sexy Love (Remix)", "description": "Previewed on December 23, 2024 via LUCKI's Instagram story. Snippet leaked on May 4, 2025. Leaked on May 5, 2025. Uses the same beat as Sexy Love by Max B.", "file_id": "c9088d70d229ce12688f5c686681207b", "stream_url": "https://api.pillows.su/api/download/c9088d70d229ce12688f5c686681207b", "download_url": "https://api.pillows.su/api/download/c9088d70d229ce12688f5c686681207b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "Silly Hoes*", "description": "Snippet leaked on April 14, 2025.", "file_id": "b51a3d082aefd2f7ffa7e831cb50eabb", "stream_url": "https://api.pillows.su/api/download/b51a3d082aefd2f7ffa7e831cb50eabb", "download_url": "https://api.pillows.su/api/download/b51a3d082aefd2f7ffa7e831cb50eabb", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "Tough On A Bitch(Telling The Bitch)", "description": "OG Filename: Lucki Song 1_12.16.24 Previewed on December 20, 2024 via LUCKI's Instagram story. Previewed again on January 21, 2025 via nolimit_maneski's Instagram story. Snippet leaked on April 14, 2025. Untagged snippet leaked on April 30, 2025.", "file_id": "582f2e703bfec0b370fdbbf89fd39367", "stream_url": "https://api.pillows.su/api/download/582f2e703bfec0b370fdbbf89fd39367", "download_url": "https://api.pillows.su/api/download/582f2e703bfec0b370fdbbf89fd39367", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}, {"era": "GEMIN!(DAYS AFTER, Gemini)", "name": "Turnt Up(with Lil Gotit)", "description": "OG Filename: Gotit x Lucki - Turnt up Snippet leaked on April 30, 2025. Two more snippets leaked on May 1, 2025, leaked later the same day. Recorded on around April 10, 2025.", "file_id": "c614aba45875b36cca133d428abb6403", "stream_url": "https://api.pillows.su/api/download/c614aba45875b36cca133d428abb6403", "download_url": "https://api.pillows.su/api/download/c614aba45875b36cca133d428abb6403", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb6GQIzxpfvX0f1ZoBF6Wag-NjGR0sbxrHFGpeLJUL-ur-qYFnr49o9-OtcOAkYIXJvOn-KdcxK1LoyiDlI-OgCAN08NYXMUwoVUFGGWOEH6JBaTUal-mjEMM0xb-vL-517bbsHtwGmmp8PgZm5UCK34vGoQRIQAHSWNg=w91-h104"}]};
+    let currentEra = null;
+    let currentIndex = null;
+    let currentSong = null;
+    let playlist = [];
+
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const seekBar = document.getElementById('seek-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const playerTitle = document.getElementById('player-title');
+    const playerCover = document.getElementById('player-cover');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    function playSong(era, index) {
+        playlist = eras[era];
+        currentEra = era;
+        currentIndex = index;
+        loadAndPlayCurrent();
+    }
+
+    function highlightCurrentSong() {
+        document.querySelectorAll('.song.playing').forEach(el => el.classList.remove('playing'));
+        if (currentEra !== null && currentIndex !== null) {
+            const songId = `song-${currentEra.replace(/ /g, '_')}-${currentIndex}`;
+            const songEl = document.getElementById(songId);
+            if (songEl) songEl.classList.add('playing');
+        }
+    }
+
+    function loadAndPlayCurrent() {
+        if (!playlist || currentIndex === null || !playlist[currentIndex]) return;
+        const song = playlist[currentIndex];
+        player.src = song.stream_url;
+        playerTitle.textContent = song.name;
+        playerCover.src = song.cover || 'https://via.placeholder.com/60x60?text=No+Cover';
+        currentSong = song.stream_url;
+        player.play();
+        updateSkipButtons();
+        updateMediaSession(song);
+        highlightCurrentSong();
+    }
+
+    function updateSkipButtons() {
+        prevBtn.disabled = (currentIndex <= 0);
+        nextBtn.disabled = (currentIndex >= playlist.length - 1);
+    }
+
+    playBtn.onclick = function() {
+        if (player.src) {
+            if (player.paused) player.play();
+            else player.pause();
+        }
+    };
+
+    prevBtn.onclick = function() {
+        if (playlist && currentIndex > 0) {
+            currentIndex -= 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    nextBtn.onclick = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    player.onplay = function() {
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "";
+    };
+    player.onpause = function() {
+        playIcon.style.display = "";
+        pauseIcon.style.display = "none";
+    };
+
+    player.ontimeupdate = function() {
+        seekBar.value = player.currentTime || 0;
+        currentTimeEl.textContent = formatTime(player.currentTime);
+    };
+    player.onloadedmetadata = function() {
+        seekBar.max = player.duration || 0;
+        durationEl.textContent = formatTime(player.duration);
+    };
+    seekBar.oninput = function() {
+        player.currentTime = seekBar.value;
+    };
+
+    player.onended = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    function formatTime(sec) {
+        sec = Math.floor(sec);
+        return Math.floor(sec/60) + ":" + String(sec%60).padStart(2, '0');
+    }
+    function updateMediaSession(song) {
+        if ('mediaSession' in navigator && song) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.name,
+                artist: song.era,
+                album: "Unreleased",
+                artwork: [
+                    { src: song.cover || 'https://via.placeholder.com/90x90?text=No+Cover', sizes: '90x90', type: 'image/png' }
+                ]
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (playlist && currentIndex > 0) {
+                    currentIndex -= 1;
+                    loadAndPlayCurrent();
+                }
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                if (playlist && currentIndex < playlist.length - 1) {
+                    currentIndex += 1;
+                    loadAndPlayCurrent();
+                }
+            });
+        }
+    }
+
+    // --- Collapsible Eras ---
+    function toggleEra(idx) {
+        const songList = document.getElementById('song-list-' + idx);
+        const chevron = document.getElementById('chevron-' + idx);
+        const isOpen = songList.classList.contains('open');
+        if (isOpen) {
+            songList.classList.remove('open');
+            chevron.classList.remove('open');
+        } else {
+            songList.classList.add('open');
+            chevron.classList.add('open');
+        }
+    }
+    // Collapse all on load
+    window.addEventListener('DOMContentLoaded', function() {
+        
+            document.getElementById('song-list-0').classList.remove('open');
+            document.getElementById('chevron-0').classList.remove('open');
+        
+            document.getElementById('song-list-1').classList.remove('open');
+            document.getElementById('chevron-1').classList.remove('open');
+        
+            document.getElementById('song-list-2').classList.remove('open');
+            document.getElementById('chevron-2').classList.remove('open');
+        
+            document.getElementById('song-list-3').classList.remove('open');
+            document.getElementById('chevron-3').classList.remove('open');
+        
+            document.getElementById('song-list-4').classList.remove('open');
+            document.getElementById('chevron-4').classList.remove('open');
+        
+            document.getElementById('song-list-5').classList.remove('open');
+            document.getElementById('chevron-5').classList.remove('open');
+        
+            document.getElementById('song-list-6').classList.remove('open');
+            document.getElementById('chevron-6').classList.remove('open');
+        
+            document.getElementById('song-list-7').classList.remove('open');
+            document.getElementById('chevron-7').classList.remove('open');
+        
+
+        // Tooltip logic
+        let tooltip = null;
+        let tooltipTimeout = null;
+
+        document.querySelectorAll('.song').forEach(song => {
+            song.addEventListener('mouseenter', function(e) {
+                const desc = song.getAttribute('data-description');
+                if (!desc) return;
+                if (tooltip) tooltip.remove();
+                tooltip = document.createElement('div');
+                tooltip.className = 'floating-song-description';
+                tooltip.innerHTML = desc;
+                document.body.appendChild(tooltip);
+
+                // Position tooltip
+                const rect = song.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 6) + 'px';
+                tooltip.style.minWidth = rect.width + 'px';
+
+                // Fade in
+                setTimeout(() => {
+                    if (tooltip) tooltip.classList.add('visible');
+                }, 10);
+            });
+            song.addEventListener('mouseleave', function(e) {
+                if (tooltip) {
+                    tooltip.classList.remove('visible');
+                    setTimeout(() => {
+                        if (tooltip) tooltip.remove();
+                        tooltip = null;
+                    }, 120);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

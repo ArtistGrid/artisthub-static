@@ -1,0 +1,1243 @@
+<!doctype html>
+<html>
+<head>
+    <title>ArtistHub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #121212;
+            color: #fff;
+        }
+.container {
+    padding: 2rem;
+    padding-bottom: 120px; /* Add space for the player */
+}
+        .era {
+            margin-bottom: 2.2rem;
+            background: #181818;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px #0003;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .era-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2.1rem 2rem 2.1rem 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.18s;
+            border-bottom: 1px solid #232323;
+        }
+        .era-header:hover {
+            background: #232323;
+        }
+        .era-cover {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .era-title {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #1db954;
+            flex: 1;
+            letter-spacing: 0.01em;
+        }
+        .chevron {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(.4,2,.6,1), color 0.2s;
+            color: #aaa;
+        }
+        .chevron.open {
+            transform: rotate(90deg);
+            color: #1db954;
+        }
+        .song-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(.4,2,.6,1);
+            background: #181818;
+            padding: 0 2rem;
+        }
+        .song-list.open {
+            padding-bottom: 1.2rem;
+            max-height: 1000px;
+            transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
+        }
+        .song {
+            background: #222;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.18s, color 0.18s;
+            box-shadow: 0 1px 4px #0002;
+            margin-top: 0.7rem;
+        }
+        .song:first-child { margin-top: 1.2rem; }
+        .song:hover {
+            background: #1db95433;
+            color: #1db954;
+        }
+        /* Hide the inline description, we use JS tooltip instead */
+        .song .song-description {
+            display: none !important;
+        }
+        .song.playing {
+            background: #1db954 !important;
+            color: #181818 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 12px #1db95455;
+        }
+        .player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #181818;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #222;
+            box-shadow: 0 -2px 8px #0003;
+            z-index: 100;
+            gap: 1.5rem;
+        }
+        .player-cover {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .player-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .player-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.2rem;
+            text-shadow: 0 1px 2px #0008;
+        }
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .player-btn, .player-skip-btn {
+            background: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px #0003;
+            margin-right: 0.5rem;
+        }
+        .player-btn:hover, .player-skip-btn:hover {
+            background: #1ed760;
+        }
+        .player-skip-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        .player-time {
+            font-size: 0.98rem;
+            color: #ccc;
+            min-width: 40px;
+            text-align: right;
+        }
+        .seek-bar {
+            flex: 1;
+            accent-color: #1db954;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            margin: 0 0.5rem;
+        }
+        .seek-bar::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-ms-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar:focus {
+            outline: none;
+        }
+        /* Tooltip style */
+        .floating-song-description {
+            position: fixed;
+            background: #222;
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px #000b;
+            z-index: 99999;
+            min-width: 250px;
+            max-width: 400px;
+            font-size: 0.97rem;
+            white-space: pre-line;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+        .floating-song-description.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #1db954;">ArtistHub</h1>
+        
+            <div class="era" id="era-0">
+                <div class="era-header" onclick="toggleEra(0)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbUItuXy3Yo2ouJKa_6HVA1ON0r793rKGPrQcfmc7PHD3FfCxC6LcCcFvAu1fC25n0JhqVomLSyeLr6ltTzG_ea88NaCKNQZnBgXXu5m9V5vjR7Mm9TzxLqhaT40SJghBTbSWaNqNKHAo7hrq4=w102-h105" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">The Last Supper</span>
+                    <span class="chevron" id="chevron-0">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-0">
+                    
+                        <div class="song" 
+                             id="song-The_Last_Supper-0" 
+                             data-description="Demo of Getter and Kryph&#39;s track Ja Break, briefly posted to Getter&#39;s Soundcloud a month before the track&#39;s release. This demo lacks the vocal samples from &#39;Crazy&#39; and is mixed differently."
+                             onclick="playSong(&quot;The Last Supper&quot;, 0)">
+                            Ja Break(prod. Getter & Oliver Tree)
+                            <div class="song-description">Demo of Getter and Kryph's track Ja Break, briefly posted to Getter's Soundcloud a month before the track's release. This demo lacks the vocal samples from 'Crazy' and is mixed differently.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-1">
+                <div class="era-header" onclick="toggleEra(1)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Turbo(Alien Boy)</span>
+                    <span class="chevron" id="chevron-1">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-1">
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-0" 
+                             data-description="OG Filename: oliver_glenwood_b_03-casey-mattson-imad Title: Alien Boy (Casey &amp; Imad) The earliest known demo of Alien Boy, from 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 0)">
+                            Alien Boy [V1](prod. Imad Royal, Casey Mattson & Oliver Tree)(Oliver Glenwood B)
+                            <div class="song-description">OG Filename: oliver_glenwood_b_03-casey-mattson-imad Title: Alien Boy (Casey & Imad) The earliest known demo of Alien Boy, from 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-1" 
+                             data-description="OG Filename: Alien Boy Updated demo of Alien Boy from 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 1)">
+                            Alien Boy [V2](prod. Imad Royal, Casey Mattson & Oliver Tree)(Oliver Glenwood B)
+                            <div class="song-description">OG Filename: Alien Boy Updated demo of Alien Boy from 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-2" 
+                             data-description="OG Filename: Oliver_Glenwood_D_01_V2 An early mix of All in All seen on Casey Mattson&#39;s macbook during a livestream, where he played a brief snippet of the cut instrumental section. Sounds mostly the same as the below mixes."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 2)">
+                            Come Again [V2](prod. Casey Mattson, Oliver Tree & Dylan Wiggins)(All in All, Oliver Glenwood D)
+                            <div class="song-description">OG Filename: Oliver_Glenwood_D_01_V2 An early mix of All in All seen on Casey Mattson's macbook during a livestream, where he played a brief snippet of the cut instrumental section. Sounds mostly the same as the below mixes.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-3" 
+                             data-description="OG Filename: oliver_glenwood_d_06-ft-casey-mattson-sirr-dylan Title: Come Again (Casey &amp; Dylan) Demo mix of All in All from 2017, originally named &#39;Come Again&#39;. Uses a significantly different instrumental to the final version."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 3)">
+                            Come Again [V4](prod. Casey Mattson, Oliver Tree & Dylan Wiggins)(All in All, Oliver Glenwood D)
+                            <div class="song-description">OG Filename: oliver_glenwood_d_06-ft-casey-mattson-sirr-dylan Title: Come Again (Casey & Dylan) Demo mix of All in All from 2017, originally named 'Come Again'. Uses a significantly different instrumental to the final version.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-4" 
+                             data-description="OG Filename: all-in-all-3 Title: All in All Updated demo mix of All in All from later in 2017. Uses a significantly different instrumental to the final version, with an instrumental break which was entirely cut from later mixes."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 4)">
+                            ⭐ All in All [V5](prod. Casey Mattson, Oliver Tree & Dylan Wiggins)(Come Again, Oliver Glenwood D)
+                            <div class="song-description">OG Filename: all-in-all-3 Title: All in All Updated demo mix of All in All from later in 2017. Uses a significantly different instrumental to the final version, with an instrumental break which was entirely cut from later mixes.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-5" 
+                             data-description="OG Filename: Better Things Updated mix of Better Things produced in 2017, intended to be included in the scrapped album Turbo."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 5)">
+                            ⭐ Better Things [V2](prod. Robert Koch & Oliver Tree)(Tree Demo A)
+                            <div class="song-description">OG Filename: Better Things Updated mix of Better Things produced in 2017, intended to be included in the scrapped album Turbo.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-6" 
+                             data-description="OG Filename: Cheapskate Updated demo of Cheapskate from 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 6)">
+                            Cheapskate [V3](prod. Robert Koch & Oliver Tree)
+                            <div class="song-description">OG Filename: Cheapskate Updated demo of Cheapskate from 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-7" 
+                             data-description="OG Filename: Come On Unreleased track produced in 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 7)">
+                            Come On(prod. Whethan & Oliver Tree)
+                            <div class="song-description">OG Filename: Come On Unreleased track produced in 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-8" 
+                             data-description="OG Filename: Come On Over Unreleased track produced in 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 8)">
+                            ✨ Come On Over
+                            <div class="song-description">OG Filename: Come On Over Unreleased track produced in 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-9" 
+                             data-description="OG Filename: Cruel Fairly rough unreleased track produced in 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 9)">
+                            Cruel(prod. Whethan & Oliver Tree)
+                            <div class="song-description">OG Filename: Cruel Fairly rough unreleased track produced in 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-10" 
+                             data-description="OG Filename: circutss_1 Title: Circuits An updated mix of Circuits from 2017. A brief snippet of this mix was played by Casey Mattson during a livestream in 2020."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 10)">
+                            Circuits [V2]
+                            <div class="song-description">OG Filename: circutss_1 Title: Circuits An updated mix of Circuits from 2017. A brief snippet of this mix was played by Casey Mattson during a livestream in 2020.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-11" 
+                             data-description="OG Filename: Oliver Tree X Tabacco - Hero The worst thing Oliver has ever produced."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 11)">
+                            🗑️ Hero(prod. Tabacco & Oliver Tree)
+                            <div class="song-description">OG Filename: Oliver Tree X Tabacco - Hero The worst thing Oliver has ever produced.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-12" 
+                             data-description="OG Filename: roget-x-wes-x-casey-x-oliver-tree-a-take-2 Title: Instrumental 1 (Roget X Wes X Casey) Unused instrumental track produced in 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 12)">
+                            Instrumental 1(prod. Rogét Chahayed, Westen Weiss, Casey Mattson & Oliver Tree)
+                            <div class="song-description">OG Filename: roget-x-wes-x-casey-x-oliver-tree-a-take-2 Title: Instrumental 1 (Roget X Wes X Casey) Unused instrumental track produced in 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-13" 
+                             data-description="OG Filename: roget-x-wes-x-oliver-tree-instrumental-2 Title: Instrumental 2 (Roget X Wes) Unused instrumental track produced in 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 13)">
+                            Instrumental 2(prod. Rogét Chahayed, Westen Weiss & Oliver Tree)
+                            <div class="song-description">OG Filename: roget-x-wes-x-oliver-tree-instrumental-2 Title: Instrumental 2 (Roget X Wes) Unused instrumental track produced in 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-14" 
+                             data-description="OG Filename: Lies Scrapped song produced in 2017 by Oliver Tree and Rogét Chahayed, intended for the scrapped album Turbo. The song was performed live several times around 2017, but did not release, and became arguably Oliver&#39;s most notorious and highly sought-after unreleased track. Although a few recordings of its performances were found, the song itself was considered lost for several years, until eventually the full thing leaked on 30 July 2023 after a successful groupbuy."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 14)">
+                            ⭐ Lies [V2](prod. Rogét Chahayed & Oliver Tree)
+                            <div class="song-description">OG Filename: Lies Scrapped song produced in 2017 by Oliver Tree and Rogét Chahayed, intended for the scrapped album Turbo. The song was performed live several times around 2017, but did not release, and became arguably Oliver's most notorious and highly sought-after unreleased track. Although a few recordings of its performances were found, the song itself was considered lost for several years, until eventually the full thing leaked on 30 July 2023 after a successful groupbuy.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-15" 
+                             data-description="OG Filename: life-goes-on-3 Title: Life Goes On An updated mix of Life Goes On from 2017, with the open verse freestyle replaced with a new rap verse."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 15)">
+                            Life Goes On [V2](prod. Getter & Oliver Tree)
+                            <div class="song-description">OG Filename: life-goes-on-3 Title: Life Goes On An updated mix of Life Goes On from 2017, with the open verse freestyle replaced with a new rap verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-16" 
+                             data-description="OG Filename: MONEY TALKS Unreleased track produced in 2017. The song was seemingly planned for release at some point, with members of Oliver and Whethan sharing snippets of the song around 2017, but for whatever reason it did not release."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 16)">
+                            ⭐ Money Talks [V1](prod. Whethan & Oliver Tree)
+                            <div class="song-description">OG Filename: MONEY TALKS Unreleased track produced in 2017. The song was seemingly planned for release at some point, with members of Oliver and Whethan sharing snippets of the song around 2017, but for whatever reason it did not release.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-17" 
+                             data-description="OG Filename: Oliver Summer v8 Unreleased track produced in 2017. Re-uses a few lyrics from Oliver and Awkword&#39;s 2011 collaboration &#34;Session&#34;."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 17)">
+                            ⭐ Spotlights(prod. Whethan & Oliver Tree)
+                            <div class="song-description">OG Filename: Oliver Summer v8 Unreleased track produced in 2017. Re-uses a few lyrics from Oliver and Awkword's 2011 collaboration "Session".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-18" 
+                             data-description="OG Filename: Superficial Unreleased track produced in 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 18)">
+                            Superficial
+                            <div class="song-description">OG Filename: Superficial Unreleased track produced in 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-19" 
+                             data-description="OG Filename: theme song update Unreleased track produced in 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 19)">
+                            ⭐ Theme Song(prod. Whethan & Oliver Tree)
+                            <div class="song-description">OG Filename: theme song update Unreleased track produced in 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-20" 
+                             data-description="OG Filename: Oliver_Glenwood_E_06 Title: Upside Down (Josh &amp; Casey) Demo mix of Upside Down from 2017. Uploaded to Oliver&#39;s Soundcloud titled &#34;Upside Down (Josh &amp; Casey)&#34;."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 20)">
+                            Upside Down [V3](prod. NVDES, Casey Mattson & Oliver Tree)(Oliver Glenwood E)
+                            <div class="song-description">OG Filename: Oliver_Glenwood_E_06 Title: Upside Down (Josh & Casey) Demo mix of Upside Down from 2017. Uploaded to Oliver's Soundcloud titled "Upside Down (Josh & Casey)".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-21" 
+                             data-description="OG Filename: upside-down-2 Title: Upside Down Updated demo of Upside Down from later in 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 21)">
+                            Upside Down [V4](prod. NVDES, Casey Mattson & Oliver Tree)(Oliver Glenwood E)
+                            <div class="song-description">OG Filename: upside-down-2 Title: Upside Down Updated demo of Upside Down from later in 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-22" 
+                             data-description="OG Filename: glendwood-c-casey-mattson-x-imad-royal Title: Waiting For Nothing (Casey x Imad) Unreleased track produced in 2017. Re-uses several lyrics from Demons."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 22)">
+                            ✨ Waiting For Nothing [V2](prod. Imad Royal, Casey Mattson & Oliver Tree)(Glendwood C)
+                            <div class="song-description">OG Filename: glendwood-c-casey-mattson-x-imad-royal Title: Waiting For Nothing (Casey x Imad) Unreleased track produced in 2017. Re-uses several lyrics from Demons.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-23" 
+                             data-description="OG Filename: Waisted Years idea Updated mix of Wasted Years, stll misspelt, from later in 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 23)">
+                            ✨ Wasted Years [V2](prod. Whethan & Oliver Tree)
+                            <div class="song-description">OG Filename: Waisted Years idea Updated mix of Wasted Years, stll misspelt, from later in 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-24" 
+                             data-description="OG Filename: What You Are Updated mix of What You Are from 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 24)">
+                            ⭐ What You Are [V2](prod. Imad Royal, Casey Mattson & Oliver Tree)
+                            <div class="song-description">OG Filename: What You Are Updated mix of What You Are from 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-25" 
+                             data-description="OG Filename: 270617-you-thought-wrong-olivertreexbigtaste Title: You Thought Wrong Unreleased track produced in 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 25)">
+                            You Thought Wrong(prod. Oliver Tree & Leroy Clampitt)
+                            <div class="song-description">OG Filename: 270617-you-thought-wrong-olivertreexbigtaste Title: You Thought Wrong Unreleased track produced in 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-26" 
+                             data-description="OG Filename: CIRCUITS STEMS Finished, unreleased song intended to be included in the scrapped album Turbo.  Circuits was performed live several times around 2017-2018, but was scrapped in late 2018 when focus shifted to Ugly is Beautiful, and the song gained notoriety amongst Oliver&#39;s fans who wanted to see it released. Oliver jokingly denied the existence of the song whenever asked about it in interviews, and it was considered lost for several years until the stems for the track finally leaked on 20 September 2022."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 26)">
+                            ⭐ Circuits [V3]
+                            <div class="song-description">OG Filename: CIRCUITS STEMS Finished, unreleased song intended to be included in the scrapped album Turbo.  Circuits was performed live several times around 2017-2018, but was scrapped in late 2018 when focus shifted to Ugly is Beautiful, and the song gained notoriety amongst Oliver's fans who wanted to see it released. Oliver jokingly denied the existence of the song whenever asked about it in interviews, and it was considered lost for several years until the stems for the track finally leaked on 20 September 2022.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-27" 
+                             data-description="OG Filename: Enemy Final Despite the filename, this is not the final mix, though it sounds almost identical to the final version besides minor mixing changes."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 27)">
+                            Enemy(prod. Whethan & Oliver Tree)
+                            <div class="song-description">OG Filename: Enemy Final Despite the filename, this is not the final mix, though it sounds almost identical to the final version besides minor mixing changes.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-28" 
+                             data-description="OG Filename: Faceplant (Imad x Roget) Unreleased track produced during work on Ugly is Beautiful."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 28)">
+                            Faceplant(prod. Imad Royal, Rogét Chahayed & Oliver Tree)
+                            <div class="song-description">OG Filename: Faceplant (Imad x Roget) Unreleased track produced during work on Ugly is Beautiful.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-29" 
+                             data-description="OG Filename: GHOSTS (fox worktape 2-2 Oliver Tree, Sterling Fox) Unreleased track produced in 2017. It&#39;s unknown which version came first."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 29)">
+                            Ghosts [V?](prod. Sterling Fox & Oliver Tree)
+                            <div class="song-description">OG Filename: GHOSTS (fox worktape 2-2 Oliver Tree, Sterling Fox) Unreleased track produced in 2017. It's unknown which version came first.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-30" 
+                             data-description="OG Filename: LIFE GOES ON STEMS Early mix of Life Goes On from 2017, including the rap verse that was removed from later iterations of the song. This version was performed live several times around 2017-2018 and was intended to be included in the scrapped album Turbo."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 30)">
+                            ⭐ Life Goes On [V3](prod. Getter & Oliver Tree)
+                            <div class="song-description">OG Filename: LIFE GOES ON STEMS Early mix of Life Goes On from 2017, including the rap verse that was removed from later iterations of the song. This version was performed live several times around 2017-2018 and was intended to be included in the scrapped album Turbo.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-31" 
+                             data-description="OG Filename: oliverbecksong1 A song named &#34;oliverbecksong1&#34;, and the stems for it, were visible on Casey Mattson&#39;s macbook during a livestream in 2020, with Casey briefly playing a stem named &#34;HORN-1&#34;. The track length was also visible."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 31)">
+                            Oliver Beck Song*
+                            <div class="song-description">OG Filename: oliverbecksong1 A song named "oliverbecksong1", and the stems for it, were visible on Casey Mattson's macbook during a livestream in 2020, with Casey briefly playing a stem named "HORN-1". The track length was also visible.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-32" 
+                             data-description="OG Filename: SHUT ME UP Unreleased track produced in 2017. The song was seemingly planned for release at some point, with members of Oliver sharing a snippet of the song in 2017, but for whatever reason it did not release."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 32)">
+                            ⭐ Shut Me Up(prod. Whethan & Oliver Tree)
+                            <div class="song-description">OG Filename: SHUT ME UP Unreleased track produced in 2017. The song was seemingly planned for release at some point, with members of Oliver sharing a snippet of the song in 2017, but for whatever reason it did not release.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-33" 
+                             data-description="OG Filename: Oliver Tree - Welcome To LA (Final) Despite the filename, this is not the final mix, and contains slight differences in the instrumental. It is otherwise very similar to the release version."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 33)">
+                            Welcome to LA [V2](prod. Whethan & Oliver Tree)
+                            <div class="song-description">OG Filename: Oliver Tree - Welcome To LA (Final) Despite the filename, this is not the final mix, and contains slight differences in the instrumental. It is otherwise very similar to the release version.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-34" 
+                             data-description="OG Filename: Against Myself Unreleased track produced during 2017."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 34)">
+                            ⭐ Against Myself
+                            <div class="song-description">OG Filename: Against Myself Unreleased track produced during 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-35" 
+                             data-description="OG Filename: alien-boy-1 Title: Alien Boy Updated demo of Alien Boy, with an unused early version of the Alien Boy EP cover art attached."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 35)">
+                            Alien Boy [V3](prod. Imad Royal, Casey Mattson & Oliver Tree)(Oliver Glenwood B)
+                            <div class="song-description">OG Filename: alien-boy-1 Title: Alien Boy Updated demo of Alien Boy, with an unused early version of the Alien Boy EP cover art attached.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-36" 
+                             data-description="OG Filename: Oliver Tree - All That Updated mix of All That from later in 2017, still with the second half missing. This version was intended to be included in the scrapped album Turbo."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 36)">
+                            All That [V2](prod. Whethan & Oliver Tree)
+                            <div class="song-description">OG Filename: Oliver Tree - All That Updated mix of All That from later in 2017, still with the second half missing. This version was intended to be included in the scrapped album Turbo.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-37" 
+                             data-description="OG Filename: oliver-ghosts Title: Oliver Tree - Ghosts Alternate version of Ghosts with a completely different instrumental, still produced by Sterling Fox."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 37)">
+                            Ghosts [V?](prod. Sterling Fox & Oliver Tree)
+                            <div class="song-description">OG Filename: oliver-ghosts Title: Oliver Tree - Ghosts Alternate version of Ghosts with a completely different instrumental, still produced by Sterling Fox.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Turbo(Alien_Boy)-38" 
+                             data-description="OG Filename: Halo Casey vs Oliver10.21.17 Updated mix of Halo with a different intro, played briefly by Casey Mattson during a livestream in 2020."
+                             onclick="playSong(&quot;Turbo(Alien Boy)&quot;, 38)">
+                            🏅 Halo [V2](prod. Casey Mattson & Oliver Tree)
+                            <div class="song-description">OG Filename: Halo Casey vs Oliver10.21.17 Updated mix of Halo with a different intro, played briefly by Casey Mattson during a livestream in 2020.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-2">
+                <div class="era-header" onclick="toggleEra(2)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Ugly is Beautiful [V1](Do You Feel Me?)</span>
+                    <span class="chevron" id="chevron-2">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-2">
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-0" 
+                             data-description="OG Filename: 2 Trees Vocal REMIX FINISHED DEMO Unreleased track produced some time around 2017-2018, previewed many times and evidently intended for release for a while. However, for unknown reasons, it did not release, and was considered a community grail for many years. The song is seemingly unnamed, and is commonly referred to by fans as &#39;Sun&#39;."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 0)">
+                            ⭐ 2 Trees(Sun*)
+                            <div class="song-description">OG Filename: 2 Trees Vocal REMIX FINISHED DEMO Unreleased track produced some time around 2017-2018, previewed many times and evidently intended for release for a while. However, for unknown reasons, it did not release, and was considered a community grail for many years. The song is seemingly unnamed, and is commonly referred to by fans as 'Sun'.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-1" 
+                             data-description="OG Filename: OLIVER TREE 1.24.18 - AGAIN AND AGAIN Very rough, early demo of Again &amp; Again from 2018. The structure is similar to the final version, but the bridge section is missing. One of the first tracks to feature the overdriven rock sound that Ugly is Beautiful would become known for."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 1)">
+                            Again & Again [V1](prod. NVDES & Oliver Tree)
+                            <div class="song-description">OG Filename: OLIVER TREE 1.24.18 - AGAIN AND AGAIN Very rough, early demo of Again & Again from 2018. The structure is similar to the final version, but the bridge section is missing. One of the first tracks to feature the overdriven rock sound that Ugly is Beautiful would become known for.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-2" 
+                             data-description="OG Filename: Again &amp; Again (Update) Updated demo mix of Again &amp; Again from 2018. The mixing is improved, though still very rough, and the structure is rearranged slightly, with a bridge section being added."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 2)">
+                            Again & Again [V2](prod. NVDES & Oliver Tree)
+                            <div class="song-description">OG Filename: Again & Again (Update) Updated demo mix of Again & Again from 2018. The mixing is improved, though still very rough, and the structure is rearranged slightly, with a bridge section being added.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-3" 
+                             data-description="OG Filename: AGAIN AND AGAIN (MIX V1) Updated mix of Again &amp; Again from later in 2018. The song now very closely resembles the release version."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 3)">
+                            Again & Again [V3](prod. NVDES & Oliver Tree)
+                            <div class="song-description">OG Filename: AGAIN AND AGAIN (MIX V1) Updated mix of Again & Again from later in 2018. The song now very closely resembles the release version.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-4" 
+                             data-description="OG Filename: Again and Again_Version 6000 Further updated mix of Again &amp; Again from later in 2018. The structure of the song is now the same as release, though the mixing is still notably rougher."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 4)">
+                            Again & Again [V4](prod. NVDES & Oliver Tree)
+                            <div class="song-description">OG Filename: Again and Again_Version 6000 Further updated mix of Again & Again from later in 2018. The structure of the song is now the same as release, though the mixing is still notably rougher.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-5" 
+                             data-description="OG Filename: all-bets-are-off-5 Title: Oliver Tree - All Bets Are Off (ft. Nvdes) The first demo of All Bets Are Off, with several entirely different verses that were cut from later versions."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 5)">
+                            ✨ All Bets Are Off [V1](prod. NVDES & Oliver Tree)
+                            <div class="song-description">OG Filename: all-bets-are-off-5 Title: Oliver Tree - All Bets Are Off (ft. Nvdes) The first demo of All Bets Are Off, with several entirely different verses that were cut from later versions.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-6" 
+                             data-description="OG Filename: all-bets-are-off-02 Title: All Bets Are Off (UPDATE) Updated mix of All Bets Are Off from 2018."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 6)">
+                            All Bets Are Off [V2](prod. NVDES & Oliver Tree)
+                            <div class="song-description">OG Filename: all-bets-are-off-02 Title: All Bets Are Off (UPDATE) Updated mix of All Bets Are Off from 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-7" 
+                             data-description="OG Filename: all-bets-are-off-3 Title: All Bets Are Off Updated demo of All Bets Are Off."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 7)">
+                            All Bets Are Off [V3](prod. NVDES & Oliver Tree)
+                            <div class="song-description">OG Filename: all-bets-are-off-3 Title: All Bets Are Off Updated demo of All Bets Are Off.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-8" 
+                             data-description="OG Filename: all-bets-are-off-mix-v1 Title: All Bets Are Off Mix V2 Updated demo of All Bets Are Off."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 8)">
+                            All Bets Are Off [V4](prod. NVDES & Oliver Tree)
+                            <div class="song-description">OG Filename: all-bets-are-off-mix-v1 Title: All Bets Are Off Mix V2 Updated demo of All Bets Are Off.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-9" 
+                             data-description="OG Filename: Better Days - (OliverTree) Unreleased track produced during work on Ugly is Beautiful."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 9)">
+                            ✨ Better Days
+                            <div class="song-description">OG Filename: Better Days - (OliverTree) Unreleased track produced during work on Ugly is Beautiful.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-10" 
+                             data-description="OG Filename: oliver-tree-rough-mix Title: OLIVER TREE - BURY ME ALIVE Demo mix of Bury Me Alive from 2018 with a rougher mix and a different outro. This mix had unique cover art uploaded alongside it which was intended for the song, but went unused."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 10)">
+                            🗑️ Bury Me Alive [V1](prod. Trevor Brown, William Simmons & Oliver Tree)
+                            <div class="song-description">OG Filename: oliver-tree-rough-mix Title: OLIVER TREE - BURY ME ALIVE Demo mix of Bury Me Alive from 2018 with a rougher mix and a different outro. This mix had unique cover art uploaded alongside it which was intended for the song, but went unused.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-11" 
+                             data-description="OG Filename: bury-me-alivev11 Title: Bury Me Alive Updated mix of Bury Me Alive from later in 2018."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 11)">
+                            Bury Me Alive [V2](prod. Trevor Brown, William Simmons & Oliver Tree)
+                            <div class="song-description">OG Filename: bury-me-alivev11 Title: Bury Me Alive Updated mix of Bury Me Alive from later in 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-12" 
+                             data-description="OG Filename: Bury Me Alive Mix V4 Updated mix of Bury Me Alive."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 12)">
+                            Bury Me Alive [V3](prod. Trevor Brown, William Simmons & Oliver Tree)
+                            <div class="song-description">OG Filename: Bury Me Alive Mix V4 Updated mix of Bury Me Alive.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-13" 
+                             data-description="OG Filename: FUCK (OLIVER X BAUUER X WHETHAN) Demo of Fuck from 2018."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 13)">
+                            Fuck [V1](prod. Whethan, Baauer & Oliver Tree)(FUCK!)
+                            <div class="song-description">OG Filename: FUCK (OLIVER X BAUUER X WHETHAN) Demo of Fuck from 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-14" 
+                             data-description="OG Filename: oliver-tree-fuck-short Title: Oliver Tree - FUCK! Demo of Fuck from 2018."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 14)">
+                            Fuck [V2](prod. Whethan, Baauer & Oliver Tree)(FUCK!)
+                            <div class="song-description">OG Filename: oliver-tree-fuck-short Title: Oliver Tree - FUCK! Demo of Fuck from 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-15" 
+                             data-description="OG Filename: FUCK (SHORTENED 4 Video) Alternate, shorter mix of Fuck for the music video."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 15)">
+                            Fuck [V3](prod. Whethan, Baauer & Oliver Tree)(FUCK!)
+                            <div class="song-description">OG Filename: FUCK (SHORTENED 4 Video) Alternate, shorter mix of Fuck for the music video.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-16" 
+                             data-description="OG Filename: FUCK SHORTENED (FINAL) Updated music video version of Fuck."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 16)">
+                            Fuck [V4](prod. Whethan, Baauer & Oliver Tree)(FUCK!)
+                            <div class="song-description">OG Filename: FUCK SHORTENED (FINAL) Updated music video version of Fuck.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-17" 
+                             data-description="OG Filename: fuckk-bauuer-x-whethan Title: FUCK Demo of Fuck from 2018."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 17)">
+                            Fuck [V5](prod. Whethan, Baauer & Oliver Tree)(FUCK!)
+                            <div class="song-description">OG Filename: fuckk-bauuer-x-whethan Title: FUCK Demo of Fuck from 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-18" 
+                             data-description="OG Filename: fuck-mix-1st-mix Title: FUCK (2nd Mix) Demo mix of Fuck from 2018 with several different lyrics and rougher mixing overall."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 18)">
+                            Fuck [V6](prod. Whethan, Baauer & Oliver Tree)(FUCK!)
+                            <div class="song-description">OG Filename: fuck-mix-1st-mix Title: FUCK (2nd Mix) Demo mix of Fuck from 2018 with several different lyrics and rougher mixing overall.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-19" 
+                             data-description="OG Filename: Fuckin Up (Whethan) UPDATE Updated demo of Hurt, still named Fuckin Up."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 19)">
+                            Fuckin' Up [V2](prod. Whethan, Oliver Tree & Michael Leary)(Hurt)
+                            <div class="song-description">OG Filename: Fuckin Up (Whethan) UPDATE Updated demo of Hurt, still named Fuckin Up.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-20" 
+                             data-description="OG Filename: fuckin-up-041 Title: Fuckin Up (Update) Updated demo of Hurt, still named Fuckin Up. Structured differently to the final version."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 20)">
+                            Fuckin' Up [V3](prod. Whethan, Oliver Tree & Michael Leary)(Hurt)
+                            <div class="song-description">OG Filename: fuckin-up-041 Title: Fuckin Up (Update) Updated demo of Hurt, still named Fuckin Up. Structured differently to the final version.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-21" 
+                             data-description="OG Filename: fuckin-up-nu-nu Title: Hurt Demo mix of Hurt from a few months before release, mostly similar to the final version but with rougher mixing."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 21)">
+                            Hurt [V4](prod. Whethan, Oliver Tree & Michael Leary)(Fuckin' Up)
+                            <div class="song-description">OG Filename: fuckin-up-nu-nu Title: Hurt Demo mix of Hurt from a few months before release, mostly similar to the final version but with rougher mixing.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-22" 
+                             data-description="OG Filename: gimmie-a-reason-01 Title: Gimmie A Reason (Shawn) Unreleased track produced in 2018."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 22)">
+                            ✨ Gimmie a Reason(prod. Oliver Tree & Shawn)
+                            <div class="song-description">OG Filename: gimmie-a-reason-01 Title: Gimmie A Reason (Shawn) Unreleased track produced in 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-23" 
+                             data-description="OG Filename: I Ain&#39;t Fucking With You Scrapped song produced in 2018, with rapping and a repetitive hook performed by Oliver. The song was intended for release at some point in 2018, being performed live several times as well as being previewed in several behind the scenes youtube videos posted by Oliver around this time. Despite this, the song did not release."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 23)">
+                            ⭐ I Ain't Fucking With You
+                            <div class="song-description">OG Filename: I Ain't Fucking With You Scrapped song produced in 2018, with rapping and a repetitive hook performed by Oliver. The song was intended for release at some point in 2018, being performed live several times as well as being previewed in several behind the scenes youtube videos posted by Oliver around this time. Despite this, the song did not release.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-24" 
+                             data-description="OG Filename: oliver-tree_im-gone Title: I&#39;m Gone Demo mix of I&#39;m Gone from 2018. Similar to the final version but with very rough mixing."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 24)">
+                            I'm Gone(prod. Dylan Wiggins & Oliver Tree)
+                            <div class="song-description">OG Filename: oliver-tree_im-gone Title: I'm Gone Demo mix of I'm Gone from 2018. Similar to the final version but with very rough mixing.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-25" 
+                             data-description="OG Filename: Oliver Tree - Im Like That - Westen Weiss Unreleased track produced in 2019, and later considered for the animated film &#34;Spiderman: Across The Spiderverse.&#34; The track did not make the cut for the film and was scrapped. Copyright for the song was registered on August 30, 2021."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 25)">
+                            ⭐ I'm Like That(prod. Whethan, Westen Weiss & Oliver Tree)
+                            <div class="song-description">OG Filename: Oliver Tree - Im Like That - Westen Weiss Unreleased track produced in 2019, and later considered for the animated film "Spiderman: Across The Spiderverse." The track did not make the cut for the film and was scrapped. Copyright for the song was registered on August 30, 2021.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-26" 
+                             data-description="OG Filename: Oliver &amp; lophiile Unreleased track from 2018 with rapping from Oliver. The song is seemingly unnamed."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 26)">
+                            ✨ Icarus*(prod. Lophiile & Oliver Tree)
+                            <div class="song-description">OG Filename: Oliver & lophiile Unreleased track from 2018 with rapping from Oliver. The song is seemingly unnamed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-27" 
+                             data-description="OG Filename: Oliver Tree &amp; Jen - Idea 1 Unreleased track produced in 2018. Sometimes referred to by fans as &#34;Schoolyard&#34;."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 27)">
+                            Idea 1(prod. Oliver Tree & Jen)(Schoolyard*)
+                            <div class="song-description">OG Filename: Oliver Tree & Jen - Idea 1 Unreleased track produced in 2018. Sometimes referred to by fans as "Schoolyard".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-28" 
+                             data-description="Demo mix of Joke&#39;s On You! from mid-2018, with several different lyrics and a rougher mix."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 28)">
+                            Joke's On You! [V1](prod. Stint, Oliver Tree & Rogét Chahayed)
+                            <div class="song-description">Demo mix of Joke's On You! from mid-2018, with several different lyrics and a rougher mix.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-29" 
+                             data-description="OG Filename: jokes-on-you-01 Title: Jokes On You (stint) Updated mix of Joke&#39;s On You! from 2018."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 29)">
+                            Joke's On You! [V2](prod. Stint, Oliver Tree & Rogét Chahayed)
+                            <div class="song-description">OG Filename: jokes-on-you-01 Title: Jokes On You (stint) Updated mix of Joke's On You! from 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-30" 
+                             data-description="OG Filename: jokes-on-you-update Title: Jokes On You Updated mix of Joke&#39;s On You! from 2018."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 30)">
+                            Joke's On You! [V3](prod. Stint, Oliver Tree & Rogét Chahayed)
+                            <div class="song-description">OG Filename: jokes-on-you-update Title: Jokes On You Updated mix of Joke's On You! from 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-31" 
+                             data-description="OG Filename: Jokes On You (1st Mix) Updated mix of Joke&#39;s On You! from 2018."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 31)">
+                            Joke's On You! [V4](prod. Stint, Oliver Tree & Rogét Chahayed)
+                            <div class="song-description">OG Filename: Jokes On You (1st Mix) Updated mix of Joke's On You! from 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-32" 
+                             data-description="OG Filename: Oliver Tree - Lies Came Out My Mouth Rough demo of Lies Came Out My Mouth with an entirely different intro section with different lyrics, which was cut completely from later versions. The production is also much rougher."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 32)">
+                            Lies Came Out My Mouth [V1](prod. Whethan, Oliver Tree & Dylan Wiggins)
+                            <div class="song-description">OG Filename: Oliver Tree - Lies Came Out My Mouth Rough demo of Lies Came Out My Mouth with an entirely different intro section with different lyrics, which was cut completely from later versions. The production is also much rougher.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-33" 
+                             data-description="OG Filename: like-that Title: Like That (With Nvdes) Repetitive unreleased track produced with NVDES in 2018."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 33)">
+                            ✨ Like That(prod. NVDES & Oliver Tree)
+                            <div class="song-description">OG Filename: like-that Title: Like That (With Nvdes) Repetitive unreleased track produced with NVDES in 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-34" 
+                             data-description="OG Filename: the-miracle-man Title: The Miracle Man (David Pramik) The first demo of Miracle Man, at this stage named &#39;The Miracle Man&#39;, from 2018. Has an intro section that was cut from later versions and sounds much rougher but is otherwise similar."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 34)">
+                            The Miracle Man [V1](prod. David Pramik & Oliver Tree)(Miracle Man)
+                            <div class="song-description">OG Filename: the-miracle-man Title: The Miracle Man (David Pramik) The first demo of Miracle Man, at this stage named 'The Miracle Man', from 2018. Has an intro section that was cut from later versions and sounds much rougher but is otherwise similar.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-35" 
+                             data-description="OG Filename: the-miracle-man-02 Title: The Miracle Man Updated demo of Miracle Man, still named &#39;The Miracle Man&#39;, from later in 2018, with the intro section removed."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 35)">
+                            The Miracle Man [V2](prod. David Pramik & Oliver Tree)(Miracle Man)
+                            <div class="song-description">OG Filename: the-miracle-man-02 Title: The Miracle Man Updated demo of Miracle Man, still named 'The Miracle Man', from later in 2018, with the intro section removed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-36" 
+                             data-description="Title: miracle-man-mix-1st-mix OG Filename: Miracle Man (2nd Mix) Updated demo of Miracle Man from later in 2018. Sounds much closer to the final version."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 36)">
+                            Miracle Man [V3](prod. David Pramik & Oliver Tree)(The Miracle Man)
+                            <div class="song-description">Title: miracle-man-mix-1st-mix OG Filename: Miracle Man (2nd Mix) Updated demo of Miracle Man from later in 2018. Sounds much closer to the final version.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-37" 
+                             data-description="OG Filename: movementwav Title: MOVEMENT FIRST DEMO Demo mix of Movement with rougher mixing and a different outro."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 37)">
+                            Movement [V1](prod. Whethan & Oliver Tree)(Movements)
+                            <div class="song-description">OG Filename: movementwav Title: MOVEMENT FIRST DEMO Demo mix of Movement with rougher mixing and a different outro.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-38" 
+                             data-description="OG Filename: MY WHOLE LIFE (REFF) - OLIVER TREE Fairly rough unreleased track produced early into work on Ugly is Beautiful. The melody in the intro was later reused for Waste My Time."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 38)">
+                            ✨ My Whole Life
+                            <div class="song-description">OG Filename: MY WHOLE LIFE (REFF) - OLIVER TREE Fairly rough unreleased track produced early into work on Ugly is Beautiful. The melody in the intro was later reused for Waste My Time.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-39" 
+                             data-description="OG Filename: NO BREAK Update.wav Very rough unreleased track produced at some point during this era. &#34;.wav&#34; is just written at the end of the name, the file is not a WAV."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 39)">
+                            No Break
+                            <div class="song-description">OG Filename: NO BREAK Update.wav Very rough unreleased track produced at some point during this era. ".wav" is just written at the end of the name, the file is not a WAV.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-40" 
+                             data-description="OG Filename: Oliver Tree - No More (ft. Nvdes) Unreleased track produced in 2017 during the same session as All Bets Are Off."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 40)">
+                            ⭐ No More(prod. NVDES & Oliver Tree)
+                            <div class="song-description">OG Filename: Oliver Tree - No More (ft. Nvdes) Unreleased track produced in 2017 during the same session as All Bets Are Off.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-41" 
+                             data-description="OG Filename: Not Me - (OliverTreeXBigTaste) Fairly rough unreleased track. The &#34;some things cannot be undone, this the kind of shit that&#39;ll change you, son&#34; line appears in this song and was later reused in Joke&#39;s On You!."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 41)">
+                            ✨ Not Me [V2](prod. Oliver Tree & Leroy Clampitt)
+                            <div class="song-description">OG Filename: Not Me - (OliverTreeXBigTaste) Fairly rough unreleased track. The "some things cannot be undone, this the kind of shit that'll change you, son" line appears in this song and was later reused in Joke's On You!.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Ugly_is_Beautiful_[V1](Do_You_Feel_Me?)-42" 
+                             data-description="OG Filename: birthday-beat-62918 Title: On Your Own Unreleased track produced during work on Ugly is Beautiful, recorded on Oliver&#39;s birthday. Re-uses the rap verse from Everything I Ever Saw, an older unreleased track. The song was teased in a video posted to Oliver&#39;s Instagram , where he performed the rap verse from the track; however, the song never released."
+                             onclick="playSong(&quot;Ugly is Beautiful [V1](Do You Feel Me?)&quot;, 42)">
+                            ⭐ On Your Own(prod. Dylan Wiggins, Casey Mattson & Oliver Tree)(Birthday Beat)
+                            <div class="song-description">OG Filename: birthday-beat-62918 Title: On Your Own Unreleased track produced during work on Ugly is Beautiful, recorded on Oliver's birthday. Re-uses the rap verse from Everything I Ever Saw, an older unreleased track. The song was teased in a video posted to Oliver's Instagram , where he performed the rap verse from the track; however, the song never released.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-3">
+                <div class="era-header" onclick="toggleEra(3)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhY54an4B9ObNUYotySToc1419LS7gEB9JIABZDsWM2oJCYUt9mkbXcjY7YB7VsKqtKaFJsmg_IdmVtUwHN1cyVWr2JED3CVLivlH6qZV4jjed-ZKPtjgUYw_H1x_Qz2RQBq046WFXRlyVI6=w102-h19" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Cowboy Tears</span>
+                    <span class="chevron" id="chevron-3">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-3">
+                    
+                        <div class="song" 
+                             id="song-Cowboy_Tears-0" 
+                             data-description="OG Filename: things we used to do 041321 [working-stems] 97bpm Updated mix of Things We Used To Do, exported as two-track stems (vocals and instrumental) by John Hill on 13 April 2021 shortly after the vocals were recorded. This version has many different lyrics to the final mix, including an entirely different bridge, and has a less developed instrumental."
+                             onclick="playSong(&quot;Cowboy Tears&quot;, 0)">
+                            Things We Used to Do [V2](prod. John Hill & Oliver Tree)
+                            <div class="song-description">OG Filename: things we used to do 041321 [working-stems] 97bpm Updated mix of Things We Used To Do, exported as two-track stems (vocals and instrumental) by John Hill on 13 April 2021 shortly after the vocals were recorded. This version has many different lyrics to the final mix, including an entirely different bridge, and has a less developed instrumental.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-4">
+                <div class="era-header" onclick="toggleEra(4)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhb8RFJiNSPXZ3boIimoi0wQKBLvRwHk_32kagNHg8c9XEd4B87Ab9-BKCvI-oZF6Sl5Yc9MaUKJudbuj9WoBygEhOFeESMBkDtuGKbK1CU4lRJFKUvXVQLcnvEtNPsuUA1-hMDjkhyeLd9g=w102-h105" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Cowboy Tears Drown the World in a Swimming Pool of Sorrow</span>
+                    <span class="chevron" id="chevron-4">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-4">
+                    
+                        <div class="song" 
+                             id="song-Cowboy_Tears_Drown_the_World_in_a_Swimming_Pool_of_Sorrow-0" 
+                             data-description="OG Filename: oliver x ilan x imad 3 - 3.5.21 STEMS Unreleased track produced during the same session as &#34;The Villain.&#34; Half of the stems are missing."
+                             onclick="playSong(&quot;Cowboy Tears Drown the World in a Swimming Pool of Sorrow&quot;, 0)">
+                            That's Not Me [V1](prod. Ilan Rubin, Imad Royal & Oliver Tree)
+                            <div class="song-description">OG Filename: oliver x ilan x imad 3 - 3.5.21 STEMS Unreleased track produced during the same session as "The Villain." Half of the stems are missing.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-5">
+                <div class="era-header" onclick="toggleEra(5)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhZ_nvFMe3sVQD3nUY3Oy1Sxy91O5IRUvJT_ny6GSAjOpbfC6E5PXAqTkaJ3WpLtihDN3D5pGLV5s50SxJ6n0wzeqakfEpQbsfbf3dxID5rpnRIXSCg0B6JpUGKtglMB2Q_bLoNXc4juCfFmPaI=w102-h105" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Alone in a Crowd</span>
+                    <span class="chevron" id="chevron-5">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-5">
+                    
+                        <div class="song" 
+                             id="song-Alone_in_a_Crowd-0" 
+                             data-description="OG Filename: Invisible Man oliver v3 Updated demo of Invisible Man, bounced a few weeks after the previous mix."
+                             onclick="playSong(&quot;Alone in a Crowd&quot;, 0)">
+                            Invisible Man [V3](prod. Imad Royal, Casey Mattson & Oliver Tree)
+                            <div class="song-description">OG Filename: Invisible Man oliver v3 Updated demo of Invisible Man, bounced a few weeks after the previous mix.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Alone_in_a_Crowd-1" 
+                             data-description="Unreleased song produced during work on Alone in a Crowd."
+                             onclick="playSong(&quot;Alone in a Crowd&quot;, 1)">
+                            🏅 Look Back*
+                            <div class="song-description">Unreleased song produced during work on Alone in a Crowd.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+    </div>
+    <!-- Spotify-style player with skip buttons -->
+    <div class="player">
+        <img id="player-cover" src=cover alt="cover" class="player-cover">
+        <div class="player-info">
+            <div id="player-title" class="player-title">Select a song</div>
+            <div class="player-controls">
+                <button id="prev-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="15,4 7,11 15,18"></polygon></svg>
+                </button>
+                <button id="play-btn" class="player-btn">
+                    <svg id="play-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff"><polygon points="6,4 24,14 6,24"></polygon></svg>
+                    <svg id="pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff" style="display:none;"><rect x="6" y="4" width="5" height="20"></rect><rect x="17" y="4" width="5" height="20"></rect></svg>
+                </button>
+                <button id="next-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="7,4 15,11 7,18"></polygon></svg>
+                </button>
+                <span id="current-time" class="player-time">0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" value="0" min="0" max="100" step="1">
+                <span id="duration" class="player-time">0:00</span>
+            </div>
+        </div>
+        <audio id="player" preload="metadata"></audio>
+    </div>
+    <script>
+    // All eras and songs as a JS object
+    const eras = {"The Last Supper": [{"era": "The Last Supper", "name": "Ja Break(prod. Getter & Oliver Tree)", "description": "Demo of Getter and Kryph's track Ja Break, briefly posted to Getter's Soundcloud a month before the track's release. This demo lacks the vocal samples from 'Crazy' and is mixed differently.", "file_id": "240c35a1df6e3270e7e0794203ee7910", "stream_url": "https://api.pillows.su/api/download/240c35a1df6e3270e7e0794203ee7910", "download_url": "https://api.pillows.su/api/download/240c35a1df6e3270e7e0794203ee7910", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbUItuXy3Yo2ouJKa_6HVA1ON0r793rKGPrQcfmc7PHD3FfCxC6LcCcFvAu1fC25n0JhqVomLSyeLr6ltTzG_ea88NaCKNQZnBgXXu5m9V5vjR7Mm9TzxLqhaT40SJghBTbSWaNqNKHAo7hrq4=w102-h105"}], "Turbo(Alien Boy)": [{"era": "Turbo(Alien Boy)", "name": "Alien Boy [V1](prod. Imad Royal, Casey Mattson & Oliver Tree)(Oliver Glenwood B)", "description": "OG Filename: oliver_glenwood_b_03-casey-mattson-imad Title: Alien Boy (Casey & Imad) The earliest known demo of Alien Boy, from 2017.", "file_id": "29e69751bcb101c990c29b7b5cd4fa7e", "stream_url": "https://api.pillows.su/api/download/29e69751bcb101c990c29b7b5cd4fa7e", "download_url": "https://api.pillows.su/api/download/29e69751bcb101c990c29b7b5cd4fa7e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Alien Boy [V2](prod. Imad Royal, Casey Mattson & Oliver Tree)(Oliver Glenwood B)", "description": "OG Filename: Alien Boy Updated demo of Alien Boy from 2017.", "file_id": "2458e4da4f1b0042070846bb70681f62", "stream_url": "https://api.pillows.su/api/download/2458e4da4f1b0042070846bb70681f62", "download_url": "https://api.pillows.su/api/download/2458e4da4f1b0042070846bb70681f62", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Come Again [V2](prod. Casey Mattson, Oliver Tree & Dylan Wiggins)(All in All, Oliver Glenwood D)", "description": "OG Filename: Oliver_Glenwood_D_01_V2 An early mix of All in All seen on Casey Mattson's macbook during a livestream, where he played a brief snippet of the cut instrumental section. Sounds mostly the same as the below mixes.", "file_id": "74fcc3497e51561bcac2ba933333bca6", "stream_url": "https://api.pillows.su/api/download/74fcc3497e51561bcac2ba933333bca6", "download_url": "https://api.pillows.su/api/download/74fcc3497e51561bcac2ba933333bca6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Come Again [V4](prod. Casey Mattson, Oliver Tree & Dylan Wiggins)(All in All, Oliver Glenwood D)", "description": "OG Filename: oliver_glenwood_d_06-ft-casey-mattson-sirr-dylan Title: Come Again (Casey & Dylan) Demo mix of All in All from 2017, originally named 'Come Again'. Uses a significantly different instrumental to the final version.", "file_id": "dc1fba768c10e58f50473f5e827afed5", "stream_url": "https://api.pillows.su/api/download/dc1fba768c10e58f50473f5e827afed5", "download_url": "https://api.pillows.su/api/download/dc1fba768c10e58f50473f5e827afed5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2b50 All in All [V5](prod. Casey Mattson, Oliver Tree & Dylan Wiggins)(Come Again, Oliver Glenwood D)", "description": "OG Filename: all-in-all-3 Title: All in All Updated demo mix of All in All from later in 2017. Uses a significantly different instrumental to the final version, with an instrumental break which was entirely cut from later mixes.", "file_id": "737663382c58da1f0ac2ba9a1e63e6e8", "stream_url": "https://api.pillows.su/api/download/737663382c58da1f0ac2ba9a1e63e6e8", "download_url": "https://api.pillows.su/api/download/737663382c58da1f0ac2ba9a1e63e6e8", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2b50 Better Things [V2](prod. Robert Koch & Oliver Tree)(Tree Demo A)", "description": "OG Filename: Better Things Updated mix of Better Things produced in 2017, intended to be included in the scrapped album Turbo.", "file_id": "d7b5ab4c856e5dcbe93a0459cb7eff89", "stream_url": "https://api.pillows.su/api/download/d7b5ab4c856e5dcbe93a0459cb7eff89", "download_url": "https://api.pillows.su/api/download/d7b5ab4c856e5dcbe93a0459cb7eff89", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Cheapskate [V3](prod. Robert Koch & Oliver Tree)", "description": "OG Filename: Cheapskate Updated demo of Cheapskate from 2017.", "file_id": "799cfe5c4ae7376a6948429b520eaa6f", "stream_url": "https://api.pillows.su/api/download/799cfe5c4ae7376a6948429b520eaa6f", "download_url": "https://api.pillows.su/api/download/799cfe5c4ae7376a6948429b520eaa6f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Come On(prod. Whethan & Oliver Tree)", "description": "OG Filename: Come On Unreleased track produced in 2017.", "file_id": "0b22d33d5964a0945a9e9b4c2aeb8210", "stream_url": "https://api.pillows.su/api/download/0b22d33d5964a0945a9e9b4c2aeb8210", "download_url": "https://api.pillows.su/api/download/0b22d33d5964a0945a9e9b4c2aeb8210", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2728 Come On Over", "description": "OG Filename: Come On Over Unreleased track produced in 2017.", "file_id": "2de81335c6f12dd91c07e2b478e8254c", "stream_url": "https://api.pillows.su/api/download/2de81335c6f12dd91c07e2b478e8254c", "download_url": "https://api.pillows.su/api/download/2de81335c6f12dd91c07e2b478e8254c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Cruel(prod. Whethan & Oliver Tree)", "description": "OG Filename: Cruel Fairly rough unreleased track produced in 2017.", "file_id": "5cb01661f2c40a76fa84d13f9d5cc9d9", "stream_url": "https://api.pillows.su/api/download/5cb01661f2c40a76fa84d13f9d5cc9d9", "download_url": "https://api.pillows.su/api/download/5cb01661f2c40a76fa84d13f9d5cc9d9", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Circuits [V2]", "description": "OG Filename: circutss_1 Title: Circuits An updated mix of Circuits from 2017. A brief snippet of this mix was played by Casey Mattson during a livestream in 2020.", "file_id": "54f17f6f5e9117ed70b78414586e888f", "stream_url": "https://api.pillows.su/api/download/54f17f6f5e9117ed70b78414586e888f", "download_url": "https://api.pillows.su/api/download/54f17f6f5e9117ed70b78414586e888f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\ud83d\uddd1\ufe0f Hero(prod. Tabacco & Oliver Tree)", "description": "OG Filename: Oliver Tree X Tabacco - Hero The worst thing Oliver has ever produced.", "file_id": "30f11b74508784d0ae4a05142b1ec4eb", "stream_url": "https://api.pillows.su/api/download/30f11b74508784d0ae4a05142b1ec4eb", "download_url": "https://api.pillows.su/api/download/30f11b74508784d0ae4a05142b1ec4eb", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Instrumental 1(prod. Rog\u00e9t Chahayed, Westen Weiss, Casey Mattson & Oliver Tree)", "description": "OG Filename: roget-x-wes-x-casey-x-oliver-tree-a-take-2 Title: Instrumental 1 (Roget X Wes X Casey) Unused instrumental track produced in 2017.", "file_id": "a7b7883e043102f4ba26a2d2f00dafb6", "stream_url": "https://api.pillows.su/api/download/a7b7883e043102f4ba26a2d2f00dafb6", "download_url": "https://api.pillows.su/api/download/a7b7883e043102f4ba26a2d2f00dafb6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Instrumental 2(prod. Rog\u00e9t Chahayed, Westen Weiss & Oliver Tree)", "description": "OG Filename: roget-x-wes-x-oliver-tree-instrumental-2 Title: Instrumental 2 (Roget X Wes) Unused instrumental track produced in 2017.", "file_id": "0ce27e3d6f5fb6e2e48c9ed88cb6e417", "stream_url": "https://api.pillows.su/api/download/0ce27e3d6f5fb6e2e48c9ed88cb6e417", "download_url": "https://api.pillows.su/api/download/0ce27e3d6f5fb6e2e48c9ed88cb6e417", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2b50 Lies [V2](prod. Rog\u00e9t Chahayed & Oliver Tree)", "description": "OG Filename: Lies Scrapped song produced in 2017 by Oliver Tree and Rog\u00e9t Chahayed, intended for the scrapped album Turbo. The song was performed live several times around 2017, but did not release, and became arguably Oliver's most notorious and highly sought-after unreleased track. Although a few recordings of its performances were found, the song itself was considered lost for several years, until eventually the full thing leaked on 30 July 2023 after a successful groupbuy.", "file_id": "53608d98eb75096f64571bf6da0ae8a6", "stream_url": "https://api.pillows.su/api/download/53608d98eb75096f64571bf6da0ae8a6", "download_url": "https://api.pillows.su/api/download/53608d98eb75096f64571bf6da0ae8a6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Life Goes On [V2](prod. Getter & Oliver Tree)", "description": "OG Filename: life-goes-on-3 Title: Life Goes On An updated mix of Life Goes On from 2017, with the open verse freestyle replaced with a new rap verse.", "file_id": "4f458c86420e5732902e0759ade2ed6f", "stream_url": "https://api.pillows.su/api/download/4f458c86420e5732902e0759ade2ed6f", "download_url": "https://api.pillows.su/api/download/4f458c86420e5732902e0759ade2ed6f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2b50 Money Talks [V1](prod. Whethan & Oliver Tree)", "description": "OG Filename: MONEY TALKS Unreleased track produced in 2017. The song was seemingly planned for release at some point, with members of Oliver and Whethan sharing snippets of the song around 2017, but for whatever reason it did not release.", "file_id": "7e7c1bb4c3d3df83fd6fec0ee195e94a", "stream_url": "https://api.pillows.su/api/download/7e7c1bb4c3d3df83fd6fec0ee195e94a", "download_url": "https://api.pillows.su/api/download/7e7c1bb4c3d3df83fd6fec0ee195e94a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2b50 Spotlights(prod. Whethan & Oliver Tree)", "description": "OG Filename: Oliver Summer v8 Unreleased track produced in 2017. Re-uses a few lyrics from Oliver and Awkword's 2011 collaboration \"Session\".", "file_id": "864122a6b0dbaf54bc40e0a4db000604", "stream_url": "https://api.pillows.su/api/download/864122a6b0dbaf54bc40e0a4db000604", "download_url": "https://api.pillows.su/api/download/864122a6b0dbaf54bc40e0a4db000604", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Superficial", "description": "OG Filename: Superficial Unreleased track produced in 2017.", "file_id": "b4b1ebf96610f5e6e88b4263e14732d7", "stream_url": "https://api.pillows.su/api/download/b4b1ebf96610f5e6e88b4263e14732d7", "download_url": "https://api.pillows.su/api/download/b4b1ebf96610f5e6e88b4263e14732d7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2b50 Theme Song(prod. Whethan & Oliver Tree)", "description": "OG Filename: theme song update Unreleased track produced in 2017.", "file_id": "73b61318f5d4fe91137f28c14eb5cdff", "stream_url": "https://api.pillows.su/api/download/73b61318f5d4fe91137f28c14eb5cdff", "download_url": "https://api.pillows.su/api/download/73b61318f5d4fe91137f28c14eb5cdff", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Upside Down [V3](prod. NVDES, Casey Mattson & Oliver Tree)(Oliver Glenwood E)", "description": "OG Filename: Oliver_Glenwood_E_06 Title: Upside Down (Josh & Casey) Demo mix of Upside Down from 2017. Uploaded to Oliver's Soundcloud titled \"Upside Down (Josh & Casey)\".", "file_id": "af4d025408204d35b3caa4f2af4ad8cd", "stream_url": "https://api.pillows.su/api/download/af4d025408204d35b3caa4f2af4ad8cd", "download_url": "https://api.pillows.su/api/download/af4d025408204d35b3caa4f2af4ad8cd", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Upside Down [V4](prod. NVDES, Casey Mattson & Oliver Tree)(Oliver Glenwood E)", "description": "OG Filename: upside-down-2 Title: Upside Down Updated demo of Upside Down from later in 2017.", "file_id": "70b76dbdad6fa4a7fe92c8ff0fd4c1de", "stream_url": "https://api.pillows.su/api/download/70b76dbdad6fa4a7fe92c8ff0fd4c1de", "download_url": "https://api.pillows.su/api/download/70b76dbdad6fa4a7fe92c8ff0fd4c1de", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2728 Waiting For Nothing [V2](prod. Imad Royal, Casey Mattson & Oliver Tree)(Glendwood C)", "description": "OG Filename: glendwood-c-casey-mattson-x-imad-royal Title: Waiting For Nothing (Casey x Imad) Unreleased track produced in 2017. Re-uses several lyrics from Demons.", "file_id": "0981863dd92c6f6c32f05f74ceb16415", "stream_url": "https://api.pillows.su/api/download/0981863dd92c6f6c32f05f74ceb16415", "download_url": "https://api.pillows.su/api/download/0981863dd92c6f6c32f05f74ceb16415", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2728 Wasted Years [V2](prod. Whethan & Oliver Tree)", "description": "OG Filename: Waisted Years idea Updated mix of Wasted Years, stll misspelt, from later in 2017.", "file_id": "c4ba4c0c79a638db0e8d26c74b231577", "stream_url": "https://api.pillows.su/api/download/c4ba4c0c79a638db0e8d26c74b231577", "download_url": "https://api.pillows.su/api/download/c4ba4c0c79a638db0e8d26c74b231577", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2b50 What You Are [V2](prod. Imad Royal, Casey Mattson & Oliver Tree)", "description": "OG Filename: What You Are Updated mix of What You Are from 2017.", "file_id": "433b019e5891a9094f055930b96c6d89", "stream_url": "https://api.pillows.su/api/download/433b019e5891a9094f055930b96c6d89", "download_url": "https://api.pillows.su/api/download/433b019e5891a9094f055930b96c6d89", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "You Thought Wrong(prod. Oliver Tree & Leroy Clampitt)", "description": "OG Filename: 270617-you-thought-wrong-olivertreexbigtaste Title: You Thought Wrong Unreleased track produced in 2017.", "file_id": "ecc53c5a55fe15bbf2a422436e5c410a", "stream_url": "https://api.pillows.su/api/download/ecc53c5a55fe15bbf2a422436e5c410a", "download_url": "https://api.pillows.su/api/download/ecc53c5a55fe15bbf2a422436e5c410a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2b50 Circuits [V3]", "description": "OG Filename: CIRCUITS STEMS Finished, unreleased song intended to be included in the scrapped album Turbo.  Circuits was performed live several times around 2017-2018, but was scrapped in late 2018 when focus shifted to Ugly is Beautiful, and the song gained notoriety amongst Oliver's fans who wanted to see it released. Oliver jokingly denied the existence of the song whenever asked about it in interviews, and it was considered lost for several years until the stems for the track finally leaked on 20 September 2022.", "file_id": "ed2cedaa409d449e205e3b83dff89125", "stream_url": "https://api.pillows.su/api/download/ed2cedaa409d449e205e3b83dff89125", "download_url": "https://api.pillows.su/api/download/ed2cedaa409d449e205e3b83dff89125", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Enemy(prod. Whethan & Oliver Tree)", "description": "OG Filename: Enemy Final Despite the filename, this is not the final mix, though it sounds almost identical to the final version besides minor mixing changes.", "file_id": "59d9b5ab8e64a30986e4f447030a1b49", "stream_url": "https://api.pillows.su/api/download/59d9b5ab8e64a30986e4f447030a1b49", "download_url": "https://api.pillows.su/api/download/59d9b5ab8e64a30986e4f447030a1b49", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Faceplant(prod. Imad Royal, Rog\u00e9t Chahayed & Oliver Tree)", "description": "OG Filename: Faceplant (Imad x Roget) Unreleased track produced during work on Ugly is Beautiful.", "file_id": "7c64d6c69b4181f2e5f33b97d6be6e89", "stream_url": "https://api.pillows.su/api/download/7c64d6c69b4181f2e5f33b97d6be6e89", "download_url": "https://api.pillows.su/api/download/7c64d6c69b4181f2e5f33b97d6be6e89", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Ghosts [V?](prod. Sterling Fox & Oliver Tree)", "description": "OG Filename: GHOSTS (fox worktape 2-2 Oliver Tree, Sterling Fox) Unreleased track produced in 2017. It's unknown which version came first.", "file_id": "9278074222f83e61e7439a4e4649d11a", "stream_url": "https://api.pillows.su/api/download/9278074222f83e61e7439a4e4649d11a", "download_url": "https://api.pillows.su/api/download/9278074222f83e61e7439a4e4649d11a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2b50 Life Goes On [V3](prod. Getter & Oliver Tree)", "description": "OG Filename: LIFE GOES ON STEMS Early mix of Life Goes On from 2017, including the rap verse that was removed from later iterations of the song. This version was performed live several times around 2017-2018 and was intended to be included in the scrapped album Turbo.", "file_id": "642b75220e68ca52d513a831d0ea3b48", "stream_url": "https://api.pillows.su/api/download/642b75220e68ca52d513a831d0ea3b48", "download_url": "https://api.pillows.su/api/download/642b75220e68ca52d513a831d0ea3b48", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Oliver Beck Song*", "description": "OG Filename: oliverbecksong1 A song named \"oliverbecksong1\", and the stems for it, were visible on Casey Mattson's macbook during a livestream in 2020, with Casey briefly playing a stem named \"HORN-1\". The track length was also visible.", "file_id": "070ccd63062f114b15cbd6c75903c3bd", "stream_url": "https://api.pillows.su/api/download/070ccd63062f114b15cbd6c75903c3bd", "download_url": "https://api.pillows.su/api/download/070ccd63062f114b15cbd6c75903c3bd", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2b50 Shut Me Up(prod. Whethan & Oliver Tree)", "description": "OG Filename: SHUT ME UP Unreleased track produced in 2017. The song was seemingly planned for release at some point, with members of Oliver sharing a snippet of the song in 2017, but for whatever reason it did not release.", "file_id": "2b5b11a7438e380f2789a02f8e9da0eb", "stream_url": "https://api.pillows.su/api/download/2b5b11a7438e380f2789a02f8e9da0eb", "download_url": "https://api.pillows.su/api/download/2b5b11a7438e380f2789a02f8e9da0eb", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Welcome to LA [V2](prod. Whethan & Oliver Tree)", "description": "OG Filename: Oliver Tree - Welcome To LA (Final) Despite the filename, this is not the final mix, and contains slight differences in the instrumental. It is otherwise very similar to the release version.", "file_id": "7fc01dd10ae02622e34def97fd8f7fbf", "stream_url": "https://api.pillows.su/api/download/7fc01dd10ae02622e34def97fd8f7fbf", "download_url": "https://api.pillows.su/api/download/7fc01dd10ae02622e34def97fd8f7fbf", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\u2b50 Against Myself", "description": "OG Filename: Against Myself Unreleased track produced during 2017.", "file_id": "84325c8aeac98b32376a8f69eb7def8c", "stream_url": "https://api.pillows.su/api/download/84325c8aeac98b32376a8f69eb7def8c", "download_url": "https://api.pillows.su/api/download/84325c8aeac98b32376a8f69eb7def8c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Alien Boy [V3](prod. Imad Royal, Casey Mattson & Oliver Tree)(Oliver Glenwood B)", "description": "OG Filename: alien-boy-1 Title: Alien Boy Updated demo of Alien Boy, with an unused early version of the Alien Boy EP cover art attached.", "file_id": "f0e836eb644ed48f6e9193ff8461118d", "stream_url": "https://api.pillows.su/api/download/f0e836eb644ed48f6e9193ff8461118d", "download_url": "https://api.pillows.su/api/download/f0e836eb644ed48f6e9193ff8461118d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "All That [V2](prod. Whethan & Oliver Tree)", "description": "OG Filename: Oliver Tree - All That Updated mix of All That from later in 2017, still with the second half missing. This version was intended to be included in the scrapped album Turbo.", "file_id": "a5be16539d54cd2c80cc861f884b9f97", "stream_url": "https://api.pillows.su/api/download/a5be16539d54cd2c80cc861f884b9f97", "download_url": "https://api.pillows.su/api/download/a5be16539d54cd2c80cc861f884b9f97", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "Ghosts [V?](prod. Sterling Fox & Oliver Tree)", "description": "OG Filename: oliver-ghosts Title: Oliver Tree - Ghosts Alternate version of Ghosts with a completely different instrumental, still produced by Sterling Fox.", "file_id": "ba81bb8d361c4b65cd1d98a07f87dfc6", "stream_url": "https://api.pillows.su/api/download/ba81bb8d361c4b65cd1d98a07f87dfc6", "download_url": "https://api.pillows.su/api/download/ba81bb8d361c4b65cd1d98a07f87dfc6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}, {"era": "Turbo(Alien Boy)", "name": "\ud83c\udfc5 Halo [V2](prod. Casey Mattson & Oliver Tree)", "description": "OG Filename: Halo Casey vs Oliver10.21.17 Updated mix of Halo with a different intro, played briefly by Casey Mattson during a livestream in 2020.", "file_id": "e66ab509669437ee6639087c7e7e81ed", "stream_url": "https://api.pillows.su/api/download/e66ab509669437ee6639087c7e7e81ed", "download_url": "https://api.pillows.su/api/download/e66ab509669437ee6639087c7e7e81ed", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjha8CBJ6MB3jlaY0F-DcZbpuhg_VChp92ffUl8iRKT8IMl-QetcEk1-JSszCZ0LBTpZ5s3P1n4wvJsD4eZudtB3ArWupud2FQf-Ia_xc4QITWXrUYEFhEONtC30qgMLe7KRwAcViqqDHJ-Gbh4A=w102-h19"}], "Ugly is Beautiful [V1](Do You Feel Me?)": [{"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\u2b50 2 Trees(Sun*)", "description": "OG Filename: 2 Trees Vocal REMIX FINISHED DEMO Unreleased track produced some time around 2017-2018, previewed many times and evidently intended for release for a while. However, for unknown reasons, it did not release, and was considered a community grail for many years. The song is seemingly unnamed, and is commonly referred to by fans as 'Sun'.", "file_id": "f4015b671c9daacfe278636a6534dc98", "stream_url": "https://api.pillows.su/api/download/f4015b671c9daacfe278636a6534dc98", "download_url": "https://api.pillows.su/api/download/f4015b671c9daacfe278636a6534dc98", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Again & Again [V1](prod. NVDES & Oliver Tree)", "description": "OG Filename: OLIVER TREE 1.24.18 - AGAIN AND AGAIN Very rough, early demo of Again & Again from 2018. The structure is similar to the final version, but the bridge section is missing. One of the first tracks to feature the overdriven rock sound that Ugly is Beautiful would become known for.", "file_id": "797d21439045cc7474829182b3228df1", "stream_url": "https://api.pillows.su/api/download/797d21439045cc7474829182b3228df1", "download_url": "https://api.pillows.su/api/download/797d21439045cc7474829182b3228df1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Again & Again [V2](prod. NVDES & Oliver Tree)", "description": "OG Filename: Again & Again (Update) Updated demo mix of Again & Again from 2018. The mixing is improved, though still very rough, and the structure is rearranged slightly, with a bridge section being added.", "file_id": "d6a4350a9159e08b63641c94fcd597dd", "stream_url": "https://api.pillows.su/api/download/d6a4350a9159e08b63641c94fcd597dd", "download_url": "https://api.pillows.su/api/download/d6a4350a9159e08b63641c94fcd597dd", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Again & Again [V3](prod. NVDES & Oliver Tree)", "description": "OG Filename: AGAIN AND AGAIN (MIX V1) Updated mix of Again & Again from later in 2018. The song now very closely resembles the release version.", "file_id": "6a0197029e834697f97a4cc571cfb6cd", "stream_url": "https://api.pillows.su/api/download/6a0197029e834697f97a4cc571cfb6cd", "download_url": "https://api.pillows.su/api/download/6a0197029e834697f97a4cc571cfb6cd", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Again & Again [V4](prod. NVDES & Oliver Tree)", "description": "OG Filename: Again and Again_Version 6000 Further updated mix of Again & Again from later in 2018. The structure of the song is now the same as release, though the mixing is still notably rougher.", "file_id": "ceba3ada31680bb734e048264b78da45", "stream_url": "https://api.pillows.su/api/download/ceba3ada31680bb734e048264b78da45", "download_url": "https://api.pillows.su/api/download/ceba3ada31680bb734e048264b78da45", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\u2728 All Bets Are Off [V1](prod. NVDES & Oliver Tree)", "description": "OG Filename: all-bets-are-off-5 Title: Oliver Tree - All Bets Are Off (ft. Nvdes) The first demo of All Bets Are Off, with several entirely different verses that were cut from later versions.", "file_id": "4bda7337917b4799281b91d94b246b79", "stream_url": "https://api.pillows.su/api/download/4bda7337917b4799281b91d94b246b79", "download_url": "https://api.pillows.su/api/download/4bda7337917b4799281b91d94b246b79", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "All Bets Are Off [V2](prod. NVDES & Oliver Tree)", "description": "OG Filename: all-bets-are-off-02 Title: All Bets Are Off (UPDATE) Updated mix of All Bets Are Off from 2018.", "file_id": "ac818505e3d7b3657c51d57356ef4c87", "stream_url": "https://api.pillows.su/api/download/ac818505e3d7b3657c51d57356ef4c87", "download_url": "https://api.pillows.su/api/download/ac818505e3d7b3657c51d57356ef4c87", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "All Bets Are Off [V3](prod. NVDES & Oliver Tree)", "description": "OG Filename: all-bets-are-off-3 Title: All Bets Are Off Updated demo of All Bets Are Off.", "file_id": "e470570a4fdb4de95c6f1432140c3a85", "stream_url": "https://api.pillows.su/api/download/e470570a4fdb4de95c6f1432140c3a85", "download_url": "https://api.pillows.su/api/download/e470570a4fdb4de95c6f1432140c3a85", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "All Bets Are Off [V4](prod. NVDES & Oliver Tree)", "description": "OG Filename: all-bets-are-off-mix-v1 Title: All Bets Are Off Mix V2 Updated demo of All Bets Are Off.", "file_id": "57b3c894728607c479ea4d896c448011", "stream_url": "https://api.pillows.su/api/download/57b3c894728607c479ea4d896c448011", "download_url": "https://api.pillows.su/api/download/57b3c894728607c479ea4d896c448011", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\u2728 Better Days", "description": "OG Filename: Better Days - (OliverTree) Unreleased track produced during work on Ugly is Beautiful.", "file_id": "05ba491dfbc0a290a62eeddf7dbbec3f", "stream_url": "https://api.pillows.su/api/download/05ba491dfbc0a290a62eeddf7dbbec3f", "download_url": "https://api.pillows.su/api/download/05ba491dfbc0a290a62eeddf7dbbec3f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\ud83d\uddd1\ufe0f Bury Me Alive [V1](prod. Trevor Brown, William Simmons & Oliver Tree)", "description": "OG Filename: oliver-tree-rough-mix Title: OLIVER TREE - BURY ME ALIVE Demo mix of Bury Me Alive from 2018 with a rougher mix and a different outro. This mix had unique cover art uploaded alongside it which was intended for the song, but went unused.", "file_id": "cb333b3b257cb7a28cd9132a5306396a", "stream_url": "https://api.pillows.su/api/download/cb333b3b257cb7a28cd9132a5306396a", "download_url": "https://api.pillows.su/api/download/cb333b3b257cb7a28cd9132a5306396a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Bury Me Alive [V2](prod. Trevor Brown, William Simmons & Oliver Tree)", "description": "OG Filename: bury-me-alivev11 Title: Bury Me Alive Updated mix of Bury Me Alive from later in 2018.", "file_id": "b5d542d469fedf124c9387d702067e5a", "stream_url": "https://api.pillows.su/api/download/b5d542d469fedf124c9387d702067e5a", "download_url": "https://api.pillows.su/api/download/b5d542d469fedf124c9387d702067e5a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Bury Me Alive [V3](prod. Trevor Brown, William Simmons & Oliver Tree)", "description": "OG Filename: Bury Me Alive Mix V4 Updated mix of Bury Me Alive.", "file_id": "f8418c268ab33f38c0c2d686dc05fa0a", "stream_url": "https://api.pillows.su/api/download/f8418c268ab33f38c0c2d686dc05fa0a", "download_url": "https://api.pillows.su/api/download/f8418c268ab33f38c0c2d686dc05fa0a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Fuck [V1](prod. Whethan, Baauer & Oliver Tree)(FUCK!)", "description": "OG Filename: FUCK (OLIVER X BAUUER X WHETHAN) Demo of Fuck from 2018.", "file_id": "734891005fb59af0805ad544687ddc26", "stream_url": "https://api.pillows.su/api/download/734891005fb59af0805ad544687ddc26", "download_url": "https://api.pillows.su/api/download/734891005fb59af0805ad544687ddc26", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Fuck [V2](prod. Whethan, Baauer & Oliver Tree)(FUCK!)", "description": "OG Filename: oliver-tree-fuck-short Title: Oliver Tree - FUCK! Demo of Fuck from 2018.", "file_id": "b3efc38694100b0b2aebe075d825c312", "stream_url": "https://api.pillows.su/api/download/b3efc38694100b0b2aebe075d825c312", "download_url": "https://api.pillows.su/api/download/b3efc38694100b0b2aebe075d825c312", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Fuck [V3](prod. Whethan, Baauer & Oliver Tree)(FUCK!)", "description": "OG Filename: FUCK (SHORTENED 4 Video) Alternate, shorter mix of Fuck for the music video.", "file_id": "979e122b974f1d2fe2b2d668b6f9e8c6", "stream_url": "https://api.pillows.su/api/download/979e122b974f1d2fe2b2d668b6f9e8c6", "download_url": "https://api.pillows.su/api/download/979e122b974f1d2fe2b2d668b6f9e8c6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Fuck [V4](prod. Whethan, Baauer & Oliver Tree)(FUCK!)", "description": "OG Filename: FUCK SHORTENED (FINAL) Updated music video version of Fuck.", "file_id": "a8c9de230a3acdf90d6604a8c45d6366", "stream_url": "https://api.pillows.su/api/download/a8c9de230a3acdf90d6604a8c45d6366", "download_url": "https://api.pillows.su/api/download/a8c9de230a3acdf90d6604a8c45d6366", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Fuck [V5](prod. Whethan, Baauer & Oliver Tree)(FUCK!)", "description": "OG Filename: fuckk-bauuer-x-whethan Title: FUCK Demo of Fuck from 2018.", "file_id": "66110fda3d7ad5c1d8dfd677b77ef1bc", "stream_url": "https://api.pillows.su/api/download/66110fda3d7ad5c1d8dfd677b77ef1bc", "download_url": "https://api.pillows.su/api/download/66110fda3d7ad5c1d8dfd677b77ef1bc", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Fuck [V6](prod. Whethan, Baauer & Oliver Tree)(FUCK!)", "description": "OG Filename: fuck-mix-1st-mix Title: FUCK (2nd Mix) Demo mix of Fuck from 2018 with several different lyrics and rougher mixing overall.", "file_id": "f8528190abd8c0dee40a59816d2c1499", "stream_url": "https://api.pillows.su/api/download/f8528190abd8c0dee40a59816d2c1499", "download_url": "https://api.pillows.su/api/download/f8528190abd8c0dee40a59816d2c1499", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Fuckin' Up [V2](prod. Whethan, Oliver Tree & Michael Leary)(Hurt)", "description": "OG Filename: Fuckin Up (Whethan) UPDATE Updated demo of Hurt, still named Fuckin Up.", "file_id": "0ede162c4be780830faf16b925c95d67", "stream_url": "https://api.pillows.su/api/download/0ede162c4be780830faf16b925c95d67", "download_url": "https://api.pillows.su/api/download/0ede162c4be780830faf16b925c95d67", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Fuckin' Up [V3](prod. Whethan, Oliver Tree & Michael Leary)(Hurt)", "description": "OG Filename: fuckin-up-041 Title: Fuckin Up (Update) Updated demo of Hurt, still named Fuckin Up. Structured differently to the final version.", "file_id": "a4db9d72841d124421fab813cfa88c00", "stream_url": "https://api.pillows.su/api/download/a4db9d72841d124421fab813cfa88c00", "download_url": "https://api.pillows.su/api/download/a4db9d72841d124421fab813cfa88c00", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Hurt [V4](prod. Whethan, Oliver Tree & Michael Leary)(Fuckin' Up)", "description": "OG Filename: fuckin-up-nu-nu Title: Hurt Demo mix of Hurt from a few months before release, mostly similar to the final version but with rougher mixing.", "file_id": "d2f49079c07f58fbeed85282737e6707", "stream_url": "https://api.pillows.su/api/download/d2f49079c07f58fbeed85282737e6707", "download_url": "https://api.pillows.su/api/download/d2f49079c07f58fbeed85282737e6707", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\u2728 Gimmie a Reason(prod. Oliver Tree & Shawn)", "description": "OG Filename: gimmie-a-reason-01 Title: Gimmie A Reason (Shawn) Unreleased track produced in 2018.", "file_id": "3fcfb2cb129aea6a09fcdfd02fb124a5", "stream_url": "https://api.pillows.su/api/download/3fcfb2cb129aea6a09fcdfd02fb124a5", "download_url": "https://api.pillows.su/api/download/3fcfb2cb129aea6a09fcdfd02fb124a5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\u2b50 I Ain't Fucking With You", "description": "OG Filename: I Ain't Fucking With You Scrapped song produced in 2018, with rapping and a repetitive hook performed by Oliver. The song was intended for release at some point in 2018, being performed live several times as well as being previewed in several behind the scenes youtube videos posted by Oliver around this time. Despite this, the song did not release.", "file_id": "f3d49ddeaefb688dca8cfce16ad24e29", "stream_url": "https://api.pillows.su/api/download/f3d49ddeaefb688dca8cfce16ad24e29", "download_url": "https://api.pillows.su/api/download/f3d49ddeaefb688dca8cfce16ad24e29", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "I'm Gone(prod. Dylan Wiggins & Oliver Tree)", "description": "OG Filename: oliver-tree_im-gone Title: I'm Gone Demo mix of I'm Gone from 2018. Similar to the final version but with very rough mixing.", "file_id": "89688cfbd81570af67d1c121f81f5c72", "stream_url": "https://api.pillows.su/api/download/89688cfbd81570af67d1c121f81f5c72", "download_url": "https://api.pillows.su/api/download/89688cfbd81570af67d1c121f81f5c72", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\u2b50 I'm Like That(prod. Whethan, Westen Weiss & Oliver Tree)", "description": "OG Filename: Oliver Tree - Im Like That - Westen Weiss Unreleased track produced in 2019, and later considered for the animated film \"Spiderman: Across The Spiderverse.\" The track did not make the cut for the film and was scrapped. Copyright for the song was registered on August 30, 2021.", "file_id": "7660b59756c0d21a6386558b9fdf7dd1", "stream_url": "https://api.pillows.su/api/download/7660b59756c0d21a6386558b9fdf7dd1", "download_url": "https://api.pillows.su/api/download/7660b59756c0d21a6386558b9fdf7dd1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\u2728 Icarus*(prod. Lophiile & Oliver Tree)", "description": "OG Filename: Oliver & lophiile Unreleased track from 2018 with rapping from Oliver. The song is seemingly unnamed.", "file_id": "d8da3682e01382fe5bcaf0ecf2c7bf31", "stream_url": "https://api.pillows.su/api/download/d8da3682e01382fe5bcaf0ecf2c7bf31", "download_url": "https://api.pillows.su/api/download/d8da3682e01382fe5bcaf0ecf2c7bf31", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Idea 1(prod. Oliver Tree & Jen)(Schoolyard*)", "description": "OG Filename: Oliver Tree & Jen - Idea 1 Unreleased track produced in 2018. Sometimes referred to by fans as \"Schoolyard\".", "file_id": "462c8ad95da32d470b46a482490e1481", "stream_url": "https://api.pillows.su/api/download/462c8ad95da32d470b46a482490e1481", "download_url": "https://api.pillows.su/api/download/462c8ad95da32d470b46a482490e1481", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Joke's On You! [V1](prod. Stint, Oliver Tree & Rog\u00e9t Chahayed)", "description": "Demo mix of Joke's On You! from mid-2018, with several different lyrics and a rougher mix.", "file_id": "149e8d3df7ed51c6f60f52a813c5e3cd", "stream_url": "https://api.pillows.su/api/download/149e8d3df7ed51c6f60f52a813c5e3cd", "download_url": "https://api.pillows.su/api/download/149e8d3df7ed51c6f60f52a813c5e3cd", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Joke's On You! [V2](prod. Stint, Oliver Tree & Rog\u00e9t Chahayed)", "description": "OG Filename: jokes-on-you-01 Title: Jokes On You (stint) Updated mix of Joke's On You! from 2018.", "file_id": "4c554dc9be4de4fc56905538f008cb7f", "stream_url": "https://api.pillows.su/api/download/4c554dc9be4de4fc56905538f008cb7f", "download_url": "https://api.pillows.su/api/download/4c554dc9be4de4fc56905538f008cb7f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Joke's On You! [V3](prod. Stint, Oliver Tree & Rog\u00e9t Chahayed)", "description": "OG Filename: jokes-on-you-update Title: Jokes On You Updated mix of Joke's On You! from 2018.", "file_id": "e5e68d915c77aa792585582ca605028c", "stream_url": "https://api.pillows.su/api/download/e5e68d915c77aa792585582ca605028c", "download_url": "https://api.pillows.su/api/download/e5e68d915c77aa792585582ca605028c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Joke's On You! [V4](prod. Stint, Oliver Tree & Rog\u00e9t Chahayed)", "description": "OG Filename: Jokes On You (1st Mix) Updated mix of Joke's On You! from 2018.", "file_id": "d312e4ad8ba54b5ada31d8b04c2b6350", "stream_url": "https://api.pillows.su/api/download/d312e4ad8ba54b5ada31d8b04c2b6350", "download_url": "https://api.pillows.su/api/download/d312e4ad8ba54b5ada31d8b04c2b6350", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Lies Came Out My Mouth [V1](prod. Whethan, Oliver Tree & Dylan Wiggins)", "description": "OG Filename: Oliver Tree - Lies Came Out My Mouth Rough demo of Lies Came Out My Mouth with an entirely different intro section with different lyrics, which was cut completely from later versions. The production is also much rougher.", "file_id": "146531431323696c34d6930cb723c51c", "stream_url": "https://api.pillows.su/api/download/146531431323696c34d6930cb723c51c", "download_url": "https://api.pillows.su/api/download/146531431323696c34d6930cb723c51c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\u2728 Like That(prod. NVDES & Oliver Tree)", "description": "OG Filename: like-that Title: Like That (With Nvdes) Repetitive unreleased track produced with NVDES in 2018.", "file_id": "a51364a677ba9e29254bd8b6f5546d5e", "stream_url": "https://api.pillows.su/api/download/a51364a677ba9e29254bd8b6f5546d5e", "download_url": "https://api.pillows.su/api/download/a51364a677ba9e29254bd8b6f5546d5e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "The Miracle Man [V1](prod. David Pramik & Oliver Tree)(Miracle Man)", "description": "OG Filename: the-miracle-man Title: The Miracle Man (David Pramik) The first demo of Miracle Man, at this stage named 'The Miracle Man', from 2018. Has an intro section that was cut from later versions and sounds much rougher but is otherwise similar.", "file_id": "c1db59c922d164d72defc8b606385d9e", "stream_url": "https://api.pillows.su/api/download/c1db59c922d164d72defc8b606385d9e", "download_url": "https://api.pillows.su/api/download/c1db59c922d164d72defc8b606385d9e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "The Miracle Man [V2](prod. David Pramik & Oliver Tree)(Miracle Man)", "description": "OG Filename: the-miracle-man-02 Title: The Miracle Man Updated demo of Miracle Man, still named 'The Miracle Man', from later in 2018, with the intro section removed.", "file_id": "82504a178c3c5748380c9a5328646469", "stream_url": "https://api.pillows.su/api/download/82504a178c3c5748380c9a5328646469", "download_url": "https://api.pillows.su/api/download/82504a178c3c5748380c9a5328646469", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Miracle Man [V3](prod. David Pramik & Oliver Tree)(The Miracle Man)", "description": "Title: miracle-man-mix-1st-mix OG Filename: Miracle Man (2nd Mix) Updated demo of Miracle Man from later in 2018. Sounds much closer to the final version.", "file_id": "00ca2d751da6f62172d458dca5c51270", "stream_url": "https://api.pillows.su/api/download/00ca2d751da6f62172d458dca5c51270", "download_url": "https://api.pillows.su/api/download/00ca2d751da6f62172d458dca5c51270", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "Movement [V1](prod. Whethan & Oliver Tree)(Movements)", "description": "OG Filename: movementwav Title: MOVEMENT FIRST DEMO Demo mix of Movement with rougher mixing and a different outro.", "file_id": "ea22f999f4ef0f206b24b9fb3eb30bab", "stream_url": "https://api.pillows.su/api/download/ea22f999f4ef0f206b24b9fb3eb30bab", "download_url": "https://api.pillows.su/api/download/ea22f999f4ef0f206b24b9fb3eb30bab", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\u2728 My Whole Life", "description": "OG Filename: MY WHOLE LIFE (REFF) - OLIVER TREE Fairly rough unreleased track produced early into work on Ugly is Beautiful. The melody in the intro was later reused for Waste My Time.", "file_id": "0aaaa137d47aecb6745f03b7f9fac9d7", "stream_url": "https://api.pillows.su/api/download/0aaaa137d47aecb6745f03b7f9fac9d7", "download_url": "https://api.pillows.su/api/download/0aaaa137d47aecb6745f03b7f9fac9d7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "No Break", "description": "OG Filename: NO BREAK Update.wav Very rough unreleased track produced at some point during this era. \".wav\" is just written at the end of the name, the file is not a WAV.", "file_id": "27447730ed48eef3a9387bc8fd80eeae", "stream_url": "https://api.pillows.su/api/download/27447730ed48eef3a9387bc8fd80eeae", "download_url": "https://api.pillows.su/api/download/27447730ed48eef3a9387bc8fd80eeae", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\u2b50 No More(prod. NVDES & Oliver Tree)", "description": "OG Filename: Oliver Tree - No More (ft. Nvdes) Unreleased track produced in 2017 during the same session as All Bets Are Off.", "file_id": "b6236880c71d38700653dc85dfbdc91b", "stream_url": "https://api.pillows.su/api/download/b6236880c71d38700653dc85dfbdc91b", "download_url": "https://api.pillows.su/api/download/b6236880c71d38700653dc85dfbdc91b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\u2728 Not Me [V2](prod. Oliver Tree & Leroy Clampitt)", "description": "OG Filename: Not Me - (OliverTreeXBigTaste) Fairly rough unreleased track. The \"some things cannot be undone, this the kind of shit that'll change you, son\" line appears in this song and was later reused in Joke's On You!.", "file_id": "167d04bfef3b1bcead67d20dfe3d7fef", "stream_url": "https://api.pillows.su/api/download/167d04bfef3b1bcead67d20dfe3d7fef", "download_url": "https://api.pillows.su/api/download/167d04bfef3b1bcead67d20dfe3d7fef", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}, {"era": "Ugly is Beautiful [V1](Do You Feel Me?)", "name": "\u2b50 On Your Own(prod. Dylan Wiggins, Casey Mattson & Oliver Tree)(Birthday Beat)", "description": "OG Filename: birthday-beat-62918 Title: On Your Own Unreleased track produced during work on Ugly is Beautiful, recorded on Oliver's birthday. Re-uses the rap verse from Everything I Ever Saw, an older unreleased track. The song was teased in a video posted to Oliver's Instagram , where he performed the rap verse from the track; however, the song never released.", "file_id": "1814a3c39107ae1440e8fca5e6aa63f7", "stream_url": "https://api.pillows.su/api/download/1814a3c39107ae1440e8fca5e6aa63f7", "download_url": "https://api.pillows.su/api/download/1814a3c39107ae1440e8fca5e6aa63f7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYKbX9Q6DNa6H0WmGTyjNuAsDeA2f5Wsr7051222Z1Q-NauMSaDTzrLTMCx0SONtj4z972VXI0Okqk_XMsdm_ZuGeD5m4OGM3zJoT7-EQxP3MpZV4VVcXyY9sND0h9M5B2kJ6ojdjYd-FZOIOg=w102-h19"}], "Cowboy Tears": [{"era": "Cowboy Tears", "name": "Things We Used to Do [V2](prod. John Hill & Oliver Tree)", "description": "OG Filename: things we used to do 041321 [working-stems] 97bpm Updated mix of Things We Used To Do, exported as two-track stems (vocals and instrumental) by John Hill on 13 April 2021 shortly after the vocals were recorded. This version has many different lyrics to the final mix, including an entirely different bridge, and has a less developed instrumental.", "file_id": "6b80755db87fe717968507283b2bb8b0", "stream_url": "https://api.pillows.su/api/download/6b80755db87fe717968507283b2bb8b0", "download_url": "https://api.pillows.su/api/download/6b80755db87fe717968507283b2bb8b0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhY54an4B9ObNUYotySToc1419LS7gEB9JIABZDsWM2oJCYUt9mkbXcjY7YB7VsKqtKaFJsmg_IdmVtUwHN1cyVWr2JED3CVLivlH6qZV4jjed-ZKPtjgUYw_H1x_Qz2RQBq046WFXRlyVI6=w102-h19"}], "Cowboy Tears Drown the World in a Swimming Pool of Sorrow": [{"era": "Cowboy Tears Drown the World in a Swimming Pool of Sorrow", "name": "That's Not Me [V1](prod. Ilan Rubin, Imad Royal & Oliver Tree)", "description": "OG Filename: oliver x ilan x imad 3 - 3.5.21 STEMS Unreleased track produced during the same session as \"The Villain.\" Half of the stems are missing.", "file_id": "43fd98895ec0510c245f4bb7c12323cf", "stream_url": "https://api.pillows.su/api/download/43fd98895ec0510c245f4bb7c12323cf", "download_url": "https://api.pillows.su/api/download/43fd98895ec0510c245f4bb7c12323cf", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb8RFJiNSPXZ3boIimoi0wQKBLvRwHk_32kagNHg8c9XEd4B87Ab9-BKCvI-oZF6Sl5Yc9MaUKJudbuj9WoBygEhOFeESMBkDtuGKbK1CU4lRJFKUvXVQLcnvEtNPsuUA1-hMDjkhyeLd9g=w102-h105"}], "Alone in a Crowd": [{"era": "Alone in a Crowd", "name": "Invisible Man [V3](prod. Imad Royal, Casey Mattson & Oliver Tree)", "description": "OG Filename: Invisible Man oliver v3 Updated demo of Invisible Man, bounced a few weeks after the previous mix.", "file_id": "31044d85f04f2a3d9dda5453213dca51", "stream_url": "https://api.pillows.su/api/download/31044d85f04f2a3d9dda5453213dca51", "download_url": "https://api.pillows.su/api/download/31044d85f04f2a3d9dda5453213dca51", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZ_nvFMe3sVQD3nUY3Oy1Sxy91O5IRUvJT_ny6GSAjOpbfC6E5PXAqTkaJ3WpLtihDN3D5pGLV5s50SxJ6n0wzeqakfEpQbsfbf3dxID5rpnRIXSCg0B6JpUGKtglMB2Q_bLoNXc4juCfFmPaI=w102-h105"}, {"era": "Alone in a Crowd", "name": "\ud83c\udfc5 Look Back*", "description": "Unreleased song produced during work on Alone in a Crowd.", "file_id": "13cc2ac6d540b158045da7903d601b10", "stream_url": "https://api.pillows.su/api/download/13cc2ac6d540b158045da7903d601b10", "download_url": "https://api.pillows.su/api/download/13cc2ac6d540b158045da7903d601b10", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZ_nvFMe3sVQD3nUY3Oy1Sxy91O5IRUvJT_ny6GSAjOpbfC6E5PXAqTkaJ3WpLtihDN3D5pGLV5s50SxJ6n0wzeqakfEpQbsfbf3dxID5rpnRIXSCg0B6JpUGKtglMB2Q_bLoNXc4juCfFmPaI=w102-h105"}]};
+    let currentEra = null;
+    let currentIndex = null;
+    let currentSong = null;
+    let playlist = [];
+
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const seekBar = document.getElementById('seek-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const playerTitle = document.getElementById('player-title');
+    const playerCover = document.getElementById('player-cover');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    function playSong(era, index) {
+        playlist = eras[era];
+        currentEra = era;
+        currentIndex = index;
+        loadAndPlayCurrent();
+    }
+
+    function highlightCurrentSong() {
+        document.querySelectorAll('.song.playing').forEach(el => el.classList.remove('playing'));
+        if (currentEra !== null && currentIndex !== null) {
+            const songId = `song-${currentEra.replace(/ /g, '_')}-${currentIndex}`;
+            const songEl = document.getElementById(songId);
+            if (songEl) songEl.classList.add('playing');
+        }
+    }
+
+    function loadAndPlayCurrent() {
+        if (!playlist || currentIndex === null || !playlist[currentIndex]) return;
+        const song = playlist[currentIndex];
+        player.src = song.stream_url;
+        playerTitle.textContent = song.name;
+        playerCover.src = song.cover || 'https://via.placeholder.com/60x60?text=No+Cover';
+        currentSong = song.stream_url;
+        player.play();
+        updateSkipButtons();
+        updateMediaSession(song);
+        highlightCurrentSong();
+    }
+
+    function updateSkipButtons() {
+        prevBtn.disabled = (currentIndex <= 0);
+        nextBtn.disabled = (currentIndex >= playlist.length - 1);
+    }
+
+    playBtn.onclick = function() {
+        if (player.src) {
+            if (player.paused) player.play();
+            else player.pause();
+        }
+    };
+
+    prevBtn.onclick = function() {
+        if (playlist && currentIndex > 0) {
+            currentIndex -= 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    nextBtn.onclick = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    player.onplay = function() {
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "";
+    };
+    player.onpause = function() {
+        playIcon.style.display = "";
+        pauseIcon.style.display = "none";
+    };
+
+    player.ontimeupdate = function() {
+        seekBar.value = player.currentTime || 0;
+        currentTimeEl.textContent = formatTime(player.currentTime);
+    };
+    player.onloadedmetadata = function() {
+        seekBar.max = player.duration || 0;
+        durationEl.textContent = formatTime(player.duration);
+    };
+    seekBar.oninput = function() {
+        player.currentTime = seekBar.value;
+    };
+
+    player.onended = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    function formatTime(sec) {
+        sec = Math.floor(sec);
+        return Math.floor(sec/60) + ":" + String(sec%60).padStart(2, '0');
+    }
+    function updateMediaSession(song) {
+        if ('mediaSession' in navigator && song) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.name,
+                artist: song.era,
+                album: "Unreleased",
+                artwork: [
+                    { src: song.cover || 'https://via.placeholder.com/90x90?text=No+Cover', sizes: '90x90', type: 'image/png' }
+                ]
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (playlist && currentIndex > 0) {
+                    currentIndex -= 1;
+                    loadAndPlayCurrent();
+                }
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                if (playlist && currentIndex < playlist.length - 1) {
+                    currentIndex += 1;
+                    loadAndPlayCurrent();
+                }
+            });
+        }
+    }
+
+    // --- Collapsible Eras ---
+    function toggleEra(idx) {
+        const songList = document.getElementById('song-list-' + idx);
+        const chevron = document.getElementById('chevron-' + idx);
+        const isOpen = songList.classList.contains('open');
+        if (isOpen) {
+            songList.classList.remove('open');
+            chevron.classList.remove('open');
+        } else {
+            songList.classList.add('open');
+            chevron.classList.add('open');
+        }
+    }
+    // Collapse all on load
+    window.addEventListener('DOMContentLoaded', function() {
+        
+            document.getElementById('song-list-0').classList.remove('open');
+            document.getElementById('chevron-0').classList.remove('open');
+        
+            document.getElementById('song-list-1').classList.remove('open');
+            document.getElementById('chevron-1').classList.remove('open');
+        
+            document.getElementById('song-list-2').classList.remove('open');
+            document.getElementById('chevron-2').classList.remove('open');
+        
+            document.getElementById('song-list-3').classList.remove('open');
+            document.getElementById('chevron-3').classList.remove('open');
+        
+            document.getElementById('song-list-4').classList.remove('open');
+            document.getElementById('chevron-4').classList.remove('open');
+        
+            document.getElementById('song-list-5').classList.remove('open');
+            document.getElementById('chevron-5').classList.remove('open');
+        
+
+        // Tooltip logic
+        let tooltip = null;
+        let tooltipTimeout = null;
+
+        document.querySelectorAll('.song').forEach(song => {
+            song.addEventListener('mouseenter', function(e) {
+                const desc = song.getAttribute('data-description');
+                if (!desc) return;
+                if (tooltip) tooltip.remove();
+                tooltip = document.createElement('div');
+                tooltip.className = 'floating-song-description';
+                tooltip.innerHTML = desc;
+                document.body.appendChild(tooltip);
+
+                // Position tooltip
+                const rect = song.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 6) + 'px';
+                tooltip.style.minWidth = rect.width + 'px';
+
+                // Fade in
+                setTimeout(() => {
+                    if (tooltip) tooltip.classList.add('visible');
+                }, 10);
+            });
+            song.addEventListener('mouseleave', function(e) {
+                if (tooltip) {
+                    tooltip.classList.remove('visible');
+                    setTimeout(() => {
+                        if (tooltip) tooltip.remove();
+                        tooltip = null;
+                    }, 120);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

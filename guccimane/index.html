@@ -1,0 +1,835 @@
+<!doctype html>
+<html>
+<head>
+    <title>ArtistHub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #121212;
+            color: #fff;
+        }
+.container {
+    padding: 2rem;
+    padding-bottom: 120px; /* Add space for the player */
+}
+        .era {
+            margin-bottom: 2.2rem;
+            background: #181818;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px #0003;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .era-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2.1rem 2rem 2.1rem 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.18s;
+            border-bottom: 1px solid #232323;
+        }
+        .era-header:hover {
+            background: #232323;
+        }
+        .era-cover {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .era-title {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #1db954;
+            flex: 1;
+            letter-spacing: 0.01em;
+        }
+        .chevron {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(.4,2,.6,1), color 0.2s;
+            color: #aaa;
+        }
+        .chevron.open {
+            transform: rotate(90deg);
+            color: #1db954;
+        }
+        .song-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(.4,2,.6,1);
+            background: #181818;
+            padding: 0 2rem;
+        }
+        .song-list.open {
+            padding-bottom: 1.2rem;
+            max-height: 1000px;
+            transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
+        }
+        .song {
+            background: #222;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.18s, color 0.18s;
+            box-shadow: 0 1px 4px #0002;
+            margin-top: 0.7rem;
+        }
+        .song:first-child { margin-top: 1.2rem; }
+        .song:hover {
+            background: #1db95433;
+            color: #1db954;
+        }
+        /* Hide the inline description, we use JS tooltip instead */
+        .song .song-description {
+            display: none !important;
+        }
+        .song.playing {
+            background: #1db954 !important;
+            color: #181818 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 12px #1db95455;
+        }
+        .player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #181818;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #222;
+            box-shadow: 0 -2px 8px #0003;
+            z-index: 100;
+            gap: 1.5rem;
+        }
+        .player-cover {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .player-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .player-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.2rem;
+            text-shadow: 0 1px 2px #0008;
+        }
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .player-btn, .player-skip-btn {
+            background: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px #0003;
+            margin-right: 0.5rem;
+        }
+        .player-btn:hover, .player-skip-btn:hover {
+            background: #1ed760;
+        }
+        .player-skip-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        .player-time {
+            font-size: 0.98rem;
+            color: #ccc;
+            min-width: 40px;
+            text-align: right;
+        }
+        .seek-bar {
+            flex: 1;
+            accent-color: #1db954;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            margin: 0 0.5rem;
+        }
+        .seek-bar::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-ms-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar:focus {
+            outline: none;
+        }
+        /* Tooltip style */
+        .floating-song-description {
+            position: fixed;
+            background: #222;
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px #000b;
+            z-index: 99999;
+            min-width: 250px;
+            max-width: 400px;
+            font-size: 0.97rem;
+            white-space: pre-line;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+        .floating-song-description.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #1db954;">ArtistHub</h1>
+        
+            <div class="era" id="era-0">
+                <div class="era-header" onclick="toggleEra(0)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYwTAgHXDzEqa4shCAIwK-okG3bOLazw5YDQ6waoq3Fd9GK_on0wvUS1D0z22M7jnlCr5J4HaSnMCZAcRLqDebE_CVqGyTnivkRpgckCNs_4hZDH57TbYRiBJx4Ik8S5u7IQvUdFOYGx92C0K9EMo4K8xK135cdNl-AXw=w558-h129" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Big Cat Records(Big Cat La Flare)(2005)</span>
+                    <span class="chevron" id="chevron-0">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-0">
+                    
+                        <div class="song" 
+                             id="song-Big_Cat_Records(Big_Cat_La_Flare)(2005)-0" 
+                             data-description="Leaked in 2005. This version contains different verses from Young Snead."
+                             onclick="playSong(&quot;Big Cat Records(Big Cat La Flare)(2005)&quot;, 0)">
+                            What It's Gon Be [V1](feat. Young Snead) (prod. Shawty Redd)
+                            <div class="song-description">Leaked in 2005. This version contains different verses from Young Snead.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Big_Cat_Records(Big_Cat_La_Flare)(2005)-1" 
+                             data-description="Surfaced in 2005. Different beat than the one used on Big Cat&#39;s unofficial Trap-A-Thon, as they changed the beat."
+                             onclick="playSong(&quot;Big Cat Records(Big Cat La Flare)(2005)&quot;, 1)">
+                            Choppa Shoppin(feat. Young Snead, Blackmagic & Maceo) (prod. ??)
+                            <div class="song-description">Surfaced in 2005. Different beat than the one used on Big Cat's unofficial Trap-A-Thon, as they changed the beat.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Big_Cat_Records(Big_Cat_La_Flare)(2005)-2" 
+                             data-description="Leaked in 2005."
+                             onclick="playSong(&quot;Big Cat Records(Big Cat La Flare)(2005)&quot;, 2)">
+                            You Ain't Said Shit(prod. Zaytoven)
+                            <div class="song-description">Leaked in 2005.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-1">
+                <div class="era-header" onclick="toggleEra(1)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhZvgmxlbo86iFlzuG-YNBWv88E6bzoGXm62xFj8FDBTM28y6XLteYFVZkn33qd2SGWJrzrBq2uQVEkk7i1OCh2oeUTgFZXje7067TxL-4-fzM6k8BxH6PfQCungJH9N_M9FblgqN0dqZLX411Q=w159-h20" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">(6/??/2006) (Gucci sticks a poolstick up some promoters ass)(1/??/2006) (Gucci gets out of jail)</span>
+                    <span class="chevron" id="chevron-1">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-1">
+                    
+                        <div class="song" 
+                             id="song-(6/??/2006)_(Gucci_sticks_a_poolstick_up_some_promoters_ass)(1/??/2006)_(Gucci_gets_out_of_jail)-0" 
+                             data-description="Leaked by DJ Scream on 11/18/06."
+                             onclick="playSong(&quot;(6/??/2006) (Gucci sticks a poolstick up some promoters ass)(1/??/2006) (Gucci gets out of jail)&quot;, 0)">
+                            Bounce(by Trap Squad) (prod. ??)
+                            <div class="song-description">Leaked by DJ Scream on 11/18/06.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-2">
+                <div class="era-header" onclick="toggleEra(2)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhZI6vy3rViYhemDZk4k-xwgTj5iVdw0QtSSCCLCPz3Rcwu6IQLHQYRLa61Lc4nn4IkQ2-y9wMV2wYB_TeRUX1I0Ag8p_a50DL8cvoxt3I6uDlORmWpMFndbGw2F7-I-wFamoziY5GaIiOZxZ7qapo9Qf0A8K4tVpEyaULef=w558-h129" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Chicken Talk(Burn One, Whisper Flow)(2006)</span>
+                    <span class="chevron" id="chevron-2">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-2">
+                    
+                        <div class="song" 
+                             id="song-Chicken_Talk(Burn_One,_Whisper_Flow)(2006)-0" 
+                             data-description="Leaked 2/14/06."
+                             onclick="playSong(&quot;Chicken Talk(Burn One, Whisper Flow)(2006)&quot;, 0)">
+                            Rental Cars(by Da Million Dollar Man) (prod. ??)
+                            <div class="song-description">Leaked 2/14/06.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chicken_Talk(Burn_One,_Whisper_Flow)(2006)-1" 
+                             data-description="Remix of Yola’s Ain’t Gon Let Up , leaked by DJ Kutt Throat."
+                             onclick="playSong(&quot;Chicken Talk(Burn One, Whisper Flow)(2006)&quot;, 1)">
+                            Ain’t Gon Let Up (Remix)(by DG Yola feat. Young Capone & Maceo) (prod. Win on the Track)
+                            <div class="song-description">Remix of Yola’s Ain’t Gon Let Up , leaked by DJ Kutt Throat.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chicken_Talk(Burn_One,_Whisper_Flow)(2006)-2" 
+                             data-description="Leaked by DJ Kutt Throat."
+                             onclick="playSong(&quot;Chicken Talk(Burn One, Whisper Flow)(2006)&quot;, 2)">
+                            Neva Fallin Off(by Trillville feat. DG Yola) (prod. ??)
+                            <div class="song-description">Leaked by DJ Kutt Throat.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chicken_Talk(Burn_One,_Whisper_Flow)(2006)-3" 
+                             data-description="Surfaced 10/1/06. Labeled as a M.I. song but Gucci does the hook and everybody got a verse so I’d say it’s his song."
+                             onclick="playSong(&quot;Chicken Talk(Burn One, Whisper Flow)(2006)&quot;, 3)">
+                            Dope Boyz(feat. M.I. & Whip) (prod. ??)
+                            <div class="song-description">Surfaced 10/1/06. Labeled as a M.I. song but Gucci does the hook and everybody got a verse so I’d say it’s his song.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chicken_Talk(Burn_One,_Whisper_Flow)(2006)-4" 
+                             data-description="Leaked by Dutty Laundry."
+                             onclick="playSong(&quot;Chicken Talk(Burn One, Whisper Flow)(2006)&quot;, 4)">
+                            Grittin My Teeth [V2](by Joe Green) (prod. Zaytoven)(Pill Man [V2])
+                            <div class="song-description">Leaked by Dutty Laundry.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chicken_Talk(Burn_One,_Whisper_Flow)(2006)-5" 
+                             data-description="Leaked 6-10-08."
+                             onclick="playSong(&quot;Chicken Talk(Burn One, Whisper Flow)(2006)&quot;, 5)">
+                            Exercise You(by Sha Stimuli) (prod. ??)
+                            <div class="song-description">Leaked 6-10-08.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chicken_Talk(Burn_One,_Whisper_Flow)(2006)-6" 
+                             data-description="Leaked 8-14-08, but the beat, voice and lyrics match the Chicken Talk era, could be Asylum aswell."
+                             onclick="playSong(&quot;Chicken Talk(Burn One, Whisper Flow)(2006)&quot;, 6)">
+                            Lie Detector(feat. Big Duke) (prod. Raw Beats)
+                            <div class="song-description">Leaked 8-14-08, but the beat, voice and lyrics match the Chicken Talk era, could be Asylum aswell.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-3">
+                <div class="era-header" onclick="toggleEra(3)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbh7nXuPDl8JuQUC85wPrT0whKA3chCmrSqMOtT7-hd1YxjjpP1--e3boFahHZV0wTKQaBpzZsb37el94K_xNp-_fJw0I7iAgv7y4Ntj7XfdOiP7jMoIi1nhyvLjze2FQoBqWdNREs53yDkCWL1IbTGncB7HscP8M6n1t1r=w558-h129" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Asylum Records(Late 2006 - 2007)</span>
+                    <span class="chevron" id="chevron-3">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-3">
+                    
+                        <div class="song" 
+                             id="song-Asylum_Records(Late_2006_-_2007)-0" 
+                             data-description="Leaked by DJ Cool Breeze."
+                             onclick="playSong(&quot;Asylum Records(Late 2006 - 2007)&quot;, 0)">
+                            What's Trap-Na-Nin(feat. Lil’ Dank) (prod. ??)(What's Trapinin', Trap)
+                            <div class="song-description">Leaked by DJ Cool Breeze.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-4">
+                <div class="era-header" onclick="toggleEra(4)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhaRGPPTm-8UVSZKYawdavTQ1eCLdPGbSHJJ8nBVibW0nVitaf1maXNnhy7xBLlHPYQ8wK8QKBpe0cSsEKTmYaktVRivqlr8QphR2bI5io7FU2oyId2hB7JygXHffIQhIpCBmMn-Je2cnWkeNSX-gAYdsysBsNrYDbPm1zmk=w558-h129" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">So Icey Entertainment(Mixtape Run)(2008 - 2009)</span>
+                    <span class="chevron" id="chevron-4">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-4">
+                    
+                        <div class="song" 
+                             id="song-So_Icey_Entertainment(Mixtape_Run)(2008_-_2009)-0" 
+                             data-description="Surfaced 2/6/08. Samples Let The Goons In . Da Million Dollar Man went by &#34;Chill&#34; aswell."
+                             onclick="playSong(&quot;So Icey Entertainment(Mixtape Run)(2008 - 2009)&quot;, 0)">
+                            My Money Strong(by Da Million Dollar Man) (prod. ??)(Get Ya Cash Right)
+                            <div class="song-description">Surfaced 2/6/08. Samples Let The Goons In . Da Million Dollar Man went by "Chill" aswell.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-So_Icey_Entertainment(Mixtape_Run)(2008_-_2009)-1" 
+                             data-description="Announced in some magazine that Vic had worked with Gucci &amp; Gotti in March. Leaked months later."
+                             onclick="playSong(&quot;So Icey Entertainment(Mixtape Run)(2008 - 2009)&quot;, 1)">
+                            Pop A Rubber Band(by Young Vic feat. Yo Gotti & Shawty Lo) (prod. Drumma Boy)(Poppin Rubberbands)
+                            <div class="song-description">Announced in some magazine that Vic had worked with Gucci & Gotti in March. Leaked months later.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-So_Icey_Entertainment(Mixtape_Run)(2008_-_2009)-2" 
+                             data-description="HQ snippet leaked by DJ Rell &amp; Trap-A-Holics on 8/5/08, full song surfaced 11/10/24."
+                             onclick="playSong(&quot;So Icey Entertainment(Mixtape Run)(2008 - 2009)&quot;, 2)">
+                            Go(by Centry) (prod. ??)(She A Go)
+                            <div class="song-description">HQ snippet leaked by DJ Rell & Trap-A-Holics on 8/5/08, full song surfaced 11/10/24.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-So_Icey_Entertainment(Mixtape_Run)(2008_-_2009)-3" 
+                             data-description="The first minute and a half leaked by DJ Rell &amp; Trap-A-Holics on 8/5/08, while the full song re-surfaced on 11/11/24."
+                             onclick="playSong(&quot;So Icey Entertainment(Mixtape Run)(2008 - 2009)&quot;, 3)">
+                            Rollin Weight(by Durt Mob Clik) (prod. Zaytoven)(26 Inches)
+                            <div class="song-description">The first minute and a half leaked by DJ Rell & Trap-A-Holics on 8/5/08, while the full song re-surfaced on 11/11/24.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-So_Icey_Entertainment(Mixtape_Run)(2008_-_2009)-4" 
+                             data-description="Probably a throwaway from The Movie (Gangsta Grillz) , HQ snippet leaked by DJ 31 Degreez on 8/10/08."
+                             onclick="playSong(&quot;So Icey Entertainment(Mixtape Run)(2008 - 2009)&quot;, 4)">
+                            Opposites Attract(feat. Mýa) (prod. ??)(We A Match)
+                            <div class="song-description">Probably a throwaway from The Movie (Gangsta Grillz) , HQ snippet leaked by DJ 31 Degreez on 8/10/08.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-5">
+                <div class="era-header" onclick="toggleEra(5)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbQmpeLV3GlgS4TcpV1a4xdn9uecByDzt2XdVhMYLk4and1Az5yOmTpZ6FQXdKJwYWhf-mIxeBZPDtUFxFY7r7S2w3BYXpZ0h7wP1rB7agnf_sUva6Rg13-URwTz2H4bGCBxl43obq1NxobIWE=w165-h20" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">(9/11/2008) (Gucci is arrested for only completing 25 out of 600 community service hours)(3/13/2009) (Gucci gets out of jail)</span>
+                    <span class="chevron" id="chevron-5">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-5">
+                    
+                        <div class="song" 
+                             id="song-(9/11/2008)_(Gucci_is_arrested_for_only_completing_25_out_of_600_community_service_hours)(3/13/2009)_(Gucci_gets_out_of_jail)-0" 
+                             data-description="Leaked by DJ L-Gee, beat samples Down 4 My N’s by C-Murder."
+                             onclick="playSong(&quot;(9/11/2008) (Gucci is arrested for only completing 25 out of 600 community service hours)(3/13/2009) (Gucci gets out of jail)&quot;, 0)">
+                            U Know(by Slim of 112) (prod. ??)
+                            <div class="song-description">Leaked by DJ L-Gee, beat samples Down 4 My N’s by C-Murder.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-6">
+                <div class="era-header" onclick="toggleEra(6)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbThcQEyw9xEZqA6lWP9HT4TmsdHb5NQ-Z9sptd4iToEDgFHbvtclFeDsOi4fq2YtCPy9GvIYrXSW5nU4eA20g-5q-foO0sMzgG3LH-84eVOkJbm8vvwXixmVdzWb2LzBRn1-xn3Q1xLj9p=w165-h20" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">(4/13/2013) (Gucci goes to jail for violating his parole)(5/2/2013) (Gucci gets out of jail)</span>
+                    <span class="chevron" id="chevron-6">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-6">
+                    
+                        <div class="song" 
+                             id="song-(4/13/2013)_(Gucci_goes_to_jail_for_violating_his_parole)(5/2/2013)_(Gucci_gets_out_of_jail)-0" 
+                             data-description="Surfaced 5/9/13."
+                             onclick="playSong(&quot;(4/13/2013) (Gucci goes to jail for violating his parole)(5/2/2013) (Gucci gets out of jail)&quot;, 0)">
+                            I'm Actin(by Chill Will feat. Kash 1017) (prod. Zaytoven)
+                            <div class="song-description">Surfaced 5/9/13.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-7">
+                <div class="era-header" onclick="toggleEra(7)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhaAONpZUguM_KJJOLUO33CmU0BbtqDndNmHSLCyD5Vzoq98snq1O4eZXHvhwvd8pDHxejeeWyFgGC0H2-ybJaVuboJOMj-l1C8voGV3E3r_wR_ujn2J6J78qeKGdSmmI4_7cMv9s9KUaW7NKWU=w558-h129" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Locked(Through the phone Gucci)(Sep 2013 - April 2016)</span>
+                    <span class="chevron" id="chevron-7">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-7">
+                    
+                        <div class="song" 
+                             id="song-Locked(Through_the_phone_Gucci)(Sep_2013_-_April_2016)-0" 
+                             data-description="Announced to DP&#39;s IG for an early Almighty DP tracklist . Has a different instrumental and 2 open verses, meant for Chief Keef. Leaked on 2-4-24 as a bonus for a Keef groupbuy."
+                             onclick="playSong(&quot;Locked(Through the phone Gucci)(Sep 2013 - April 2016)&quot;, 0)">
+                            Spray 4 Me [V1](prod. GGP)
+                            <div class="song-description">Announced to DP's IG for an early Almighty DP tracklist . Has a different instrumental and 2 open verses, meant for Chief Keef. Leaked on 2-4-24 as a bonus for a Keef groupbuy.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-8">
+                <div class="era-header" onclick="toggleEra(8)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhafWv6jYSZQF1_u-u9wVYnsgJqWX3mauOeO8Acbp61m-MQI_PywBczXPYqc7nGlfRbcYMmbvRmOtFrSA-UpnxtffB_NdGp9nEKJCI3baIQrhzfL1B7Ym2A9fH1Gr2wYoEGAPimYuSSpi6DhZ33No0kSu9mNS_OslZa3fQ=w558-h129" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)</span>
+                    <span class="chevron" id="chevron-8">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-8">
+                    
+                        <div class="song" 
+                             id="song-Wizop(Evil_Genius,_Clone_Gucci,_El_Gato)(May_2016_-_2018)-0" 
+                             data-description="Recording of the original production by Menace. Uploaded in 2017 by the producer. Any snippets of this version are likely lost. A fake edit from Logan Smitherman that recreates the production leaked in 2018."
+                             onclick="playSong(&quot;Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)&quot;, 0)">
+                            Champions [V4](by Kanye West feat. Big Sean, 2 Chainz, Travis Scott, Yo Gotti, Quavo & Desiigner) (prod. Menace)
+                            <div class="song-description">Recording of the original production by Menace. Uploaded in 2017 by the producer. Any snippets of this version are likely lost. A fake edit from Logan Smitherman that recreates the production leaked in 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Wizop(Evil_Genius,_Clone_Gucci,_El_Gato)(May_2016_-_2018)-1" 
+                             data-description="Earlier version of &#34;Champions&#34; with a different instrumental and vocal effects."
+                             onclick="playSong(&quot;Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)&quot;, 1)">
+                            Champions [V5](by Kanye West feat. Big Sean, 2 Chainz, Travis Scott, Yo Gotti, Quavo & Desiigner) (prod. ??)
+                            <div class="song-description">Earlier version of "Champions" with a different instrumental and vocal effects.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Wizop(Evil_Genius,_Clone_Gucci,_El_Gato)(May_2016_-_2018)-2" 
+                             data-description="OG Filename(s): Champions Ref 3 (6.3.16) &amp; Champions AK M1 EXPLICIT (6.3.16) Early version of Champions with alternate vocal takes, different adlibs and Quavo&#39;s hook being repeated at 2:37."
+                             onclick="playSong(&quot;Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)&quot;, 2)">
+                            Champions [V6](by Kanye West feat. Big Sean, 2 Chainz, Travis Scott, Yo Gotti, Quavo & Desiigner) (prod. Kanye West, A-Trak, Lex Luger, MIKE DEAN, Fonzworth Bentley, Charlie Heat & Noah Goldstein)
+                            <div class="song-description">OG Filename(s): Champions Ref 3 (6.3.16) & Champions AK M1 EXPLICIT (6.3.16) Early version of Champions with alternate vocal takes, different adlibs and Quavo's hook being repeated at 2:37.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Wizop(Evil_Genius,_Clone_Gucci,_El_Gato)(May_2016_-_2018)-3" 
+                             data-description="Pre-Master Mix by Alex Tumay. V1-4 do not feature Gucci."
+                             onclick="playSong(&quot;Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)&quot;, 3)">
+                            Floyd Mayweather [V5](by Young Thug feat. Gunna) (prod. Goose, TM88, Billboard Hitmakers, Wheezy & Young Thug)(Drip [V5])
+                            <div class="song-description">Pre-Master Mix by Alex Tumay. V1-4 do not feature Gucci.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Wizop(Evil_Genius,_Clone_Gucci,_El_Gato)(May_2016_-_2018)-4" 
+                             data-description="Version dated 09.02.16, so likely the version planned for the Cruel Winter album. Very similar to V6, but Quavo is only on there once, along with some alternate mixing changes."
+                             onclick="playSong(&quot;Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)&quot;, 4)">
+                            Champions [V9](by Kanye West feat. Big Sean, 2 Chainz, Travis Scott, Yo Gotti, Quavo & Desiigner) (prod. Kanye West, A-Trak, Lex Luger, MIKE DEAN, Fonzworth Bentley, Charlie Heat & Noah Goldstein)
+                            <div class="song-description">Version dated 09.02.16, so likely the version planned for the Cruel Winter album. Very similar to V6, but Quavo is only on there once, along with some alternate mixing changes.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Wizop(Evil_Genius,_Clone_Gucci,_El_Gato)(May_2016_-_2018)-5" 
+                             data-description="First previewed by Lil Yachty on live , years later a HQ snippet leaked (as Glacierz , but Yachty showed the file name on his live)."
+                             onclick="playSong(&quot;Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)&quot;, 5)">
+                            Glacier Boyz(by Lil Yachty feat. Hoodrich Pablo Juan, Lil Baby, Quavo & Takeoff) (prod. Quay Global)
+                            <div class="song-description">First previewed by Lil Yachty on live , years later a HQ snippet leaked (as Glacierz , but Yachty showed the file name on his live).</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Wizop(Evil_Genius,_Clone_Gucci,_El_Gato)(May_2016_-_2018)-6" 
+                             data-description="The song began as a Quavo and Jeremih song (different beat and everything), it got re-worked on and turnt into this, and finally after a third rework it released (without Young Thug) on 2024."
+                             onclick="playSong(&quot;Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)&quot;, 6)">
+                            Last Night [V2](by Jason Derulo feat. Quavo & Young Thug) (prod. Mally Mall)
+                            <div class="song-description">The song began as a Quavo and Jeremih song (different beat and everything), it got re-worked on and turnt into this, and finally after a third rework it released (without Young Thug) on 2024.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-9">
+                <div class="era-header" onclick="toggleEra(9)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjharlvsczdxbKmRpzZzrnXM6anC8_aF1NZTovop8xAdq6i9Ucbm42inmXKkVALGBz_0V9HKgPr8HKrhl2WETz6v0Gu7LCbP4mlBs-NiNJqiutFkFHi3ZLE2Dsh4YjUd8PY_4-rlXowrQxok4MxqH7VuDpzlWuf0ioynSfMgP=w558-h129" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">The New 1017 Records(Ice Daddy, So Icy Gang, So Icy Boyz)(2019 - Ongoing)</span>
+                    <span class="chevron" id="chevron-9">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-9">
+                    
+                        <div class="song" 
+                             id="song-The_New_1017_Records(Ice_Daddy,_So_Icy_Gang,_So_Icy_Boyz)(2019_-_Ongoing)-0" 
+                             data-description="HQ snippet leaked 2/8/24."
+                             onclick="playSong(&quot;The New 1017 Records(Ice Daddy, So Icy Gang, So Icy Boyz)(2019 - Ongoing)&quot;, 0)">
+                            Freeze Tag(by Takeoff) (prod. ??)(Diamonds Freeze Tag)
+                            <div class="song-description">HQ snippet leaked 2/8/24.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+    </div>
+    <!-- Spotify-style player with skip buttons -->
+    <div class="player">
+        <img id="player-cover" src=cover alt="cover" class="player-cover">
+        <div class="player-info">
+            <div id="player-title" class="player-title">Select a song</div>
+            <div class="player-controls">
+                <button id="prev-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="15,4 7,11 15,18"></polygon></svg>
+                </button>
+                <button id="play-btn" class="player-btn">
+                    <svg id="play-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff"><polygon points="6,4 24,14 6,24"></polygon></svg>
+                    <svg id="pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff" style="display:none;"><rect x="6" y="4" width="5" height="20"></rect><rect x="17" y="4" width="5" height="20"></rect></svg>
+                </button>
+                <button id="next-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="7,4 15,11 7,18"></polygon></svg>
+                </button>
+                <span id="current-time" class="player-time">0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" value="0" min="0" max="100" step="1">
+                <span id="duration" class="player-time">0:00</span>
+            </div>
+        </div>
+        <audio id="player" preload="metadata"></audio>
+    </div>
+    <script>
+    // All eras and songs as a JS object
+    const eras = {"Big Cat Records(Big Cat La Flare)(2005)": [{"era": "Big Cat Records(Big Cat La Flare)(2005)", "name": "What It's Gon Be [V1](feat. Young Snead) (prod. Shawty Redd)", "description": "Leaked in 2005. This version contains different verses from Young Snead.", "file_id": "55a75da493716bf4d5b47cbf355747f7", "stream_url": "https://api.pillows.su/api/download/55a75da493716bf4d5b47cbf355747f7", "download_url": "https://api.pillows.su/api/download/55a75da493716bf4d5b47cbf355747f7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYwTAgHXDzEqa4shCAIwK-okG3bOLazw5YDQ6waoq3Fd9GK_on0wvUS1D0z22M7jnlCr5J4HaSnMCZAcRLqDebE_CVqGyTnivkRpgckCNs_4hZDH57TbYRiBJx4Ik8S5u7IQvUdFOYGx92C0K9EMo4K8xK135cdNl-AXw=w558-h129"}, {"era": "Big Cat Records(Big Cat La Flare)(2005)", "name": "Choppa Shoppin(feat. Young Snead, Blackmagic & Maceo) (prod. ??)", "description": "Surfaced in 2005. Different beat than the one used on Big Cat's unofficial Trap-A-Thon, as they changed the beat.", "file_id": "38aeef004a33aab1adbfa6eca7328fd9", "stream_url": "https://api.pillows.su/api/download/38aeef004a33aab1adbfa6eca7328fd9", "download_url": "https://api.pillows.su/api/download/38aeef004a33aab1adbfa6eca7328fd9", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYwTAgHXDzEqa4shCAIwK-okG3bOLazw5YDQ6waoq3Fd9GK_on0wvUS1D0z22M7jnlCr5J4HaSnMCZAcRLqDebE_CVqGyTnivkRpgckCNs_4hZDH57TbYRiBJx4Ik8S5u7IQvUdFOYGx92C0K9EMo4K8xK135cdNl-AXw=w558-h129"}, {"era": "Big Cat Records(Big Cat La Flare)(2005)", "name": "You Ain't Said Shit(prod. Zaytoven)", "description": "Leaked in 2005.", "file_id": "c932586f620c673ae82078507d58ec55", "stream_url": "https://api.pillows.su/api/download/c932586f620c673ae82078507d58ec55", "download_url": "https://api.pillows.su/api/download/c932586f620c673ae82078507d58ec55", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYwTAgHXDzEqa4shCAIwK-okG3bOLazw5YDQ6waoq3Fd9GK_on0wvUS1D0z22M7jnlCr5J4HaSnMCZAcRLqDebE_CVqGyTnivkRpgckCNs_4hZDH57TbYRiBJx4Ik8S5u7IQvUdFOYGx92C0K9EMo4K8xK135cdNl-AXw=w558-h129"}], "(6/??/2006) (Gucci sticks a poolstick up some promoters ass)(1/??/2006) (Gucci gets out of jail)": [{"era": "(6/??/2006) (Gucci sticks a poolstick up some promoters ass)(1/??/2006) (Gucci gets out of jail)", "name": "Bounce(by Trap Squad) (prod. ??)", "description": "Leaked by DJ Scream on 11/18/06.", "file_id": "af2e2094edc71b0c5db3b35dade7a5c0", "stream_url": "https://api.pillows.su/api/download/af2e2094edc71b0c5db3b35dade7a5c0", "download_url": "https://api.pillows.su/api/download/af2e2094edc71b0c5db3b35dade7a5c0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZvgmxlbo86iFlzuG-YNBWv88E6bzoGXm62xFj8FDBTM28y6XLteYFVZkn33qd2SGWJrzrBq2uQVEkk7i1OCh2oeUTgFZXje7067TxL-4-fzM6k8BxH6PfQCungJH9N_M9FblgqN0dqZLX411Q=w159-h20"}], "Chicken Talk(Burn One, Whisper Flow)(2006)": [{"era": "Chicken Talk(Burn One, Whisper Flow)(2006)", "name": "Rental Cars(by Da Million Dollar Man) (prod. ??)", "description": "Leaked 2/14/06.", "file_id": "6a4c053a803839e03f42c8a269a8f1ae", "stream_url": "https://api.pillows.su/api/download/6a4c053a803839e03f42c8a269a8f1ae", "download_url": "https://api.pillows.su/api/download/6a4c053a803839e03f42c8a269a8f1ae", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZI6vy3rViYhemDZk4k-xwgTj5iVdw0QtSSCCLCPz3Rcwu6IQLHQYRLa61Lc4nn4IkQ2-y9wMV2wYB_TeRUX1I0Ag8p_a50DL8cvoxt3I6uDlORmWpMFndbGw2F7-I-wFamoziY5GaIiOZxZ7qapo9Qf0A8K4tVpEyaULef=w558-h129"}, {"era": "Chicken Talk(Burn One, Whisper Flow)(2006)", "name": "Ain\u2019t Gon Let Up (Remix)(by DG Yola feat. Young Capone & Maceo) (prod. Win on the Track)", "description": "Remix of Yola\u2019s Ain\u2019t Gon Let Up , leaked by DJ Kutt Throat.", "file_id": "53f9a5f138c9beeb0e943e173af26e47", "stream_url": "https://api.pillows.su/api/download/53f9a5f138c9beeb0e943e173af26e47", "download_url": "https://api.pillows.su/api/download/53f9a5f138c9beeb0e943e173af26e47", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZI6vy3rViYhemDZk4k-xwgTj5iVdw0QtSSCCLCPz3Rcwu6IQLHQYRLa61Lc4nn4IkQ2-y9wMV2wYB_TeRUX1I0Ag8p_a50DL8cvoxt3I6uDlORmWpMFndbGw2F7-I-wFamoziY5GaIiOZxZ7qapo9Qf0A8K4tVpEyaULef=w558-h129"}, {"era": "Chicken Talk(Burn One, Whisper Flow)(2006)", "name": "Neva Fallin Off(by Trillville feat. DG Yola) (prod. ??)", "description": "Leaked by DJ Kutt Throat.", "file_id": "b071defdc9abcee724002ab3b59f3f4a", "stream_url": "https://api.pillows.su/api/download/b071defdc9abcee724002ab3b59f3f4a", "download_url": "https://api.pillows.su/api/download/b071defdc9abcee724002ab3b59f3f4a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZI6vy3rViYhemDZk4k-xwgTj5iVdw0QtSSCCLCPz3Rcwu6IQLHQYRLa61Lc4nn4IkQ2-y9wMV2wYB_TeRUX1I0Ag8p_a50DL8cvoxt3I6uDlORmWpMFndbGw2F7-I-wFamoziY5GaIiOZxZ7qapo9Qf0A8K4tVpEyaULef=w558-h129"}, {"era": "Chicken Talk(Burn One, Whisper Flow)(2006)", "name": "Dope Boyz(feat. M.I. & Whip) (prod. ??)", "description": "Surfaced 10/1/06. Labeled as a M.I. song but Gucci does the hook and everybody got a verse so I\u2019d say it\u2019s his song.", "file_id": "18b8ef7fcac1fead8d55971cdf6dce86", "stream_url": "https://api.pillows.su/api/download/18b8ef7fcac1fead8d55971cdf6dce86", "download_url": "https://api.pillows.su/api/download/18b8ef7fcac1fead8d55971cdf6dce86", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZI6vy3rViYhemDZk4k-xwgTj5iVdw0QtSSCCLCPz3Rcwu6IQLHQYRLa61Lc4nn4IkQ2-y9wMV2wYB_TeRUX1I0Ag8p_a50DL8cvoxt3I6uDlORmWpMFndbGw2F7-I-wFamoziY5GaIiOZxZ7qapo9Qf0A8K4tVpEyaULef=w558-h129"}, {"era": "Chicken Talk(Burn One, Whisper Flow)(2006)", "name": "Grittin My Teeth [V2](by Joe Green) (prod. Zaytoven)(Pill Man [V2])", "description": "Leaked by Dutty Laundry.", "file_id": "c92c21e85992929fd8f432adea58ee64", "stream_url": "https://api.pillows.su/api/download/c92c21e85992929fd8f432adea58ee64", "download_url": "https://api.pillows.su/api/download/c92c21e85992929fd8f432adea58ee64", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZI6vy3rViYhemDZk4k-xwgTj5iVdw0QtSSCCLCPz3Rcwu6IQLHQYRLa61Lc4nn4IkQ2-y9wMV2wYB_TeRUX1I0Ag8p_a50DL8cvoxt3I6uDlORmWpMFndbGw2F7-I-wFamoziY5GaIiOZxZ7qapo9Qf0A8K4tVpEyaULef=w558-h129"}, {"era": "Chicken Talk(Burn One, Whisper Flow)(2006)", "name": "Exercise You(by Sha Stimuli) (prod. ??)", "description": "Leaked 6-10-08.", "file_id": "d32cfd28168c9f84f556c315287da6aa", "stream_url": "https://api.pillows.su/api/download/d32cfd28168c9f84f556c315287da6aa", "download_url": "https://api.pillows.su/api/download/d32cfd28168c9f84f556c315287da6aa", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZI6vy3rViYhemDZk4k-xwgTj5iVdw0QtSSCCLCPz3Rcwu6IQLHQYRLa61Lc4nn4IkQ2-y9wMV2wYB_TeRUX1I0Ag8p_a50DL8cvoxt3I6uDlORmWpMFndbGw2F7-I-wFamoziY5GaIiOZxZ7qapo9Qf0A8K4tVpEyaULef=w558-h129"}, {"era": "Chicken Talk(Burn One, Whisper Flow)(2006)", "name": "Lie Detector(feat. Big Duke) (prod. Raw Beats)", "description": "Leaked 8-14-08, but the beat, voice and lyrics match the Chicken Talk era, could be Asylum aswell.", "file_id": "70468e991aebbf5c1cbecca582d7d322", "stream_url": "https://api.pillows.su/api/download/70468e991aebbf5c1cbecca582d7d322", "download_url": "https://api.pillows.su/api/download/70468e991aebbf5c1cbecca582d7d322", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZI6vy3rViYhemDZk4k-xwgTj5iVdw0QtSSCCLCPz3Rcwu6IQLHQYRLa61Lc4nn4IkQ2-y9wMV2wYB_TeRUX1I0Ag8p_a50DL8cvoxt3I6uDlORmWpMFndbGw2F7-I-wFamoziY5GaIiOZxZ7qapo9Qf0A8K4tVpEyaULef=w558-h129"}], "Asylum Records(Late 2006 - 2007)": [{"era": "Asylum Records(Late 2006 - 2007)", "name": "What's Trap-Na-Nin(feat. Lil\u2019 Dank) (prod. ??)(What's Trapinin', Trap)", "description": "Leaked by DJ Cool Breeze.", "file_id": "f86e7ac50bd0f9cbd32e1b158f27cd12", "stream_url": "https://api.pillows.su/api/download/f86e7ac50bd0f9cbd32e1b158f27cd12", "download_url": "https://api.pillows.su/api/download/f86e7ac50bd0f9cbd32e1b158f27cd12", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbh7nXuPDl8JuQUC85wPrT0whKA3chCmrSqMOtT7-hd1YxjjpP1--e3boFahHZV0wTKQaBpzZsb37el94K_xNp-_fJw0I7iAgv7y4Ntj7XfdOiP7jMoIi1nhyvLjze2FQoBqWdNREs53yDkCWL1IbTGncB7HscP8M6n1t1r=w558-h129"}], "So Icey Entertainment(Mixtape Run)(2008 - 2009)": [{"era": "So Icey Entertainment(Mixtape Run)(2008 - 2009)", "name": "My Money Strong(by Da Million Dollar Man) (prod. ??)(Get Ya Cash Right)", "description": "Surfaced 2/6/08. Samples Let The Goons In . Da Million Dollar Man went by \"Chill\" aswell.", "file_id": "653d3c5d9ae850431b485f94e9744b00", "stream_url": "https://api.pillows.su/api/download/653d3c5d9ae850431b485f94e9744b00", "download_url": "https://api.pillows.su/api/download/653d3c5d9ae850431b485f94e9744b00", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaRGPPTm-8UVSZKYawdavTQ1eCLdPGbSHJJ8nBVibW0nVitaf1maXNnhy7xBLlHPYQ8wK8QKBpe0cSsEKTmYaktVRivqlr8QphR2bI5io7FU2oyId2hB7JygXHffIQhIpCBmMn-Je2cnWkeNSX-gAYdsysBsNrYDbPm1zmk=w558-h129"}, {"era": "So Icey Entertainment(Mixtape Run)(2008 - 2009)", "name": "Pop A Rubber Band(by Young Vic feat. Yo Gotti & Shawty Lo) (prod. Drumma Boy)(Poppin Rubberbands)", "description": "Announced in some magazine that Vic had worked with Gucci & Gotti in March. Leaked months later.", "file_id": "db19b2a1e4a8da0f34ce181d58b073bc", "stream_url": "https://api.pillows.su/api/download/db19b2a1e4a8da0f34ce181d58b073bc", "download_url": "https://api.pillows.su/api/download/db19b2a1e4a8da0f34ce181d58b073bc", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaRGPPTm-8UVSZKYawdavTQ1eCLdPGbSHJJ8nBVibW0nVitaf1maXNnhy7xBLlHPYQ8wK8QKBpe0cSsEKTmYaktVRivqlr8QphR2bI5io7FU2oyId2hB7JygXHffIQhIpCBmMn-Je2cnWkeNSX-gAYdsysBsNrYDbPm1zmk=w558-h129"}, {"era": "So Icey Entertainment(Mixtape Run)(2008 - 2009)", "name": "Go(by Centry) (prod. ??)(She A Go)", "description": "HQ snippet leaked by DJ Rell & Trap-A-Holics on 8/5/08, full song surfaced 11/10/24.", "file_id": "02f9cea174895f8430e18e11c00684cc", "stream_url": "https://api.pillows.su/api/download/02f9cea174895f8430e18e11c00684cc", "download_url": "https://api.pillows.su/api/download/02f9cea174895f8430e18e11c00684cc", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaRGPPTm-8UVSZKYawdavTQ1eCLdPGbSHJJ8nBVibW0nVitaf1maXNnhy7xBLlHPYQ8wK8QKBpe0cSsEKTmYaktVRivqlr8QphR2bI5io7FU2oyId2hB7JygXHffIQhIpCBmMn-Je2cnWkeNSX-gAYdsysBsNrYDbPm1zmk=w558-h129"}, {"era": "So Icey Entertainment(Mixtape Run)(2008 - 2009)", "name": "Rollin Weight(by Durt Mob Clik) (prod. Zaytoven)(26 Inches)", "description": "The first minute and a half leaked by DJ Rell & Trap-A-Holics on 8/5/08, while the full song re-surfaced on 11/11/24.", "file_id": "41f6d92061c7a1e7a0e41ca39241c033", "stream_url": "https://api.pillows.su/api/download/41f6d92061c7a1e7a0e41ca39241c033", "download_url": "https://api.pillows.su/api/download/41f6d92061c7a1e7a0e41ca39241c033", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaRGPPTm-8UVSZKYawdavTQ1eCLdPGbSHJJ8nBVibW0nVitaf1maXNnhy7xBLlHPYQ8wK8QKBpe0cSsEKTmYaktVRivqlr8QphR2bI5io7FU2oyId2hB7JygXHffIQhIpCBmMn-Je2cnWkeNSX-gAYdsysBsNrYDbPm1zmk=w558-h129"}, {"era": "So Icey Entertainment(Mixtape Run)(2008 - 2009)", "name": "Opposites Attract(feat. M\u00fda) (prod. ??)(We A Match)", "description": "Probably a throwaway from The Movie (Gangsta Grillz) , HQ snippet leaked by DJ 31 Degreez on 8/10/08.", "file_id": "421971046847347078318ac4eb862f66", "stream_url": "https://api.pillows.su/api/download/421971046847347078318ac4eb862f66", "download_url": "https://api.pillows.su/api/download/421971046847347078318ac4eb862f66", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaRGPPTm-8UVSZKYawdavTQ1eCLdPGbSHJJ8nBVibW0nVitaf1maXNnhy7xBLlHPYQ8wK8QKBpe0cSsEKTmYaktVRivqlr8QphR2bI5io7FU2oyId2hB7JygXHffIQhIpCBmMn-Je2cnWkeNSX-gAYdsysBsNrYDbPm1zmk=w558-h129"}], "(9/11/2008) (Gucci is arrested for only completing 25 out of 600 community service hours)(3/13/2009) (Gucci gets out of jail)": [{"era": "(9/11/2008) (Gucci is arrested for only completing 25 out of 600 community service hours)(3/13/2009) (Gucci gets out of jail)", "name": "U Know(by Slim of 112) (prod. ??)", "description": "Leaked by DJ L-Gee, beat samples Down 4 My N\u2019s by C-Murder.", "file_id": "c76a9c74ea9ec99fb2dc30f0855bdfaa", "stream_url": "https://api.pillows.su/api/download/c76a9c74ea9ec99fb2dc30f0855bdfaa", "download_url": "https://api.pillows.su/api/download/c76a9c74ea9ec99fb2dc30f0855bdfaa", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbQmpeLV3GlgS4TcpV1a4xdn9uecByDzt2XdVhMYLk4and1Az5yOmTpZ6FQXdKJwYWhf-mIxeBZPDtUFxFY7r7S2w3BYXpZ0h7wP1rB7agnf_sUva6Rg13-URwTz2H4bGCBxl43obq1NxobIWE=w165-h20"}], "(4/13/2013) (Gucci goes to jail for violating his parole)(5/2/2013) (Gucci gets out of jail)": [{"era": "(4/13/2013) (Gucci goes to jail for violating his parole)(5/2/2013) (Gucci gets out of jail)", "name": "I'm Actin(by Chill Will feat. Kash 1017) (prod. Zaytoven)", "description": "Surfaced 5/9/13.", "file_id": "9d18e604ff1687da09201b7f2e4be2b0", "stream_url": "https://api.pillows.su/api/download/9d18e604ff1687da09201b7f2e4be2b0", "download_url": "https://api.pillows.su/api/download/9d18e604ff1687da09201b7f2e4be2b0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbThcQEyw9xEZqA6lWP9HT4TmsdHb5NQ-Z9sptd4iToEDgFHbvtclFeDsOi4fq2YtCPy9GvIYrXSW5nU4eA20g-5q-foO0sMzgG3LH-84eVOkJbm8vvwXixmVdzWb2LzBRn1-xn3Q1xLj9p=w165-h20"}], "Locked(Through the phone Gucci)(Sep 2013 - April 2016)": [{"era": "Locked(Through the phone Gucci)(Sep 2013 - April 2016)", "name": "Spray 4 Me [V1](prod. GGP)", "description": "Announced to DP's IG for an early Almighty DP tracklist . Has a different instrumental and 2 open verses, meant for Chief Keef. Leaked on 2-4-24 as a bonus for a Keef groupbuy.", "file_id": "b4b5d888a0d578f668036767b01e3539", "stream_url": "https://api.pillows.su/api/download/b4b5d888a0d578f668036767b01e3539", "download_url": "https://api.pillows.su/api/download/b4b5d888a0d578f668036767b01e3539", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaAONpZUguM_KJJOLUO33CmU0BbtqDndNmHSLCyD5Vzoq98snq1O4eZXHvhwvd8pDHxejeeWyFgGC0H2-ybJaVuboJOMj-l1C8voGV3E3r_wR_ujn2J6J78qeKGdSmmI4_7cMv9s9KUaW7NKWU=w558-h129"}], "Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)": [{"era": "Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)", "name": "Champions [V4](by Kanye West feat. Big Sean, 2 Chainz, Travis Scott, Yo Gotti, Quavo & Desiigner) (prod. Menace)", "description": "Recording of the original production by Menace. Uploaded in 2017 by the producer. Any snippets of this version are likely lost. A fake edit from Logan Smitherman that recreates the production leaked in 2018.", "file_id": "e26598efd1bb060a91a352a13c31a3fc", "stream_url": "https://api.pillows.su/api/download/e26598efd1bb060a91a352a13c31a3fc", "download_url": "https://api.pillows.su/api/download/e26598efd1bb060a91a352a13c31a3fc", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhafWv6jYSZQF1_u-u9wVYnsgJqWX3mauOeO8Acbp61m-MQI_PywBczXPYqc7nGlfRbcYMmbvRmOtFrSA-UpnxtffB_NdGp9nEKJCI3baIQrhzfL1B7Ym2A9fH1Gr2wYoEGAPimYuSSpi6DhZ33No0kSu9mNS_OslZa3fQ=w558-h129"}, {"era": "Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)", "name": "Champions [V5](by Kanye West feat. Big Sean, 2 Chainz, Travis Scott, Yo Gotti, Quavo & Desiigner) (prod. ??)", "description": "Earlier version of \"Champions\" with a different instrumental and vocal effects.", "file_id": "4190ae8a4d09697a18163344ac43440a", "stream_url": "https://api.pillows.su/api/download/4190ae8a4d09697a18163344ac43440a", "download_url": "https://api.pillows.su/api/download/4190ae8a4d09697a18163344ac43440a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhafWv6jYSZQF1_u-u9wVYnsgJqWX3mauOeO8Acbp61m-MQI_PywBczXPYqc7nGlfRbcYMmbvRmOtFrSA-UpnxtffB_NdGp9nEKJCI3baIQrhzfL1B7Ym2A9fH1Gr2wYoEGAPimYuSSpi6DhZ33No0kSu9mNS_OslZa3fQ=w558-h129"}, {"era": "Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)", "name": "Champions [V6](by Kanye West feat. Big Sean, 2 Chainz, Travis Scott, Yo Gotti, Quavo & Desiigner) (prod. Kanye West, A-Trak, Lex Luger, MIKE DEAN, Fonzworth Bentley, Charlie Heat & Noah Goldstein)", "description": "OG Filename(s): Champions Ref 3 (6.3.16) & Champions AK M1 EXPLICIT (6.3.16) Early version of Champions with alternate vocal takes, different adlibs and Quavo's hook being repeated at 2:37.", "file_id": "26646f5639f9e7564859887921f9545b", "stream_url": "https://api.pillows.su/api/download/26646f5639f9e7564859887921f9545b", "download_url": "https://api.pillows.su/api/download/26646f5639f9e7564859887921f9545b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhafWv6jYSZQF1_u-u9wVYnsgJqWX3mauOeO8Acbp61m-MQI_PywBczXPYqc7nGlfRbcYMmbvRmOtFrSA-UpnxtffB_NdGp9nEKJCI3baIQrhzfL1B7Ym2A9fH1Gr2wYoEGAPimYuSSpi6DhZ33No0kSu9mNS_OslZa3fQ=w558-h129"}, {"era": "Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)", "name": "Floyd Mayweather [V5](by Young Thug feat. Gunna) (prod. Goose, TM88, Billboard Hitmakers, Wheezy & Young Thug)(Drip [V5])", "description": "Pre-Master Mix by Alex Tumay. V1-4 do not feature Gucci.", "file_id": "7cef95a26e5b28503a10141616dde1fc", "stream_url": "https://api.pillows.su/api/download/7cef95a26e5b28503a10141616dde1fc", "download_url": "https://api.pillows.su/api/download/7cef95a26e5b28503a10141616dde1fc", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhafWv6jYSZQF1_u-u9wVYnsgJqWX3mauOeO8Acbp61m-MQI_PywBczXPYqc7nGlfRbcYMmbvRmOtFrSA-UpnxtffB_NdGp9nEKJCI3baIQrhzfL1B7Ym2A9fH1Gr2wYoEGAPimYuSSpi6DhZ33No0kSu9mNS_OslZa3fQ=w558-h129"}, {"era": "Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)", "name": "Champions [V9](by Kanye West feat. Big Sean, 2 Chainz, Travis Scott, Yo Gotti, Quavo & Desiigner) (prod. Kanye West, A-Trak, Lex Luger, MIKE DEAN, Fonzworth Bentley, Charlie Heat & Noah Goldstein)", "description": "Version dated 09.02.16, so likely the version planned for the Cruel Winter album. Very similar to V6, but Quavo is only on there once, along with some alternate mixing changes.", "file_id": "74c04d7dd3e9599bef2c60edf7a97a22", "stream_url": "https://api.pillows.su/api/download/74c04d7dd3e9599bef2c60edf7a97a22", "download_url": "https://api.pillows.su/api/download/74c04d7dd3e9599bef2c60edf7a97a22", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhafWv6jYSZQF1_u-u9wVYnsgJqWX3mauOeO8Acbp61m-MQI_PywBczXPYqc7nGlfRbcYMmbvRmOtFrSA-UpnxtffB_NdGp9nEKJCI3baIQrhzfL1B7Ym2A9fH1Gr2wYoEGAPimYuSSpi6DhZ33No0kSu9mNS_OslZa3fQ=w558-h129"}, {"era": "Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)", "name": "Glacier Boyz(by Lil Yachty feat. Hoodrich Pablo Juan, Lil Baby, Quavo & Takeoff) (prod. Quay Global)", "description": "First previewed by Lil Yachty on live , years later a HQ snippet leaked (as Glacierz , but Yachty showed the file name on his live).", "file_id": "9cdf60acf8a299db828f792ac5fe61b9", "stream_url": "https://api.pillows.su/api/download/9cdf60acf8a299db828f792ac5fe61b9", "download_url": "https://api.pillows.su/api/download/9cdf60acf8a299db828f792ac5fe61b9", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhafWv6jYSZQF1_u-u9wVYnsgJqWX3mauOeO8Acbp61m-MQI_PywBczXPYqc7nGlfRbcYMmbvRmOtFrSA-UpnxtffB_NdGp9nEKJCI3baIQrhzfL1B7Ym2A9fH1Gr2wYoEGAPimYuSSpi6DhZ33No0kSu9mNS_OslZa3fQ=w558-h129"}, {"era": "Wizop(Evil Genius, Clone Gucci, El Gato)(May 2016 - 2018)", "name": "Last Night [V2](by Jason Derulo feat. Quavo & Young Thug) (prod. Mally Mall)", "description": "The song began as a Quavo and Jeremih song (different beat and everything), it got re-worked on and turnt into this, and finally after a third rework it released (without Young Thug) on 2024.", "file_id": "d486071dd514320f1312ef18162052a1", "stream_url": "https://api.pillows.su/api/download/d486071dd514320f1312ef18162052a1", "download_url": "https://api.pillows.su/api/download/d486071dd514320f1312ef18162052a1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhafWv6jYSZQF1_u-u9wVYnsgJqWX3mauOeO8Acbp61m-MQI_PywBczXPYqc7nGlfRbcYMmbvRmOtFrSA-UpnxtffB_NdGp9nEKJCI3baIQrhzfL1B7Ym2A9fH1Gr2wYoEGAPimYuSSpi6DhZ33No0kSu9mNS_OslZa3fQ=w558-h129"}], "The New 1017 Records(Ice Daddy, So Icy Gang, So Icy Boyz)(2019 - Ongoing)": [{"era": "The New 1017 Records(Ice Daddy, So Icy Gang, So Icy Boyz)(2019 - Ongoing)", "name": "Freeze Tag(by Takeoff) (prod. ??)(Diamonds Freeze Tag)", "description": "HQ snippet leaked 2/8/24.", "file_id": "229e9ace6ecd637c7a2ae4be85cfbee1", "stream_url": "https://api.pillows.su/api/download/229e9ace6ecd637c7a2ae4be85cfbee1", "download_url": "https://api.pillows.su/api/download/229e9ace6ecd637c7a2ae4be85cfbee1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjharlvsczdxbKmRpzZzrnXM6anC8_aF1NZTovop8xAdq6i9Ucbm42inmXKkVALGBz_0V9HKgPr8HKrhl2WETz6v0Gu7LCbP4mlBs-NiNJqiutFkFHi3ZLE2Dsh4YjUd8PY_4-rlXowrQxok4MxqH7VuDpzlWuf0ioynSfMgP=w558-h129"}]};
+    let currentEra = null;
+    let currentIndex = null;
+    let currentSong = null;
+    let playlist = [];
+
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const seekBar = document.getElementById('seek-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const playerTitle = document.getElementById('player-title');
+    const playerCover = document.getElementById('player-cover');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    function playSong(era, index) {
+        playlist = eras[era];
+        currentEra = era;
+        currentIndex = index;
+        loadAndPlayCurrent();
+    }
+
+    function highlightCurrentSong() {
+        document.querySelectorAll('.song.playing').forEach(el => el.classList.remove('playing'));
+        if (currentEra !== null && currentIndex !== null) {
+            const songId = `song-${currentEra.replace(/ /g, '_')}-${currentIndex}`;
+            const songEl = document.getElementById(songId);
+            if (songEl) songEl.classList.add('playing');
+        }
+    }
+
+    function loadAndPlayCurrent() {
+        if (!playlist || currentIndex === null || !playlist[currentIndex]) return;
+        const song = playlist[currentIndex];
+        player.src = song.stream_url;
+        playerTitle.textContent = song.name;
+        playerCover.src = song.cover || 'https://via.placeholder.com/60x60?text=No+Cover';
+        currentSong = song.stream_url;
+        player.play();
+        updateSkipButtons();
+        updateMediaSession(song);
+        highlightCurrentSong();
+    }
+
+    function updateSkipButtons() {
+        prevBtn.disabled = (currentIndex <= 0);
+        nextBtn.disabled = (currentIndex >= playlist.length - 1);
+    }
+
+    playBtn.onclick = function() {
+        if (player.src) {
+            if (player.paused) player.play();
+            else player.pause();
+        }
+    };
+
+    prevBtn.onclick = function() {
+        if (playlist && currentIndex > 0) {
+            currentIndex -= 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    nextBtn.onclick = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    player.onplay = function() {
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "";
+    };
+    player.onpause = function() {
+        playIcon.style.display = "";
+        pauseIcon.style.display = "none";
+    };
+
+    player.ontimeupdate = function() {
+        seekBar.value = player.currentTime || 0;
+        currentTimeEl.textContent = formatTime(player.currentTime);
+    };
+    player.onloadedmetadata = function() {
+        seekBar.max = player.duration || 0;
+        durationEl.textContent = formatTime(player.duration);
+    };
+    seekBar.oninput = function() {
+        player.currentTime = seekBar.value;
+    };
+
+    player.onended = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    function formatTime(sec) {
+        sec = Math.floor(sec);
+        return Math.floor(sec/60) + ":" + String(sec%60).padStart(2, '0');
+    }
+    function updateMediaSession(song) {
+        if ('mediaSession' in navigator && song) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.name,
+                artist: song.era,
+                album: "Unreleased",
+                artwork: [
+                    { src: song.cover || 'https://via.placeholder.com/90x90?text=No+Cover', sizes: '90x90', type: 'image/png' }
+                ]
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (playlist && currentIndex > 0) {
+                    currentIndex -= 1;
+                    loadAndPlayCurrent();
+                }
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                if (playlist && currentIndex < playlist.length - 1) {
+                    currentIndex += 1;
+                    loadAndPlayCurrent();
+                }
+            });
+        }
+    }
+
+    // --- Collapsible Eras ---
+    function toggleEra(idx) {
+        const songList = document.getElementById('song-list-' + idx);
+        const chevron = document.getElementById('chevron-' + idx);
+        const isOpen = songList.classList.contains('open');
+        if (isOpen) {
+            songList.classList.remove('open');
+            chevron.classList.remove('open');
+        } else {
+            songList.classList.add('open');
+            chevron.classList.add('open');
+        }
+    }
+    // Collapse all on load
+    window.addEventListener('DOMContentLoaded', function() {
+        
+            document.getElementById('song-list-0').classList.remove('open');
+            document.getElementById('chevron-0').classList.remove('open');
+        
+            document.getElementById('song-list-1').classList.remove('open');
+            document.getElementById('chevron-1').classList.remove('open');
+        
+            document.getElementById('song-list-2').classList.remove('open');
+            document.getElementById('chevron-2').classList.remove('open');
+        
+            document.getElementById('song-list-3').classList.remove('open');
+            document.getElementById('chevron-3').classList.remove('open');
+        
+            document.getElementById('song-list-4').classList.remove('open');
+            document.getElementById('chevron-4').classList.remove('open');
+        
+            document.getElementById('song-list-5').classList.remove('open');
+            document.getElementById('chevron-5').classList.remove('open');
+        
+            document.getElementById('song-list-6').classList.remove('open');
+            document.getElementById('chevron-6').classList.remove('open');
+        
+            document.getElementById('song-list-7').classList.remove('open');
+            document.getElementById('chevron-7').classList.remove('open');
+        
+            document.getElementById('song-list-8').classList.remove('open');
+            document.getElementById('chevron-8').classList.remove('open');
+        
+            document.getElementById('song-list-9').classList.remove('open');
+            document.getElementById('chevron-9').classList.remove('open');
+        
+
+        // Tooltip logic
+        let tooltip = null;
+        let tooltipTimeout = null;
+
+        document.querySelectorAll('.song').forEach(song => {
+            song.addEventListener('mouseenter', function(e) {
+                const desc = song.getAttribute('data-description');
+                if (!desc) return;
+                if (tooltip) tooltip.remove();
+                tooltip = document.createElement('div');
+                tooltip.className = 'floating-song-description';
+                tooltip.innerHTML = desc;
+                document.body.appendChild(tooltip);
+
+                // Position tooltip
+                const rect = song.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 6) + 'px';
+                tooltip.style.minWidth = rect.width + 'px';
+
+                // Fade in
+                setTimeout(() => {
+                    if (tooltip) tooltip.classList.add('visible');
+                }, 10);
+            });
+            song.addEventListener('mouseleave', function(e) {
+                if (tooltip) {
+                    tooltip.classList.remove('visible');
+                    setTimeout(() => {
+                        if (tooltip) tooltip.remove();
+                        tooltip = null;
+                    }, 120);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

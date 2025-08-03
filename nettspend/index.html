@@ -1,0 +1,1531 @@
+<!doctype html>
+<html>
+<head>
+    <title>ArtistHub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #121212;
+            color: #fff;
+        }
+.container {
+    padding: 2rem;
+    padding-bottom: 120px; /* Add space for the player */
+}
+        .era {
+            margin-bottom: 2.2rem;
+            background: #181818;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px #0003;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .era-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2.1rem 2rem 2.1rem 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.18s;
+            border-bottom: 1px solid #232323;
+        }
+        .era-header:hover {
+            background: #232323;
+        }
+        .era-cover {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .era-title {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #1db954;
+            flex: 1;
+            letter-spacing: 0.01em;
+        }
+        .chevron {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(.4,2,.6,1), color 0.2s;
+            color: #aaa;
+        }
+        .chevron.open {
+            transform: rotate(90deg);
+            color: #1db954;
+        }
+        .song-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(.4,2,.6,1);
+            background: #181818;
+            padding: 0 2rem;
+        }
+        .song-list.open {
+            padding-bottom: 1.2rem;
+            max-height: 1000px;
+            transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
+        }
+        .song {
+            background: #222;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.18s, color 0.18s;
+            box-shadow: 0 1px 4px #0002;
+            margin-top: 0.7rem;
+        }
+        .song:first-child { margin-top: 1.2rem; }
+        .song:hover {
+            background: #1db95433;
+            color: #1db954;
+        }
+        /* Hide the inline description, we use JS tooltip instead */
+        .song .song-description {
+            display: none !important;
+        }
+        .song.playing {
+            background: #1db954 !important;
+            color: #181818 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 12px #1db95455;
+        }
+        .player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #181818;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #222;
+            box-shadow: 0 -2px 8px #0003;
+            z-index: 100;
+            gap: 1.5rem;
+        }
+        .player-cover {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .player-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .player-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.2rem;
+            text-shadow: 0 1px 2px #0008;
+        }
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .player-btn, .player-skip-btn {
+            background: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px #0003;
+            margin-right: 0.5rem;
+        }
+        .player-btn:hover, .player-skip-btn:hover {
+            background: #1ed760;
+        }
+        .player-skip-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        .player-time {
+            font-size: 0.98rem;
+            color: #ccc;
+            min-width: 40px;
+            text-align: right;
+        }
+        .seek-bar {
+            flex: 1;
+            accent-color: #1db954;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            margin: 0 0.5rem;
+        }
+        .seek-bar::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-ms-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar:focus {
+            outline: none;
+        }
+        /* Tooltip style */
+        .floating-song-description {
+            position: fixed;
+            background: #222;
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px #000b;
+            z-index: 99999;
+            min-width: 250px;
+            max-width: 400px;
+            font-size: 0.97rem;
+            white-space: pre-line;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+        .floating-song-description.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #1db954;">ArtistHub</h1>
+        
+            <div class="era" id="era-0">
+                <div class="era-header" onclick="toggleEra(0)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Pre-BAFK(October 01, 2022 - May 26, 2023)</span>
+                    <span class="chevron" id="chevron-0">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-0">
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-0" 
+                             data-description="OG Filename: X time.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 0)">
+                            X Time(prod. ??)
+                            <div class="song-description">OG Filename: X time.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-1" 
+                             data-description="OG Filename: up ＊old so old 😂 ＊reuploaded.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 1)">
+                            Up(prod. ??)
+                            <div class="song-description">OG Filename: up ＊old so old 😂 ＊reuploaded.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-2" 
+                             data-description="OG Filename: Lust.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 2)">
+                            Lust(prod. ??)
+                            <div class="song-description">OG Filename: Lust.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-3" 
+                             data-description="OG Filename: can’t ：(.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 3)">
+                            Can't(prod. ??)
+                            <div class="song-description">OG Filename: can’t ：(.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-4" 
+                             data-description="OG Filename: Thisiskindanotbutisnotbutiswhyihatemymusic.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 4)">
+                            Thisiskindanotbutisnotbutiswhyihatemymusic(prod. ??)
+                            <div class="song-description">OG Filename: Thisiskindanotbutisnotbutiswhyihatemymusic.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-5" 
+                             data-description="OG Filename: Wokstar.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 5)">
+                            Wokstar(prod. ??)
+                            <div class="song-description">OG Filename: Wokstar.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-6" 
+                             data-description="OG Filename: GUNNEX X BADKIDMIZU - WTF.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 6)">
+                            Wtf(feat. Badkidmizu) (prod. ??)
+                            <div class="song-description">OG Filename: GUNNEX X BADKIDMIZU - WTF.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-7" 
+                             data-description="OG Filename: GUNNEX + $ADPLUG + BADKIDMIZU - KICKIN DOORS (prod. Curtiz57.m4a Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 7)">
+                            Kickin Doors(feat. $adplug & Badkidmizu) (prod. Curtiz57)
+                            <div class="song-description">OG Filename: GUNNEX + $ADPLUG + BADKIDMIZU - KICKIN DOORS (prod. Curtiz57.m4a Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-8" 
+                             data-description="OG Filename: me prod tenkay.m4a Leaked on 12/9/23. This version is normal speed."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 8)">
+                            Beamerrr [V1](prod. Tenkay & $harpboi)
+                            <div class="song-description">OG Filename: me prod tenkay.m4a Leaked on 12/9/23. This version is normal speed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-9" 
+                             data-description="OG Filename: U stuck bru.mp3 Leaked on 12/9/23. This version lets the beat run."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 9)">
+                            Tekken Remix [V1](prod. Nyli & Enchant)
+                            <div class="song-description">OG Filename: U stuck bru.mp3 Leaked on 12/9/23. This version lets the beat run.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-10" 
+                             data-description="OG Filename: gg.mp3 Leaked on 12/9/23. This version has a different verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 10)">
+                            Thrill [V1](prod. Mag)
+                            <div class="song-description">OG Filename: gg.mp3 Leaked on 12/9/23. This version has a different verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-11" 
+                             data-description="OG Filename: im just a teen (ss3bby).wav Leaked on 12/9/23. This version is solo and normal speed."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 11)">
+                            I'm Just A Teen [V1](prod. ss3bby)
+                            <div class="song-description">OG Filename: im just a teen (ss3bby).wav Leaked on 12/9/23. This version is solo and normal speed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-12" 
+                             data-description="OG Filename: Go Up.m4a OG Filename: (Ss3bby).m4a Leaked on 12/9/23. This version is solo and repeats at the end in various speeds."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 12)">
+                            I'm Just A Teen [V2](prod. ss3bby)
+                            <div class="song-description">OG Filename: Go Up.m4a OG Filename: (Ss3bby).m4a Leaked on 12/9/23. This version is solo and repeats at the end in various speeds.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-13" 
+                             data-description="OG Filename: Go Up.m4a OG Filename: (Ss3bby).m4a Leaked on 12/9/23. This version is solo and repeats at the end in various speeds."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 13)">
+                            I'm Just A Teen [V2](prod. ss3bby)
+                            <div class="song-description">OG Filename: Go Up.m4a OG Filename: (Ss3bby).m4a Leaked on 12/9/23. This version is solo and repeats at the end in various speeds.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-14" 
+                             data-description="OG Filename: Words On Nett Yhap.mp3 Leaked on 12/9/23. This version has louder Yhapojj vocals."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 14)">
+                            I'm Just A Teen [V3](prod. ss3bby)
+                            <div class="song-description">OG Filename: Words On Nett Yhap.mp3 Leaked on 12/9/23. This version has louder Yhapojj vocals.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-15" 
+                             data-description="OG Filename: Text Me Prod. Sophitia.mp3 OG Filename: Turnin Uup Prod. Sophitia.mp3 Leaked on 12/9/23. This version is sped up and has a phaser on the outro."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 15)">
+                            Section [V1](prod. Sophitia)
+                            <div class="song-description">OG Filename: Text Me Prod. Sophitia.mp3 OG Filename: Turnin Uup Prod. Sophitia.mp3 Leaked on 12/9/23. This version is sped up and has a phaser on the outro.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-16" 
+                             data-description="OG Filename: Text Me Prod. Sophitia.mp3 OG Filename: Turnin Uup Prod. Sophitia.mp3 Leaked on 12/9/23. This version is sped up and has a phaser on the outro."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 16)">
+                            Section [V1](prod. Sophitia)
+                            <div class="song-description">OG Filename: Text Me Prod. Sophitia.mp3 OG Filename: Turnin Uup Prod. Sophitia.mp3 Leaked on 12/9/23. This version is sped up and has a phaser on the outro.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-17" 
+                             data-description="OG Filename: My Name Nett (Jj1da).m4a Leaked on 12/9/23. This version is normal speed."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 17)">
+                            Good Night [V1](prod. Jj1da & Tapie)
+                            <div class="song-description">OG Filename: My Name Nett (Jj1da).m4a Leaked on 12/9/23. This version is normal speed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-18" 
+                             data-description="OG Filename: Rips N My Clip (jj1da).m4a Leaked on 12/9/23. This version is sped up."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 18)">
+                            Good Night [V2](prod. Jj1da & Tapie)
+                            <div class="song-description">OG Filename: Rips N My Clip (jj1da).m4a Leaked on 12/9/23. This version is sped up.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-19" 
+                             data-description="OG Filename: u told us quit (yk &amp; 444jet).mp3 Leaked on 12/9/23. This version is solo and has an extra verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 19)">
+                            U Told Us Quit [V1](prod. 444jet & yk)
+                            <div class="song-description">OG Filename: u told us quit (yk & 444jet).mp3 Leaked on 12/9/23. This version is solo and has an extra verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-20" 
+                             data-description="OG Filename: Cause Prod Clay 10 + Miso.m4a Leaked on 12/9/23. This version has different mixing."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 20)">
+                            U Gon Fall [V1](prod. Clay10 & Miso)
+                            <div class="song-description">OG Filename: Cause Prod Clay 10 + Miso.m4a Leaked on 12/9/23. This version has different mixing.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-21" 
+                             data-description="OG Filename: @Nyli2b @NettSpend - Knocked Off (p.Nyli).mp3 Leaked on 12/9/23. This version is normal speed."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 21)">
+                            Knocked Off [V2](by Nyli) (prod. Nyli)
+                            <div class="song-description">OG Filename: @Nyli2b @NettSpend - Knocked Off (p.Nyli).mp3 Leaked on 12/9/23. This version is normal speed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-22" 
+                             data-description="OG Filename: are we strangers w nett.mp3 Leaked on 12/9/23. This version is normal speed."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 22)">
+                            Out The Whip [V1](feat. Kasper Gem) (prod. Ss3bby & Cranes)
+                            <div class="song-description">OG Filename: are we strangers w nett.mp3 Leaked on 12/9/23. This version is normal speed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-23" 
+                             data-description="OG Filename: strangers w⧸ kaspergem prod sebby n cranes.mp3 Leaked on 12/9/23. This version is normal speed with better mixing."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 23)">
+                            Out The Whip [V2](feat. Kasper Gem) (prod. Ss3bby & Cranes)
+                            <div class="song-description">OG Filename: strangers w⧸ kaspergem prod sebby n cranes.mp3 Leaked on 12/9/23. This version is normal speed with better mixing.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-24" 
+                             data-description="OG Filename: Yhap Pre.mp3 Leaked on 12/9/23. This version is solo and has earlier mixing."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 24)">
+                            Can't Miss [V1](prod. ??)
+                            <div class="song-description">OG Filename: Yhap Pre.mp3 Leaked on 12/9/23. This version is solo and has earlier mixing.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-25" 
+                             data-description="OG Filename: Uuu.mp3 Leaked on 12/9/23. This version is solo with better mixing."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 25)">
+                            Can't Miss [V2](prod. ??)
+                            <div class="song-description">OG Filename: Uuu.mp3 Leaked on 12/9/23. This version is solo with better mixing.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-26" 
+                             data-description="OG Filename: open55.mp3.mp3 Leaked on 12/9/23. This version is solo."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 26)">
+                            On Me [V1](prod. Mag & Occult)
+                            <div class="song-description">OG Filename: open55.mp3.mp3 Leaked on 12/9/23. This version is solo.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-27" 
+                             data-description="OG Filename: YHAP OPEN .mp3.mp3 Leaked on 12/9/23. This version is solo with a few extra vocals."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 27)">
+                            On Me [V2](prod. Mag & Occult)
+                            <div class="song-description">OG Filename: YHAP OPEN .mp3.mp3 Leaked on 12/9/23. This version is solo with a few extra vocals.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-28" 
+                             data-description="OG Filename: open.mp3 Leaked on 12/9/23. This version is solo and open verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 28)">
+                            Taller [V1](prod. nyli, Occult.14 & ​exset)
+                            <div class="song-description">OG Filename: open.mp3 Leaked on 12/9/23. This version is solo and open verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-29" 
+                             data-description="OG Filename: Now Or Never (Sophitia &amp; FilthyGenes).mp3 Leaked on 12/9/23. This version is normal speed."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 29)">
+                            Tell Yourself [V1](prod. ​Filthygenes & Sophitia)
+                            <div class="song-description">OG Filename: Now Or Never (Sophitia & FilthyGenes).mp3 Leaked on 12/9/23. This version is normal speed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-30" 
+                             data-description="OG Filename: Static open.mp3.mp3 Leaked on 12/9/23. This version is solo and open verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 30)">
+                            Skip That Text [V1](prod. Magnis & ​Reklus1ve)
+                            <div class="song-description">OG Filename: Static open.mp3.mp3 Leaked on 12/9/23. This version is solo and open verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-31" 
+                             data-description="OG Filename: Hollywood (Kyuro N Occult14).mp3 Released on 6/16/23. This version has earlier mixing and has the full verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 31)">
+                            Hollywood [V1](prod. Kyuro & Occult.14)
+                            <div class="song-description">OG Filename: Hollywood (Kyuro N Occult14).mp3 Released on 6/16/23. This version has earlier mixing and has the full verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-32" 
+                             data-description="OG Filename: 20+ prod ok 2.mp3 Leaked on 12/9/23. This version has earlier mixing different structuring."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 32)">
+                            No Waiting [V1](prod. Ok)
+                            <div class="song-description">OG Filename: 20+ prod ok 2.mp3 Leaked on 12/9/23. This version has earlier mixing different structuring.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-33" 
+                             data-description="OG Filename: heavens bed (occult+night66).mp3 Leaked on 12/9/23. This version is sped up along with other differences."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 33)">
+                            Transferrr [V1](prod. Occult.14 & Night66)
+                            <div class="song-description">OG Filename: heavens bed (occult+night66).mp3 Leaked on 12/9/23. This version is sped up along with other differences.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-34" 
+                             data-description="OG Filename: hp prod seepy.mp3 Previewed to Netspend&#39;s Instagram in July 2023 . Leaked on 12/9/23. Open verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 34)">
+                            HP(prod. Seepy)
+                            <div class="song-description">OG Filename: hp prod seepy.mp3 Previewed to Netspend's Instagram in July 2023 . Leaked on 12/9/23. Open verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-35" 
+                             data-description="OG Filename: funuhyuh pt2 demo 1.mp3 Leaked on an unknown date. This version has earlier mixing."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 35)">
+                            We Not Like You [V1](prod. Zoot)
+                            <div class="song-description">OG Filename: funuhyuh pt2 demo 1.mp3 Leaked on an unknown date. This version has earlier mixing.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-36" 
+                             data-description="OG Filename: netmix.m4a.mp3 OG Filename: UntitledAug2420231246AM.m4a.mp3 Previewed to Nettspend&#39;s Instagram on 9/24/23 . Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 36)">
+                            Netmix(prod. Ok)
+                            <div class="song-description">OG Filename: netmix.m4a.mp3 OG Filename: UntitledAug2420231246AM.m4a.mp3 Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-37" 
+                             data-description="OG Filename: netmix.m4a.mp3 OG Filename: UntitledAug2420231246AM.m4a.mp3 Previewed to Nettspend&#39;s Instagram on 9/24/23 . Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 37)">
+                            Netmix(prod. Ok)
+                            <div class="song-description">OG Filename: netmix.m4a.mp3 OG Filename: UntitledAug2420231246AM.m4a.mp3 Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-38" 
+                             data-description="OG Filename: demo.mp3 Previewed to DJ Rennessy&#39;s Instagram in August 2023 . Leaked on 12/8/23. This version is solo."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 38)">
+                            Pop Out [V1](prod. Twentywrld & Ss3bby)
+                            <div class="song-description">OG Filename: demo.mp3 Previewed to DJ Rennessy's Instagram in August 2023 . Leaked on 12/8/23. This version is solo.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-39" 
+                             data-description="OG Filename: pop out w xaviersobased (ss3bby twentywrld).mp3 Leaked on 12/9/23. This version has Nettspend before Xaviersobased and different mixing."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 39)">
+                            Pop Out [V2](feat. Xaviersobased) (prod. Twentywrld & Ss3bby)
+                            <div class="song-description">OG Filename: pop out w xaviersobased (ss3bby twentywrld).mp3 Leaked on 12/9/23. This version has Nettspend before Xaviersobased and different mixing.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-40" 
+                             data-description="OG Filename: Xaviersobased pop out w nettspend (twentywrld n ss3bby).mp3 Leaked on 12/9/23. This version features Xaviersobased."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 40)">
+                            Pop Out [V3](by Xaviersobased) (prod. Twentywrld & Ss3bby)
+                            <div class="song-description">OG Filename: Xaviersobased pop out w nettspend (twentywrld n ss3bby).mp3 Leaked on 12/9/23. This version features Xaviersobased.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-41" 
+                             data-description="OG Filename: UntitledSep42023807PM.m4a.mp3 OG Filename: drank (zoot).mp3 Leaked on 12/9/23. This version has different mixing."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 41)">
+                            DrankDrankDrank [V1](prod. Zoot)
+                            <div class="song-description">OG Filename: UntitledSep42023807PM.m4a.mp3 OG Filename: drank (zoot).mp3 Leaked on 12/9/23. This version has different mixing.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-42" 
+                             data-description="OG Filename: UntitledSep42023807PM.m4a.mp3 OG Filename: drank (zoot).mp3 Leaked on 12/9/23. This version has different mixing."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 42)">
+                            DrankDrankDrank [V1](prod. Zoot)
+                            <div class="song-description">OG Filename: UntitledSep42023807PM.m4a.mp3 OG Filename: drank (zoot).mp3 Leaked on 12/9/23. This version has different mixing.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-43" 
+                             data-description="OG Filename: snipet.mp3 Leaked on 12/9/23. This version has a shorter, slightly different verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 43)">
+                            Cops R Racist [V1](prod. 1o)
+                            <div class="song-description">OG Filename: snipet.mp3 Leaked on 12/9/23. This version has a shorter, slightly different verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-44" 
+                             data-description="OG Filename: oops.mp3 Leaked on 12/9/23. This version lets the beat play out."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 44)">
+                            Cops R Racist [V2](prod. 1o)
+                            <div class="song-description">OG Filename: oops.mp3 Leaked on 12/9/23. This version lets the beat play out.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-45" 
+                             data-description="OG Filename: netspend - ghost prod dj smokey.wav.m4a Leaked on 12/9/23. This version has a different beat and better mixing."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 45)">
+                            Cops R Racist [V4](prod. DJ Smokey)
+                            <div class="song-description">OG Filename: netspend - ghost prod dj smokey.wav.m4a Leaked on 12/9/23. This version has a different beat and better mixing.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-46" 
+                             data-description="OG Filename: Nettspend - Track 2.mp3.mp3 Leaked on 12/9/23. This version has shittier mixing and a different verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 46)">
+                            Most Hated [V1](prod. Zoot)
+                            <div class="song-description">OG Filename: Nettspend - Track 2.mp3.mp3 Leaked on 12/9/23. This version has shittier mixing and a different verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-47" 
+                             data-description="OG Filename: stolo (xaviersobased).mp3 Leaked on 12/9/23. This version is normal speed."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 47)">
+                            Ca$h Cow [V1](prod. Xaviersobased)
+                            <div class="song-description">OG Filename: stolo (xaviersobased).mp3 Leaked on 12/9/23. This version is normal speed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-48" 
+                             data-description="OG Filename: rocks prod cru n xionorion.mp3 Previewed to Nettspend&#39;s Instagram on 9/16/23 . Leaked on 12/7/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 48)">
+                            Rocks(prod. Xionorion & Cru)
+                            <div class="song-description">OG Filename: rocks prod cru n xionorion.mp3 Previewed to Nettspend's Instagram on 9/16/23 . Leaked on 12/7/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-49" 
+                             data-description="OG Filename: ok + nettspend 3.mp3.m4a Previewed to Nettspend&#39;s Instagram on 9/24/23 . Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 49)">
+                            Feelin Like D Rose(prod. Ok)
+                            <div class="song-description">OG Filename: ok + nettspend 3.mp3.m4a Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-50" 
+                             data-description="OG Filename: ok + nett 4.m4a Previewed to Nettspend&#39;s Instagram on 9/24/23 . Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 50)">
+                            4(prod. Ok)
+                            <div class="song-description">OG Filename: ok + nett 4.m4a Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-51" 
+                             data-description="OG Filename: wake up prod ok.mp3 Open verse version of Wake Up that was sent to Osamason. Previewed to Nettspend&#39;s Instagram on 9/24/23 . Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 51)">
+                            Wake Up [V1](prod. Ok)
+                            <div class="song-description">OG Filename: wake up prod ok.mp3 Open verse version of Wake Up that was sent to Osamason. Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-52" 
+                             data-description="OG Filename: rva 2 nyc.m4a Previewed to Nettspend&#39;s Instagram on 9/24/23 . Leaked on 12/9/23. This version is solo &amp; open verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 52)">
+                            804 To 212 [V1](prod. Evilgiane & Eera)
+                            <div class="song-description">OG Filename: rva 2 nyc.m4a Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 12/9/23. This version is solo & open verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-53" 
+                             data-description="OG Filename: 804 to 212 ft. zuro prod evilgiane n eera.mp3 Leaked on 12/9/23. This version is features Zuro."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 53)">
+                            804 To 212 [V2](feat. Zuro) (prod. Evilgiane & Eera)
+                            <div class="song-description">OG Filename: 804 to 212 ft. zuro prod evilgiane n eera.mp3 Leaked on 12/9/23. This version is features Zuro.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-54" 
+                             data-description="OG Filename: 12 friends prod harrison.m4a Previewed to Nettspend&#39;s Instagram on 9/24/23 . Leaked on 11/23/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 54)">
+                            12 Friends(prod. Harrison)
+                            <div class="song-description">OG Filename: 12 friends prod harrison.m4a Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 11/23/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-55" 
+                             data-description="OG Filename: Watch Over Her prod safegaurd n zoot n k1ro.mp3 Leaked on 12/9/23. This version is normal speed."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 55)">
+                            Spendin Before Yuh [V1](prod. Safeguard, Zoot & K1ro)
+                            <div class="song-description">OG Filename: Watch Over Her prod safegaurd n zoot n k1ro.mp3 Leaked on 12/9/23. This version is normal speed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-56" 
+                             data-description="OG Filename: spendin before yuh.mp3 Announced on 10/1/23 . Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 56)">
+                            Spendin Before Yuh [V2](prod. Safeguard, Zoot & K1ro)
+                            <div class="song-description">OG Filename: spendin before yuh.mp3 Announced on 10/1/23 . Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-57" 
+                             data-description="OG Filename: deleted song😐.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 57)">
+                            Deleted Song(prod. ??)
+                            <div class="song-description">OG Filename: deleted song😐.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-58" 
+                             data-description="OG Filename: stg wit 19.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 58)">
+                            Stg(feat. 19) (prod. ??)
+                            <div class="song-description">OG Filename: stg wit 19.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-59" 
+                             data-description="OG Filename: rolling around town.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 59)">
+                            Rolling Around Town(prod. ??)
+                            <div class="song-description">OG Filename: rolling around town.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-60" 
+                             data-description="OG Filename: Spyro off tha x.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 60)">
+                            Spyro Off Tha X(prod. ??)
+                            <div class="song-description">OG Filename: Spyro off tha x.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-61" 
+                             data-description="OG Filename: #WG FLIPPED YA CAR PROD NYLI.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 61)">
+                            #WG Flipped Ya Car(prod. Nyli)
+                            <div class="song-description">OG Filename: #WG FLIPPED YA CAR PROD NYLI.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-62" 
+                             data-description="OG Filename: OPEN111 (miso).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 62)">
+                            Open111(prod. Miso)
+                            <div class="song-description">OG Filename: OPEN111 (miso).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-63" 
+                             data-description="OG Filename: Rode The Rip$tick (p.SlekA).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 63)">
+                            Rode The Rip$tick(prod. Sleka)
+                            <div class="song-description">OG Filename: Rode The Rip$tick (p.SlekA).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-64" 
+                             data-description="OG Filename: Parked 1.m4a Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 64)">
+                            Parked(prod. ??)
+                            <div class="song-description">OG Filename: Parked 1.m4a Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-65" 
+                             data-description="OG Filename: watchu tryna say (xion).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 65)">
+                            Watchu Tryna Say(prod. Xionorion)
+                            <div class="song-description">OG Filename: watchu tryna say (xion).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-66" 
+                             data-description="OG Filename: wont stop hoe.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 66)">
+                            Wont Stop Hoe(prod. Xionorion)
+                            <div class="song-description">OG Filename: wont stop hoe.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-67" 
+                             data-description="OG Filename: Spraytan.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 67)">
+                            Spraytan(prod. ??)
+                            <div class="song-description">OG Filename: Spraytan.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-68" 
+                             data-description="OG Filename: N my pants.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 68)">
+                            N My Pants(prod. Filthygenes)
+                            <div class="song-description">OG Filename: N my pants.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-69" 
+                             data-description="OG Filename: Fuk it.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 69)">
+                            Fuk It(prod. ??)
+                            <div class="song-description">OG Filename: Fuk it.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-70" 
+                             data-description="OG Filename: set up semi prod nyli.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 70)">
+                            Set Up Semi(prod. Nyli)(Puceboi)
+                            <div class="song-description">OG Filename: set up semi prod nyli.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-71" 
+                             data-description="OG Filename: jtxpo x nettspend - flee prod yardi.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 71)">
+                            Flee(by Jtxpo) (prod. Yardi)
+                            <div class="song-description">OG Filename: jtxpo x nettspend - flee prod yardi.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-72" 
+                             data-description="OG Filename: Swervjn2.m4a.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 72)">
+                            Swervin [V1](prod. ??)
+                            <div class="song-description">OG Filename: Swervjn2.m4a.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-73" 
+                             data-description="OG Filename: Swervin3.m4a.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 73)">
+                            Swervin [V2](prod. ??)
+                            <div class="song-description">OG Filename: Swervin3.m4a.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-74" 
+                             data-description="OG Filename: bag prod nyli ＊open.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 74)">
+                            Bag(prod. Nyli)
+                            <div class="song-description">OG Filename: bag prod nyli ＊open.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-75" 
+                             data-description="OG Filename: caseygirls (cyberia).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 75)">
+                            Caseygirls(prod. Cyberia)
+                            <div class="song-description">OG Filename: caseygirls (cyberia).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-76" 
+                             data-description="OG Filename: New Wrist Prod Yurkiez N Occult.14 #NothinButNett.mp3 OG Filename: Patek (Yurkiez Occult.14).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 76)">
+                            Patek(prod. Yurkiez & Occult.14)(New Wrist)
+                            <div class="song-description">OG Filename: New Wrist Prod Yurkiez N Occult.14 #NothinButNett.mp3 OG Filename: Patek (Yurkiez Occult.14).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-77" 
+                             data-description="OG Filename: New Wrist Prod Yurkiez N Occult.14 #NothinButNett.mp3 OG Filename: Patek (Yurkiez Occult.14).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 77)">
+                            Patek(prod. Yurkiez & Occult.14)(New Wrist)
+                            <div class="song-description">OG Filename: New Wrist Prod Yurkiez N Occult.14 #NothinButNett.mp3 OG Filename: Patek (Yurkiez Occult.14).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-78" 
+                             data-description="OG Filename: last nerve (occult 14).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 78)">
+                            Last Nerve(prod. Occult.14)
+                            <div class="song-description">OG Filename: last nerve (occult 14).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-79" 
+                             data-description="OG Filename: net 2.wav.m4a Leaked on 12/9/23. This version is solo and open verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 79)">
+                            OG [V1](prod. Musa)
+                            <div class="song-description">OG Filename: net 2.wav.m4a Leaked on 12/9/23. This version is solo and open verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-80" 
+                             data-description="OG Filename: og w jtxpo prod musa.m4a Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 80)">
+                            OG [V2](feat. Jtxpo) (prod. Musa)
+                            <div class="song-description">OG Filename: og w jtxpo prod musa.m4a Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-81" 
+                             data-description="OG Filename: Nick open prod mack.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 81)">
+                            Nick Open(prod. Mack)
+                            <div class="song-description">OG Filename: Nick open prod mack.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-82" 
+                             data-description="OG Filename: it was my birthday turn up prod clay 10.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 82)">
+                            It Was My Birthday Turn Up(prod. Clay10)
+                            <div class="song-description">OG Filename: it was my birthday turn up prod clay 10.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-83" 
+                             data-description="OG Filename: breakn it down (northbest).m4a Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 83)">
+                            Breakn It Down(prod. Northbest)
+                            <div class="song-description">OG Filename: breakn it down (northbest).m4a Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-84" 
+                             data-description="OG Filename: Burn Bitch prod mag.m4a Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 84)">
+                            Burn Bitch(prod. Mag)
+                            <div class="song-description">OG Filename: Burn Bitch prod mag.m4a Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-85" 
+                             data-description="OG Filename: anything you want (reklus1ve n clay10).mp3 OG Filename: 23 (Reklus1ve &amp; Clay10).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 85)">
+                            Anything You Want(prod. Reklus1ve & Clay10)(23)
+                            <div class="song-description">OG Filename: anything you want (reklus1ve n clay10).mp3 OG Filename: 23 (Reklus1ve & Clay10).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-86" 
+                             data-description="OG Filename: anything you want (reklus1ve n clay10).mp3 OG Filename: 23 (Reklus1ve &amp; Clay10).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 86)">
+                            Anything You Want(prod. Reklus1ve & Clay10)(23)
+                            <div class="song-description">OG Filename: anything you want (reklus1ve n clay10).mp3 OG Filename: 23 (Reklus1ve & Clay10).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-87" 
+                             data-description="OG Filename: Care Bout What Prod Js.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 87)">
+                            Care Bout What(prod. Js)
+                            <div class="song-description">OG Filename: Care Bout What Prod Js.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-88" 
+                             data-description="OG Filename: Vest (Nyli + Tgwog + Occult).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 88)">
+                            Vest(prod. Nyli, Tgwog & Occult)
+                            <div class="song-description">OG Filename: Vest (Nyli + Tgwog + Occult).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-89" 
+                             data-description="OG Filename: Untitledzz.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 89)">
+                            Bd(prod. ??)
+                            <div class="song-description">OG Filename: Untitledzz.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-90" 
+                             data-description="OG Filename: Lap 1of2.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 90)">
+                            Lap 1of2(prod. ??)
+                            <div class="song-description">OG Filename: Lap 1of2.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-91" 
+                             data-description="OG Filename: Dwd2 unfinished.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 91)">
+                            Dwd2(prod. ??)
+                            <div class="song-description">OG Filename: Dwd2 unfinished.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-92" 
+                             data-description="OG Filename: DowndPM Prod. Ss3bby N Res ＊bonus＊.m4a Leaked on 12/9/23. Released to the proc"
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 92)">
+                            Downd PM(prod. Ss3bby & Res)
+                            <div class="song-description">OG Filename: DowndPM Prod. Ss3bby N Res ＊bonus＊.m4a Leaked on 12/9/23. Released to the proc</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-93" 
+                             data-description="OG Filename: Thanku.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 93)">
+                            Thanku(prod. ??)
+                            <div class="song-description">OG Filename: Thanku.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-94" 
+                             data-description="OG Filename: Voicemail 1.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 94)">
+                            Voicemail(prod. ??)
+                            <div class="song-description">OG Filename: Voicemail 1.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-95" 
+                             data-description="OG Filename: Open open.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 95)">
+                            Open Open(prod. ??)
+                            <div class="song-description">OG Filename: Open open.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-96" 
+                             data-description="OG Filename: In N Out (Prod. Egress1).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 96)">
+                            In N Out(prod. Egress1)
+                            <div class="song-description">OG Filename: In N Out (Prod. Egress1).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-97" 
+                             data-description="OG Filename: Ain Bout The Net W Sy Prod Reklusive.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 97)">
+                            Ain Bout The Net(by Syrealugly) (prod. Reklus1ve)
+                            <div class="song-description">OG Filename: Ain Bout The Net W Sy Prod Reklusive.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-98" 
+                             data-description="OG Filename: Gimme Minute.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 98)">
+                            Gimme Minute(prod. ??)
+                            <div class="song-description">OG Filename: Gimme Minute.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-99" 
+                             data-description="OG Filename: Time W Nivky (Mag).m4a Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 99)">
+                            Time(feat. Nivky) (prod. Mag)
+                            <div class="song-description">OG Filename: Time W Nivky (Mag).m4a Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-100" 
+                             data-description="OG Filename: Fafafa.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 100)">
+                            Fafafa(prod. ??)
+                            <div class="song-description">OG Filename: Fafafa.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-101" 
+                             data-description="OG Filename: Kutthroat face 2.mp3 Leaked on 12/9/23. Open verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 101)">
+                            Kutthroat Face(prod. ??)
+                            <div class="song-description">OG Filename: Kutthroat face 2.mp3 Leaked on 12/9/23. Open verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-102" 
+                             data-description="OG Filename: scooby doo spedd.wav.m4a Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 102)">
+                            Scooby Doo Spedd(by ??) (prod. ??)
+                            <div class="song-description">OG Filename: scooby doo spedd.wav.m4a Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-103" 
+                             data-description="OG Filename: Once Again (AnxientSoul).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 103)">
+                            Once Again(prod. AnxientSoul)
+                            <div class="song-description">OG Filename: Once Again (AnxientSoul).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-104" 
+                             data-description="OG Filename: you not raw w⧸@dully (infernal).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 104)">
+                            You Not Raw(by Dully) (prod. Infernal)
+                            <div class="song-description">OG Filename: you not raw w⧸@dully (infernal).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-105" 
+                             data-description="OG Filename: Hold dis.m4a.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 105)">
+                            Hold Dis(prod. ??)
+                            <div class="song-description">OG Filename: Hold dis.m4a.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-106" 
+                             data-description="OG Filename: nada ft. jtxpo.m4a Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 106)">
+                            Nada(feat. Jtxpo) (prod. ??)
+                            <div class="song-description">OG Filename: nada ft. jtxpo.m4a Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-107" 
+                             data-description="OG Filename: ghosts w⧸ zuro (st47ic).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 107)">
+                            Ghosts(feat. Zuro) (prod. St47tic)
+                            <div class="song-description">OG Filename: ghosts w⧸ zuro (st47ic).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-108" 
+                             data-description="OG Filename: diddy bop.mp3 Leaked on 12/9/23. Open verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 108)">
+                            Diddy Bop(prod. ??)
+                            <div class="song-description">OG Filename: diddy bop.mp3 Leaked on 12/9/23. Open verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-109" 
+                             data-description="OG Filename: Yea (Perk$hawty).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 109)">
+                            Yea(prod. Perk$hawty)
+                            <div class="song-description">OG Filename: Yea (Perk$hawty).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-110" 
+                             data-description="OG Filename: For Jae 12.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 110)">
+                            For Jae(by Starsaga) (prod. ??)
+                            <div class="song-description">OG Filename: For Jae 12.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-111" 
+                             data-description="OG Filename: Miscommunication (ft badkidmizu).mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 111)">
+                            Miscommunication(feat. Badkidmizu) (prod. ??)
+                            <div class="song-description">OG Filename: Miscommunication (ft badkidmizu).mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-112" 
+                             data-description="OG Filename: nettopenfor xav prodcranes.mp3 Leaked on 12/9/23. Open verse."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 112)">
+                            NettOpenForXav(prod. Cranes)
+                            <div class="song-description">OG Filename: nettopenfor xav prodcranes.mp3 Leaked on 12/9/23. Open verse.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-113" 
+                             data-description="OG Filename: FACT.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 113)">
+                            Fact(prod. Sammyboy)
+                            <div class="song-description">OG Filename: FACT.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-114" 
+                             data-description="OG Filename: Feva.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 114)">
+                            Feva(feat. ??) (prod. ??)
+                            <div class="song-description">OG Filename: Feva.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-115" 
+                             data-description="OG Filename: sad plu n me LAVISH.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 115)">
+                            Lavish(by Sad Plug) (prod. ??)
+                            <div class="song-description">OG Filename: sad plu n me LAVISH.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-116" 
+                             data-description="OG Filename: 2 glocks x sad plug.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 116)">
+                            2 Glocks(by Sad Plug) (prod. ??)
+                            <div class="song-description">OG Filename: 2 glocks x sad plug.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-117" 
+                             data-description="OG Filename: Syrealugly - Ain’t My Fuckimg Slime Ft Clay10 Dar Nettspend produced by. syrealugly.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 117)">
+                            Ain't My Fucking Slime(by Syrealugly feat. Clay10 & Dar) (prod. Syrealugly)
+                            <div class="song-description">OG Filename: Syrealugly - Ain’t My Fuckimg Slime Ft Clay10 Dar Nettspend produced by. syrealugly.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-118" 
+                             data-description="Leaked on 5/17/24."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 118)">
+                            Fuckin Up A Check(prod. ??)
+                            <div class="song-description">Leaked on 5/17/24.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-119" 
+                             data-description="HQ snippet leaked October 2023 to Nettspend&#39;s discord server."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 119)">
+                            Mad(prod. ??)
+                            <div class="song-description">HQ snippet leaked October 2023 to Nettspend's discord server.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-120" 
+                             data-description="Previewed to Nettspend&#39;s Instagram on 10/7/23 . HQ snippet leaked the same month to Nettspend&#39;s discord server. New LQ snippet surfaced in the &#34;We Not Like You&#34; MV BTS on 10/6/24 ."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 120)">
+                            Changed The Game(prod. ??)
+                            <div class="song-description">Previewed to Nettspend's Instagram on 10/7/23 . HQ snippet leaked the same month to Nettspend's discord server. New LQ snippet surfaced in the "We Not Like You" MV BTS on 10/6/24 .</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-121" 
+                             data-description="OG Filename: fat t🔒.mp3 Leaked on 12/9/23."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 121)">
+                            Fat T(prod. ??)
+                            <div class="song-description">OG Filename: fat t🔒.mp3 Leaked on 12/9/23.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pre-BAFK(October_01,_2022_-_May_26,_2023)-122" 
+                             data-description="Previewed to Nettspend&#39;s Instagram in 2023. This version had different lyrics, missing verse and different mixing."
+                             onclick="playSong(&quot;Pre-BAFK(October 01, 2022 - May 26, 2023)&quot;, 122)">
+                            Perc Soda [V1](prod. OK)
+                            <div class="song-description">Previewed to Nettspend's Instagram in 2023. This version had different lyrics, missing verse and different mixing.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-1">
+                <div class="era-header" onclick="toggleEra(1)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbyhv7KWpe5S8Z83vU31AxmQZRHSukdRkfNThPF7tVosqeOdP80vF-0PuHsGO6SZM2S5SJ-DahANfDoG__W16tFBVquVD-utbwkv_7uffE_XfBFT5r3_GQISYYoOfqatRbzqjVP4oi0MnxSFro=w683-h129" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">BAFK [V1](Oct 22, 2023 - Apr 11, 2024)</span>
+                    <span class="chevron" id="chevron-1">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-1">
+                    
+                        <div class="song" 
+                             id="song-BAFK_[V1](Oct_22,_2023_-_Apr_11,_2024)-0" 
+                             data-description="OG Filenam e: hotmodelsex prod zoot.mp3 Leaked on 12/9/23. This version has an open beat."
+                             onclick="playSong(&quot;BAFK [V1](Oct 22, 2023 - Apr 11, 2024)&quot;, 0)">
+                            Model Sex [V1](prod. Zoot)
+                            <div class="song-description">OG Filenam e: hotmodelsex prod zoot.mp3 Leaked on 12/9/23. This version has an open beat.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-BAFK_[V1](Oct_22,_2023_-_Apr_11,_2024)-1" 
+                             data-description="OG Filename: Model Sex Prod Natecxo.mp3 Leaked on 12/9/23. This version has a different beat and distorted mixing."
+                             onclick="playSong(&quot;BAFK [V1](Oct 22, 2023 - Apr 11, 2024)&quot;, 1)">
+                            Model Sex [V4](prod. Natecxo)
+                            <div class="song-description">OG Filename: Model Sex Prod Natecxo.mp3 Leaked on 12/9/23. This version has a different beat and distorted mixing.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-2">
+                <div class="era-header" onclick="toggleEra(2)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbJJyBQfeC5a5k5ZSIM51_yyf7sg4J9c_cdEWylegmspPCPH1YCSg4R1vrSkWHNHTiEMLfJib0SJHpC6fWSwIcMorfcBBZl6mHoz7FGk8xJhMHGRJ2qF4oa3m5K7LvX9iy5QHWNSR7cK267=w683-h129" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">BAFK [V2](Apr 11, 2024 - Dec 31, 2024)</span>
+                    <span class="chevron" id="chevron-2">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-2">
+                    
+                        <div class="song" 
+                             id="song-BAFK_[V2](Apr_11,_2024_-_Dec_31,_2024)-0" 
+                             data-description="Previsouly unheard song, leaked on 5/25/25"
+                             onclick="playSong(&quot;BAFK [V2](Apr 11, 2024 - Dec 31, 2024)&quot;, 0)">
+                            Vogue(prod. Ok)
+                            <div class="song-description">Previsouly unheard song, leaked on 5/25/25</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-BAFK_[V2](Apr_11,_2024_-_Dec_31,_2024)-1" 
+                             data-description="OG Filename: tour bus feat osama demov2-1.m4a Previewed on 4/17/24. HQ snippet leaked on 7/30/24. Leaked on 7/31/24."
+                             onclick="playSong(&quot;BAFK [V2](Apr 11, 2024 - Dec 31, 2024)&quot;, 1)">
+                            Tour Bus(feat. OsamaSon) (prod. Ok)
+                            <div class="song-description">OG Filename: tour bus feat osama demov2-1.m4a Previewed on 4/17/24. HQ snippet leaked on 7/30/24. Leaked on 7/31/24.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-BAFK_[V2](Apr_11,_2024_-_Dec_31,_2024)-2" 
+                             data-description="Previewed to Nettspend&#39;s Instagram on 5/16/24. Announced to a tracklist for Ian Connor&#39;s sickö soundz mixtape on 2/2/25. Leaked on 2/14/25 and Ok would post the song on his Soundcloud the same day and delete it a few hours later."
+                             onclick="playSong(&quot;BAFK [V2](Apr 11, 2024 - Dec 31, 2024)&quot;, 2)">
+                            Beebadooba(prod. Ok)(Feel Like Future/So Fried/Alive)
+                            <div class="song-description">Previewed to Nettspend's Instagram on 5/16/24. Announced to a tracklist for Ian Connor's sickö soundz mixtape on 2/2/25. Leaked on 2/14/25 and Ok would post the song on his Soundcloud the same day and delete it a few hours later.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-BAFK_[V2](Apr_11,_2024_-_Dec_31,_2024)-3" 
+                             data-description="Previewed by stunmic on an instagram live on 7/27/24 . HQ snippet leaked on 7/12/25."
+                             onclick="playSong(&quot;BAFK [V2](Apr 11, 2024 - Dec 31, 2024)&quot;, 3)">
+                            In Tha Rich(prod. ??)
+                            <div class="song-description">Previewed by stunmic on an instagram live on 7/27/24 . HQ snippet leaked on 7/12/25.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+    </div>
+    <!-- Spotify-style player with skip buttons -->
+    <div class="player">
+        <img id="player-cover" src=cover alt="cover" class="player-cover">
+        <div class="player-info">
+            <div id="player-title" class="player-title">Select a song</div>
+            <div class="player-controls">
+                <button id="prev-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="15,4 7,11 15,18"></polygon></svg>
+                </button>
+                <button id="play-btn" class="player-btn">
+                    <svg id="play-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff"><polygon points="6,4 24,14 6,24"></polygon></svg>
+                    <svg id="pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff" style="display:none;"><rect x="6" y="4" width="5" height="20"></rect><rect x="17" y="4" width="5" height="20"></rect></svg>
+                </button>
+                <button id="next-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="7,4 15,11 7,18"></polygon></svg>
+                </button>
+                <span id="current-time" class="player-time">0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" value="0" min="0" max="100" step="1">
+                <span id="duration" class="player-time">0:00</span>
+            </div>
+        </div>
+        <audio id="player" preload="metadata"></audio>
+    </div>
+    <script>
+    // All eras and songs as a JS object
+    const eras = {"Pre-BAFK(October 01, 2022 - May 26, 2023)": [{"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "X Time(prod. ??)", "description": "OG Filename: X time.mp3 Leaked on 12/9/23.", "file_id": "a9b4a9919341ef640d7feff84205d0e6", "stream_url": "https://api.pillows.su/api/download/a9b4a9919341ef640d7feff84205d0e6", "download_url": "https://api.pillows.su/api/download/a9b4a9919341ef640d7feff84205d0e6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Up(prod. ??)", "description": "OG Filename: up \uff0aold so old \ud83d\ude02 \uff0areuploaded.mp3 Leaked on 12/9/23.", "file_id": "db3faf8b90254bb405379d6992fdb5bd", "stream_url": "https://api.pillows.su/api/download/db3faf8b90254bb405379d6992fdb5bd", "download_url": "https://api.pillows.su/api/download/db3faf8b90254bb405379d6992fdb5bd", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Lust(prod. ??)", "description": "OG Filename: Lust.mp3 Leaked on 12/9/23.", "file_id": "b7a6bcf9ecfcaf1e90a57c734a50fcc1", "stream_url": "https://api.pillows.su/api/download/b7a6bcf9ecfcaf1e90a57c734a50fcc1", "download_url": "https://api.pillows.su/api/download/b7a6bcf9ecfcaf1e90a57c734a50fcc1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Can't(prod. ??)", "description": "OG Filename: can\u2019t \uff1a(.mp3 Leaked on 12/9/23.", "file_id": "3041a3d81b4f24443faf133c33041898", "stream_url": "https://api.pillows.su/api/download/3041a3d81b4f24443faf133c33041898", "download_url": "https://api.pillows.su/api/download/3041a3d81b4f24443faf133c33041898", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Thisiskindanotbutisnotbutiswhyihatemymusic(prod. ??)", "description": "OG Filename: Thisiskindanotbutisnotbutiswhyihatemymusic.mp3 Leaked on 12/9/23.", "file_id": "c04c9412b68eefac1ec442f0d60b7ace", "stream_url": "https://api.pillows.su/api/download/c04c9412b68eefac1ec442f0d60b7ace", "download_url": "https://api.pillows.su/api/download/c04c9412b68eefac1ec442f0d60b7ace", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Wokstar(prod. ??)", "description": "OG Filename: Wokstar.mp3 Leaked on 12/9/23.", "file_id": "06950c540fc174e188455c7101d7c0fa", "stream_url": "https://api.pillows.su/api/download/06950c540fc174e188455c7101d7c0fa", "download_url": "https://api.pillows.su/api/download/06950c540fc174e188455c7101d7c0fa", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Wtf(feat. Badkidmizu) (prod. ??)", "description": "OG Filename: GUNNEX X BADKIDMIZU - WTF.mp3 Leaked on 12/9/23.", "file_id": "32dcb98c8ad00cc4b362d8e6d5f491d5", "stream_url": "https://api.pillows.su/api/download/32dcb98c8ad00cc4b362d8e6d5f491d5", "download_url": "https://api.pillows.su/api/download/32dcb98c8ad00cc4b362d8e6d5f491d5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Kickin Doors(feat. $adplug & Badkidmizu) (prod. Curtiz57)", "description": "OG Filename: GUNNEX + $ADPLUG + BADKIDMIZU - KICKIN DOORS (prod. Curtiz57.m4a Leaked on 12/9/23.", "file_id": "0a94d01406dfc4fd4e9409395ad3d050", "stream_url": "https://api.pillows.su/api/download/0a94d01406dfc4fd4e9409395ad3d050", "download_url": "https://api.pillows.su/api/download/0a94d01406dfc4fd4e9409395ad3d050", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Beamerrr [V1](prod. Tenkay & $harpboi)", "description": "OG Filename: me prod tenkay.m4a Leaked on 12/9/23. This version is normal speed.", "file_id": "e0d7034244e2f57aeef7f9cde123fa7f", "stream_url": "https://api.pillows.su/api/download/e0d7034244e2f57aeef7f9cde123fa7f", "download_url": "https://api.pillows.su/api/download/e0d7034244e2f57aeef7f9cde123fa7f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Tekken Remix [V1](prod. Nyli & Enchant)", "description": "OG Filename: U stuck bru.mp3 Leaked on 12/9/23. This version lets the beat run.", "file_id": "1cb68f55ec538622b711f03384cc5461", "stream_url": "https://api.pillows.su/api/download/1cb68f55ec538622b711f03384cc5461", "download_url": "https://api.pillows.su/api/download/1cb68f55ec538622b711f03384cc5461", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Thrill [V1](prod. Mag)", "description": "OG Filename: gg.mp3 Leaked on 12/9/23. This version has a different verse.", "file_id": "fca28edc91542bb9b0dc3fc42848e929", "stream_url": "https://api.pillows.su/api/download/fca28edc91542bb9b0dc3fc42848e929", "download_url": "https://api.pillows.su/api/download/fca28edc91542bb9b0dc3fc42848e929", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "I'm Just A Teen [V1](prod. ss3bby)", "description": "OG Filename: im just a teen (ss3bby).wav Leaked on 12/9/23. This version is solo and normal speed.", "file_id": "fca28edc91542bb9b0dc3fc42848e929", "stream_url": "https://api.pillows.su/api/download/fca28edc91542bb9b0dc3fc42848e929", "download_url": "https://api.pillows.su/api/download/fca28edc91542bb9b0dc3fc42848e929", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "I'm Just A Teen [V2](prod. ss3bby)", "description": "OG Filename: Go Up.m4a OG Filename: (Ss3bby).m4a Leaked on 12/9/23. This version is solo and repeats at the end in various speeds.", "file_id": "6da41fc8e3f9bdcdbb002abfc5a0a740", "stream_url": "https://api.pillows.su/api/download/6da41fc8e3f9bdcdbb002abfc5a0a740", "download_url": "https://api.pillows.su/api/download/6da41fc8e3f9bdcdbb002abfc5a0a740", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "I'm Just A Teen [V2](prod. ss3bby)", "description": "OG Filename: Go Up.m4a OG Filename: (Ss3bby).m4a Leaked on 12/9/23. This version is solo and repeats at the end in various speeds.", "file_id": "008da1651d0d9ca21041e41b984a5452", "stream_url": "https://api.pillows.su/api/download/008da1651d0d9ca21041e41b984a5452", "download_url": "https://api.pillows.su/api/download/008da1651d0d9ca21041e41b984a5452", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "I'm Just A Teen [V3](prod. ss3bby)", "description": "OG Filename: Words On Nett Yhap.mp3 Leaked on 12/9/23. This version has louder Yhapojj vocals.", "file_id": "1a80287cf8ae4babe9af9c55e8e7562a", "stream_url": "https://api.pillows.su/api/download/1a80287cf8ae4babe9af9c55e8e7562a", "download_url": "https://api.pillows.su/api/download/1a80287cf8ae4babe9af9c55e8e7562a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Section [V1](prod. Sophitia)", "description": "OG Filename: Text Me Prod. Sophitia.mp3 OG Filename: Turnin Uup Prod. Sophitia.mp3 Leaked on 12/9/23. This version is sped up and has a phaser on the outro.", "file_id": "6076f5602acf7b183590b2e265ebf6fe", "stream_url": "https://api.pillows.su/api/download/6076f5602acf7b183590b2e265ebf6fe", "download_url": "https://api.pillows.su/api/download/6076f5602acf7b183590b2e265ebf6fe", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Section [V1](prod. Sophitia)", "description": "OG Filename: Text Me Prod. Sophitia.mp3 OG Filename: Turnin Uup Prod. Sophitia.mp3 Leaked on 12/9/23. This version is sped up and has a phaser on the outro.", "file_id": "c2f96512b3a7d9672ad820331320c948", "stream_url": "https://api.pillows.su/api/download/c2f96512b3a7d9672ad820331320c948", "download_url": "https://api.pillows.su/api/download/c2f96512b3a7d9672ad820331320c948", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Good Night [V1](prod. Jj1da & Tapie)", "description": "OG Filename: My Name Nett (Jj1da).m4a Leaked on 12/9/23. This version is normal speed.", "file_id": "c0eb1f9b580d809be45bfa6ed4357827", "stream_url": "https://api.pillows.su/api/download/c0eb1f9b580d809be45bfa6ed4357827", "download_url": "https://api.pillows.su/api/download/c0eb1f9b580d809be45bfa6ed4357827", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Good Night [V2](prod. Jj1da & Tapie)", "description": "OG Filename: Rips N My Clip (jj1da).m4a Leaked on 12/9/23. This version is sped up.", "file_id": "980765507c0bbc0977430946066a2abc", "stream_url": "https://api.pillows.su/api/download/980765507c0bbc0977430946066a2abc", "download_url": "https://api.pillows.su/api/download/980765507c0bbc0977430946066a2abc", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "U Told Us Quit [V1](prod. 444jet & yk)", "description": "OG Filename: u told us quit (yk & 444jet).mp3 Leaked on 12/9/23. This version is solo and has an extra verse.", "file_id": "c20b7a90e11430ccd7d29c19812f94c5", "stream_url": "https://api.pillows.su/api/download/c20b7a90e11430ccd7d29c19812f94c5", "download_url": "https://api.pillows.su/api/download/c20b7a90e11430ccd7d29c19812f94c5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "U Gon Fall [V1](prod. Clay10 & Miso)", "description": "OG Filename: Cause Prod Clay 10 + Miso.m4a Leaked on 12/9/23. This version has different mixing.", "file_id": "653bb1f4e152e2216e61f13624c34df6", "stream_url": "https://api.pillows.su/api/download/653bb1f4e152e2216e61f13624c34df6", "download_url": "https://api.pillows.su/api/download/653bb1f4e152e2216e61f13624c34df6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Knocked Off [V2](by Nyli) (prod. Nyli)", "description": "OG Filename: @Nyli2b @NettSpend - Knocked Off (p.Nyli).mp3 Leaked on 12/9/23. This version is normal speed.", "file_id": "4d3a87323a2bd97c4fb3c94c3284cdfb", "stream_url": "https://api.pillows.su/api/download/4d3a87323a2bd97c4fb3c94c3284cdfb", "download_url": "https://api.pillows.su/api/download/4d3a87323a2bd97c4fb3c94c3284cdfb", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Out The Whip [V1](feat. Kasper Gem) (prod. Ss3bby & Cranes)", "description": "OG Filename: are we strangers w nett.mp3 Leaked on 12/9/23. This version is normal speed.", "file_id": "6fc0f36315552bfa68066289e87dcb98", "stream_url": "https://api.pillows.su/api/download/6fc0f36315552bfa68066289e87dcb98", "download_url": "https://api.pillows.su/api/download/6fc0f36315552bfa68066289e87dcb98", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Out The Whip [V2](feat. Kasper Gem) (prod. Ss3bby & Cranes)", "description": "OG Filename: strangers w\u29f8 kaspergem prod sebby n cranes.mp3 Leaked on 12/9/23. This version is normal speed with better mixing.", "file_id": "14b9b612971e29e81fcfc8f551c637f7", "stream_url": "https://api.pillows.su/api/download/14b9b612971e29e81fcfc8f551c637f7", "download_url": "https://api.pillows.su/api/download/14b9b612971e29e81fcfc8f551c637f7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Can't Miss [V1](prod. ??)", "description": "OG Filename: Yhap Pre.mp3 Leaked on 12/9/23. This version is solo and has earlier mixing.", "file_id": "470929668d751ab3e5182a1be8d36236", "stream_url": "https://api.pillows.su/api/download/470929668d751ab3e5182a1be8d36236", "download_url": "https://api.pillows.su/api/download/470929668d751ab3e5182a1be8d36236", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Can't Miss [V2](prod. ??)", "description": "OG Filename: Uuu.mp3 Leaked on 12/9/23. This version is solo with better mixing.", "file_id": "3534ce25734d63e1f44abff54b8f966d", "stream_url": "https://api.pillows.su/api/download/3534ce25734d63e1f44abff54b8f966d", "download_url": "https://api.pillows.su/api/download/3534ce25734d63e1f44abff54b8f966d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "On Me [V1](prod. Mag & Occult)", "description": "OG Filename: open55.mp3.mp3 Leaked on 12/9/23. This version is solo.", "file_id": "dd2ac4a6741e193b21ec6d141364fc45", "stream_url": "https://api.pillows.su/api/download/dd2ac4a6741e193b21ec6d141364fc45", "download_url": "https://api.pillows.su/api/download/dd2ac4a6741e193b21ec6d141364fc45", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "On Me [V2](prod. Mag & Occult)", "description": "OG Filename: YHAP OPEN .mp3.mp3 Leaked on 12/9/23. This version is solo with a few extra vocals.", "file_id": "cbbf4907191917b3c7fa7ec18a5a72d3", "stream_url": "https://api.pillows.su/api/download/cbbf4907191917b3c7fa7ec18a5a72d3", "download_url": "https://api.pillows.su/api/download/cbbf4907191917b3c7fa7ec18a5a72d3", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Taller [V1](prod. nyli, Occult.14 & \u200bexset)", "description": "OG Filename: open.mp3 Leaked on 12/9/23. This version is solo and open verse.", "file_id": "401c10db516ddbfacc89b3262289f2ea", "stream_url": "https://api.pillows.su/api/download/401c10db516ddbfacc89b3262289f2ea", "download_url": "https://api.pillows.su/api/download/401c10db516ddbfacc89b3262289f2ea", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Tell Yourself [V1](prod. \u200bFilthygenes & Sophitia)", "description": "OG Filename: Now Or Never (Sophitia & FilthyGenes).mp3 Leaked on 12/9/23. This version is normal speed.", "file_id": "def8b93c6e2148fc932a83b8c1237750", "stream_url": "https://api.pillows.su/api/download/def8b93c6e2148fc932a83b8c1237750", "download_url": "https://api.pillows.su/api/download/def8b93c6e2148fc932a83b8c1237750", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Skip That Text [V1](prod. Magnis & \u200bReklus1ve)", "description": "OG Filename: Static open.mp3.mp3 Leaked on 12/9/23. This version is solo and open verse.", "file_id": "338117048ac9e4c6bd861645eb05c998", "stream_url": "https://api.pillows.su/api/download/338117048ac9e4c6bd861645eb05c998", "download_url": "https://api.pillows.su/api/download/338117048ac9e4c6bd861645eb05c998", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Hollywood [V1](prod. Kyuro & Occult.14)", "description": "OG Filename: Hollywood (Kyuro N Occult14).mp3 Released on 6/16/23. This version has earlier mixing and has the full verse.", "file_id": "1733b86918a4438b7ec3119d295e52bc", "stream_url": "https://api.pillows.su/api/download/1733b86918a4438b7ec3119d295e52bc", "download_url": "https://api.pillows.su/api/download/1733b86918a4438b7ec3119d295e52bc", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "No Waiting [V1](prod. Ok)", "description": "OG Filename: 20+ prod ok 2.mp3 Leaked on 12/9/23. This version has earlier mixing different structuring.", "file_id": "776dfba6fb277424c8f2c6fd8a3eb65e", "stream_url": "https://api.pillows.su/api/download/776dfba6fb277424c8f2c6fd8a3eb65e", "download_url": "https://api.pillows.su/api/download/776dfba6fb277424c8f2c6fd8a3eb65e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Transferrr [V1](prod. Occult.14 & Night66)", "description": "OG Filename: heavens bed (occult+night66).mp3 Leaked on 12/9/23. This version is sped up along with other differences.", "file_id": "06a7d94d0dc783097dddad2523bc3e8a", "stream_url": "https://api.pillows.su/api/download/06a7d94d0dc783097dddad2523bc3e8a", "download_url": "https://api.pillows.su/api/download/06a7d94d0dc783097dddad2523bc3e8a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "HP(prod. Seepy)", "description": "OG Filename: hp prod seepy.mp3 Previewed to Netspend's Instagram in July 2023 . Leaked on 12/9/23. Open verse.", "file_id": "60e981654ff05ff1f535899107d91f51", "stream_url": "https://api.pillows.su/api/download/60e981654ff05ff1f535899107d91f51", "download_url": "https://api.pillows.su/api/download/60e981654ff05ff1f535899107d91f51", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "We Not Like You [V1](prod. Zoot)", "description": "OG Filename: funuhyuh pt2 demo 1.mp3 Leaked on an unknown date. This version has earlier mixing.", "file_id": "5354cc3106899c4a2fbabb96e1775a9d", "stream_url": "https://api.pillows.su/api/download/5354cc3106899c4a2fbabb96e1775a9d", "download_url": "https://api.pillows.su/api/download/5354cc3106899c4a2fbabb96e1775a9d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Netmix(prod. Ok)", "description": "OG Filename: netmix.m4a.mp3 OG Filename: UntitledAug2420231246AM.m4a.mp3 Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 12/9/23.", "file_id": "981ac7394254eb34532644eb99181d09", "stream_url": "https://api.pillows.su/api/download/981ac7394254eb34532644eb99181d09", "download_url": "https://api.pillows.su/api/download/981ac7394254eb34532644eb99181d09", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Netmix(prod. Ok)", "description": "OG Filename: netmix.m4a.mp3 OG Filename: UntitledAug2420231246AM.m4a.mp3 Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 12/9/23.", "file_id": "a523f73d5b419c5dcd6b035d9bcedd58", "stream_url": "https://api.pillows.su/api/download/a523f73d5b419c5dcd6b035d9bcedd58", "download_url": "https://api.pillows.su/api/download/a523f73d5b419c5dcd6b035d9bcedd58", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Pop Out [V1](prod. Twentywrld & Ss3bby)", "description": "OG Filename: demo.mp3 Previewed to DJ Rennessy's Instagram in August 2023 . Leaked on 12/8/23. This version is solo.", "file_id": "d9e6caa32107c7aac62b39cf11a279ff", "stream_url": "https://api.pillows.su/api/download/d9e6caa32107c7aac62b39cf11a279ff", "download_url": "https://api.pillows.su/api/download/d9e6caa32107c7aac62b39cf11a279ff", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Pop Out [V2](feat. Xaviersobased) (prod. Twentywrld & Ss3bby)", "description": "OG Filename: pop out w xaviersobased (ss3bby twentywrld).mp3 Leaked on 12/9/23. This version has Nettspend before Xaviersobased and different mixing.", "file_id": "b4bf825f4158db530149b91cd633d32e", "stream_url": "https://api.pillows.su/api/download/b4bf825f4158db530149b91cd633d32e", "download_url": "https://api.pillows.su/api/download/b4bf825f4158db530149b91cd633d32e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Pop Out [V3](by Xaviersobased) (prod. Twentywrld & Ss3bby)", "description": "OG Filename: Xaviersobased pop out w nettspend (twentywrld n ss3bby).mp3 Leaked on 12/9/23. This version features Xaviersobased.", "file_id": "efc734fb0822c9b86452d6a4bb0c9abf", "stream_url": "https://api.pillows.su/api/download/efc734fb0822c9b86452d6a4bb0c9abf", "download_url": "https://api.pillows.su/api/download/efc734fb0822c9b86452d6a4bb0c9abf", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "DrankDrankDrank [V1](prod. Zoot)", "description": "OG Filename: UntitledSep42023807PM.m4a.mp3 OG Filename: drank (zoot).mp3 Leaked on 12/9/23. This version has different mixing.", "file_id": "5651237d979e01bf0dc31ff6f35eac32", "stream_url": "https://api.pillows.su/api/download/5651237d979e01bf0dc31ff6f35eac32", "download_url": "https://api.pillows.su/api/download/5651237d979e01bf0dc31ff6f35eac32", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "DrankDrankDrank [V1](prod. Zoot)", "description": "OG Filename: UntitledSep42023807PM.m4a.mp3 OG Filename: drank (zoot).mp3 Leaked on 12/9/23. This version has different mixing.", "file_id": "7fbe8691fd3ffe32efdcdbc047dab925", "stream_url": "https://api.pillows.su/api/download/7fbe8691fd3ffe32efdcdbc047dab925", "download_url": "https://api.pillows.su/api/download/7fbe8691fd3ffe32efdcdbc047dab925", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Cops R Racist [V1](prod. 1o)", "description": "OG Filename: snipet.mp3 Leaked on 12/9/23. This version has a shorter, slightly different verse.", "file_id": "0ab199c294aa72b36474576744dc2d07", "stream_url": "https://api.pillows.su/api/download/0ab199c294aa72b36474576744dc2d07", "download_url": "https://api.pillows.su/api/download/0ab199c294aa72b36474576744dc2d07", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Cops R Racist [V2](prod. 1o)", "description": "OG Filename: oops.mp3 Leaked on 12/9/23. This version lets the beat play out.", "file_id": "9aab95056b45b361cfebda64a9597511", "stream_url": "https://api.pillows.su/api/download/9aab95056b45b361cfebda64a9597511", "download_url": "https://api.pillows.su/api/download/9aab95056b45b361cfebda64a9597511", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Cops R Racist [V4](prod. DJ Smokey)", "description": "OG Filename: netspend - ghost prod dj smokey.wav.m4a Leaked on 12/9/23. This version has a different beat and better mixing.", "file_id": "14517aa10b8b25937f1e55c882ab4c7a", "stream_url": "https://api.pillows.su/api/download/14517aa10b8b25937f1e55c882ab4c7a", "download_url": "https://api.pillows.su/api/download/14517aa10b8b25937f1e55c882ab4c7a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Most Hated [V1](prod. Zoot)", "description": "OG Filename: Nettspend - Track 2.mp3.mp3 Leaked on 12/9/23. This version has shittier mixing and a different verse.", "file_id": "c06953ea15c9dc1a22c87c19ea33f5b7", "stream_url": "https://api.pillows.su/api/download/c06953ea15c9dc1a22c87c19ea33f5b7", "download_url": "https://api.pillows.su/api/download/c06953ea15c9dc1a22c87c19ea33f5b7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Ca$h Cow [V1](prod. Xaviersobased)", "description": "OG Filename: stolo (xaviersobased).mp3 Leaked on 12/9/23. This version is normal speed.", "file_id": "7992b5b9e0adbce0e8068d96e33c9432", "stream_url": "https://api.pillows.su/api/download/7992b5b9e0adbce0e8068d96e33c9432", "download_url": "https://api.pillows.su/api/download/7992b5b9e0adbce0e8068d96e33c9432", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Rocks(prod. Xionorion & Cru)", "description": "OG Filename: rocks prod cru n xionorion.mp3 Previewed to Nettspend's Instagram on 9/16/23 . Leaked on 12/7/23.", "file_id": "a5b65a09070cfcd30d7c44cc6f3f9dba", "stream_url": "https://api.pillows.su/api/download/a5b65a09070cfcd30d7c44cc6f3f9dba", "download_url": "https://api.pillows.su/api/download/a5b65a09070cfcd30d7c44cc6f3f9dba", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Feelin Like D Rose(prod. Ok)", "description": "OG Filename: ok + nettspend 3.mp3.m4a Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 12/9/23.", "file_id": "88ee6205e1a524e44141fa55f9e0b9d0", "stream_url": "https://api.pillows.su/api/download/88ee6205e1a524e44141fa55f9e0b9d0", "download_url": "https://api.pillows.su/api/download/88ee6205e1a524e44141fa55f9e0b9d0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "4(prod. Ok)", "description": "OG Filename: ok + nett 4.m4a Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 12/9/23.", "file_id": "6d7636cb164f7840cde16cf1a931e208", "stream_url": "https://api.pillows.su/api/download/6d7636cb164f7840cde16cf1a931e208", "download_url": "https://api.pillows.su/api/download/6d7636cb164f7840cde16cf1a931e208", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Wake Up [V1](prod. Ok)", "description": "OG Filename: wake up prod ok.mp3 Open verse version of Wake Up that was sent to Osamason. Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 12/9/23.", "file_id": "224f6094c093813c4f3e534f709e10ac", "stream_url": "https://api.pillows.su/api/download/224f6094c093813c4f3e534f709e10ac", "download_url": "https://api.pillows.su/api/download/224f6094c093813c4f3e534f709e10ac", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "804 To 212 [V1](prod. Evilgiane & Eera)", "description": "OG Filename: rva 2 nyc.m4a Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 12/9/23. This version is solo & open verse.", "file_id": "6688ade15ef2ee4303248c01ce1f4003", "stream_url": "https://api.pillows.su/api/download/6688ade15ef2ee4303248c01ce1f4003", "download_url": "https://api.pillows.su/api/download/6688ade15ef2ee4303248c01ce1f4003", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "804 To 212 [V2](feat. Zuro) (prod. Evilgiane & Eera)", "description": "OG Filename: 804 to 212 ft. zuro prod evilgiane n eera.mp3 Leaked on 12/9/23. This version is features Zuro.", "file_id": "3ca6badf3c35e4be7b54febdef9c53ee", "stream_url": "https://api.pillows.su/api/download/3ca6badf3c35e4be7b54febdef9c53ee", "download_url": "https://api.pillows.su/api/download/3ca6badf3c35e4be7b54febdef9c53ee", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "12 Friends(prod. Harrison)", "description": "OG Filename: 12 friends prod harrison.m4a Previewed to Nettspend's Instagram on 9/24/23 . Leaked on 11/23/23.", "file_id": "cc853a2159dff3f43317ca6088722dc2", "stream_url": "https://api.pillows.su/api/download/cc853a2159dff3f43317ca6088722dc2", "download_url": "https://api.pillows.su/api/download/cc853a2159dff3f43317ca6088722dc2", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Spendin Before Yuh [V1](prod. Safeguard, Zoot & K1ro)", "description": "OG Filename: Watch Over Her prod safegaurd n zoot n k1ro.mp3 Leaked on 12/9/23. This version is normal speed.", "file_id": "a78073eecf3cc7bd99afd4f13b88f8f6", "stream_url": "https://api.pillows.su/api/download/a78073eecf3cc7bd99afd4f13b88f8f6", "download_url": "https://api.pillows.su/api/download/a78073eecf3cc7bd99afd4f13b88f8f6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Spendin Before Yuh [V2](prod. Safeguard, Zoot & K1ro)", "description": "OG Filename: spendin before yuh.mp3 Announced on 10/1/23 . Leaked on 12/9/23.", "file_id": "a78073eecf3cc7bd99afd4f13b88f8f6", "stream_url": "https://api.pillows.su/api/download/a78073eecf3cc7bd99afd4f13b88f8f6", "download_url": "https://api.pillows.su/api/download/a78073eecf3cc7bd99afd4f13b88f8f6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Deleted Song(prod. ??)", "description": "OG Filename: deleted song\ud83d\ude10.mp3 Leaked on 12/9/23.", "file_id": "635b2dc507b304c44685f25b7f3935d0", "stream_url": "https://api.pillows.su/api/download/635b2dc507b304c44685f25b7f3935d0", "download_url": "https://api.pillows.su/api/download/635b2dc507b304c44685f25b7f3935d0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Stg(feat. 19) (prod. ??)", "description": "OG Filename: stg wit 19.mp3 Leaked on 12/9/23.", "file_id": "db37ad917f557113b576f4a7f278571d", "stream_url": "https://api.pillows.su/api/download/db37ad917f557113b576f4a7f278571d", "download_url": "https://api.pillows.su/api/download/db37ad917f557113b576f4a7f278571d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Rolling Around Town(prod. ??)", "description": "OG Filename: rolling around town.mp3 Leaked on 12/9/23.", "file_id": "304d9c16acb02d8b58722fbb6bc43a03", "stream_url": "https://api.pillows.su/api/download/304d9c16acb02d8b58722fbb6bc43a03", "download_url": "https://api.pillows.su/api/download/304d9c16acb02d8b58722fbb6bc43a03", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Spyro Off Tha X(prod. ??)", "description": "OG Filename: Spyro off tha x.mp3 Leaked on 12/9/23.", "file_id": "cfd1719e6211467d1577ba9999d594b7", "stream_url": "https://api.pillows.su/api/download/cfd1719e6211467d1577ba9999d594b7", "download_url": "https://api.pillows.su/api/download/cfd1719e6211467d1577ba9999d594b7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "#WG Flipped Ya Car(prod. Nyli)", "description": "OG Filename: #WG FLIPPED YA CAR PROD NYLI.mp3 Leaked on 12/9/23.", "file_id": "8e932c9c48c4c78ff5042f2750879117", "stream_url": "https://api.pillows.su/api/download/8e932c9c48c4c78ff5042f2750879117", "download_url": "https://api.pillows.su/api/download/8e932c9c48c4c78ff5042f2750879117", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Open111(prod. Miso)", "description": "OG Filename: OPEN111 (miso).mp3 Leaked on 12/9/23.", "file_id": "3d00609d2426eae859f02cb749b48090", "stream_url": "https://api.pillows.su/api/download/3d00609d2426eae859f02cb749b48090", "download_url": "https://api.pillows.su/api/download/3d00609d2426eae859f02cb749b48090", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Rode The Rip$tick(prod. Sleka)", "description": "OG Filename: Rode The Rip$tick (p.SlekA).mp3 Leaked on 12/9/23.", "file_id": "05147afa81d43505dbecda04543e71d1", "stream_url": "https://api.pillows.su/api/download/05147afa81d43505dbecda04543e71d1", "download_url": "https://api.pillows.su/api/download/05147afa81d43505dbecda04543e71d1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Parked(prod. ??)", "description": "OG Filename: Parked 1.m4a Leaked on 12/9/23.", "file_id": "3044cc1e227fb4a12700c254908d87e9", "stream_url": "https://api.pillows.su/api/download/3044cc1e227fb4a12700c254908d87e9", "download_url": "https://api.pillows.su/api/download/3044cc1e227fb4a12700c254908d87e9", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Watchu Tryna Say(prod. Xionorion)", "description": "OG Filename: watchu tryna say (xion).mp3 Leaked on 12/9/23.", "file_id": "18be0a79d687954828315b231b1ea389", "stream_url": "https://api.pillows.su/api/download/18be0a79d687954828315b231b1ea389", "download_url": "https://api.pillows.su/api/download/18be0a79d687954828315b231b1ea389", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Wont Stop Hoe(prod. Xionorion)", "description": "OG Filename: wont stop hoe.mp3 Leaked on 12/9/23.", "file_id": "65e1a961d4877c86f4423b65151ad3f0", "stream_url": "https://api.pillows.su/api/download/65e1a961d4877c86f4423b65151ad3f0", "download_url": "https://api.pillows.su/api/download/65e1a961d4877c86f4423b65151ad3f0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Spraytan(prod. ??)", "description": "OG Filename: Spraytan.mp3 Leaked on 12/9/23.", "file_id": "4775a271a37a1f1e297dc27bbd22bb24", "stream_url": "https://api.pillows.su/api/download/4775a271a37a1f1e297dc27bbd22bb24", "download_url": "https://api.pillows.su/api/download/4775a271a37a1f1e297dc27bbd22bb24", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "N My Pants(prod. Filthygenes)", "description": "OG Filename: N my pants.mp3 Leaked on 12/9/23.", "file_id": "30e0c7077d487e241f14b978f0c861dd", "stream_url": "https://api.pillows.su/api/download/30e0c7077d487e241f14b978f0c861dd", "download_url": "https://api.pillows.su/api/download/30e0c7077d487e241f14b978f0c861dd", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Fuk It(prod. ??)", "description": "OG Filename: Fuk it.mp3 Leaked on 12/9/23.", "file_id": "54e4aaddd61bb1153b36de27a653db72", "stream_url": "https://api.pillows.su/api/download/54e4aaddd61bb1153b36de27a653db72", "download_url": "https://api.pillows.su/api/download/54e4aaddd61bb1153b36de27a653db72", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Set Up Semi(prod. Nyli)(Puceboi)", "description": "OG Filename: set up semi prod nyli.mp3 Leaked on 12/9/23.", "file_id": "daae40fc326b65b57a6555abf22307dc", "stream_url": "https://api.pillows.su/api/download/daae40fc326b65b57a6555abf22307dc", "download_url": "https://api.pillows.su/api/download/daae40fc326b65b57a6555abf22307dc", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Flee(by Jtxpo) (prod. Yardi)", "description": "OG Filename: jtxpo x nettspend - flee prod yardi.mp3 Leaked on 12/9/23.", "file_id": "9288b1b53ec99bec2dc856a17759273e", "stream_url": "https://api.pillows.su/api/download/9288b1b53ec99bec2dc856a17759273e", "download_url": "https://api.pillows.su/api/download/9288b1b53ec99bec2dc856a17759273e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Swervin [V1](prod. ??)", "description": "OG Filename: Swervjn2.m4a.mp3 Leaked on 12/9/23.", "file_id": "97746caf649eaa2d2c247b810b8ce654", "stream_url": "https://api.pillows.su/api/download/97746caf649eaa2d2c247b810b8ce654", "download_url": "https://api.pillows.su/api/download/97746caf649eaa2d2c247b810b8ce654", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Swervin [V2](prod. ??)", "description": "OG Filename: Swervin3.m4a.mp3 Leaked on 12/9/23.", "file_id": "2c93ef254188bc6d4c7588e9f44e9988", "stream_url": "https://api.pillows.su/api/download/2c93ef254188bc6d4c7588e9f44e9988", "download_url": "https://api.pillows.su/api/download/2c93ef254188bc6d4c7588e9f44e9988", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Bag(prod. Nyli)", "description": "OG Filename: bag prod nyli \uff0aopen.mp3 Leaked on 12/9/23.", "file_id": "f819c68b0a988eb34827dd5244a20dc5", "stream_url": "https://api.pillows.su/api/download/f819c68b0a988eb34827dd5244a20dc5", "download_url": "https://api.pillows.su/api/download/f819c68b0a988eb34827dd5244a20dc5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Caseygirls(prod. Cyberia)", "description": "OG Filename: caseygirls (cyberia).mp3 Leaked on 12/9/23.", "file_id": "60681935485107252f787132716c7064", "stream_url": "https://api.pillows.su/api/download/60681935485107252f787132716c7064", "download_url": "https://api.pillows.su/api/download/60681935485107252f787132716c7064", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Patek(prod. Yurkiez & Occult.14)(New Wrist)", "description": "OG Filename: New Wrist Prod Yurkiez N Occult.14 #NothinButNett.mp3 OG Filename: Patek (Yurkiez Occult.14).mp3 Leaked on 12/9/23.", "file_id": "02531ddfc1a23d3da00d76332d95888f", "stream_url": "https://api.pillows.su/api/download/02531ddfc1a23d3da00d76332d95888f", "download_url": "https://api.pillows.su/api/download/02531ddfc1a23d3da00d76332d95888f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Patek(prod. Yurkiez & Occult.14)(New Wrist)", "description": "OG Filename: New Wrist Prod Yurkiez N Occult.14 #NothinButNett.mp3 OG Filename: Patek (Yurkiez Occult.14).mp3 Leaked on 12/9/23.", "file_id": "3e5f5c22511d9ac3f2c43a70f79be5b6", "stream_url": "https://api.pillows.su/api/download/3e5f5c22511d9ac3f2c43a70f79be5b6", "download_url": "https://api.pillows.su/api/download/3e5f5c22511d9ac3f2c43a70f79be5b6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Last Nerve(prod. Occult.14)", "description": "OG Filename: last nerve (occult 14).mp3 Leaked on 12/9/23.", "file_id": "29bd45394a3716a50d7d7c51a125cd68", "stream_url": "https://api.pillows.su/api/download/29bd45394a3716a50d7d7c51a125cd68", "download_url": "https://api.pillows.su/api/download/29bd45394a3716a50d7d7c51a125cd68", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "OG [V1](prod. Musa)", "description": "OG Filename: net 2.wav.m4a Leaked on 12/9/23. This version is solo and open verse.", "file_id": "64879df1cc67ecff9b425fb094083705", "stream_url": "https://api.pillows.su/api/download/64879df1cc67ecff9b425fb094083705", "download_url": "https://api.pillows.su/api/download/64879df1cc67ecff9b425fb094083705", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "OG [V2](feat. Jtxpo) (prod. Musa)", "description": "OG Filename: og w jtxpo prod musa.m4a Leaked on 12/9/23.", "file_id": "8355bc805424ec2f2c2e8e1c60052568", "stream_url": "https://api.pillows.su/api/download/8355bc805424ec2f2c2e8e1c60052568", "download_url": "https://api.pillows.su/api/download/8355bc805424ec2f2c2e8e1c60052568", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Nick Open(prod. Mack)", "description": "OG Filename: Nick open prod mack.mp3 Leaked on 12/9/23.", "file_id": "a911887d9e877f105b530f26918d4533", "stream_url": "https://api.pillows.su/api/download/a911887d9e877f105b530f26918d4533", "download_url": "https://api.pillows.su/api/download/a911887d9e877f105b530f26918d4533", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "It Was My Birthday Turn Up(prod. Clay10)", "description": "OG Filename: it was my birthday turn up prod clay 10.mp3 Leaked on 12/9/23.", "file_id": "32510e22b5a351f284243afc1c30abf4", "stream_url": "https://api.pillows.su/api/download/32510e22b5a351f284243afc1c30abf4", "download_url": "https://api.pillows.su/api/download/32510e22b5a351f284243afc1c30abf4", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Breakn It Down(prod. Northbest)", "description": "OG Filename: breakn it down (northbest).m4a Leaked on 12/9/23.", "file_id": "dd00df93fdda383f2139025addf79549", "stream_url": "https://api.pillows.su/api/download/dd00df93fdda383f2139025addf79549", "download_url": "https://api.pillows.su/api/download/dd00df93fdda383f2139025addf79549", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Burn Bitch(prod. Mag)", "description": "OG Filename: Burn Bitch prod mag.m4a Leaked on 12/9/23.", "file_id": "96fb1bc2939de0c7be6eff37343f228b", "stream_url": "https://api.pillows.su/api/download/96fb1bc2939de0c7be6eff37343f228b", "download_url": "https://api.pillows.su/api/download/96fb1bc2939de0c7be6eff37343f228b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Anything You Want(prod. Reklus1ve & Clay10)(23)", "description": "OG Filename: anything you want (reklus1ve n clay10).mp3 OG Filename: 23 (Reklus1ve & Clay10).mp3 Leaked on 12/9/23.", "file_id": "c9b9a112a59c03945c10699d1ba8047a", "stream_url": "https://api.pillows.su/api/download/c9b9a112a59c03945c10699d1ba8047a", "download_url": "https://api.pillows.su/api/download/c9b9a112a59c03945c10699d1ba8047a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Anything You Want(prod. Reklus1ve & Clay10)(23)", "description": "OG Filename: anything you want (reklus1ve n clay10).mp3 OG Filename: 23 (Reklus1ve & Clay10).mp3 Leaked on 12/9/23.", "file_id": "7524d051b367ee5d72e1ca04e5f430c2", "stream_url": "https://api.pillows.su/api/download/7524d051b367ee5d72e1ca04e5f430c2", "download_url": "https://api.pillows.su/api/download/7524d051b367ee5d72e1ca04e5f430c2", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Care Bout What(prod. Js)", "description": "OG Filename: Care Bout What Prod Js.mp3 Leaked on 12/9/23.", "file_id": "31a533ced45a2627d44fdf8913a82e79", "stream_url": "https://api.pillows.su/api/download/31a533ced45a2627d44fdf8913a82e79", "download_url": "https://api.pillows.su/api/download/31a533ced45a2627d44fdf8913a82e79", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Vest(prod. Nyli, Tgwog & Occult)", "description": "OG Filename: Vest (Nyli + Tgwog + Occult).mp3 Leaked on 12/9/23.", "file_id": "d41e13c0c826a918974e07a9835da8d4", "stream_url": "https://api.pillows.su/api/download/d41e13c0c826a918974e07a9835da8d4", "download_url": "https://api.pillows.su/api/download/d41e13c0c826a918974e07a9835da8d4", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Bd(prod. ??)", "description": "OG Filename: Untitledzz.mp3 Leaked on 12/9/23.", "file_id": "812134f3ff1c5e29494581e7aa70bd88", "stream_url": "https://api.pillows.su/api/download/812134f3ff1c5e29494581e7aa70bd88", "download_url": "https://api.pillows.su/api/download/812134f3ff1c5e29494581e7aa70bd88", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Lap 1of2(prod. ??)", "description": "OG Filename: Lap 1of2.mp3 Leaked on 12/9/23.", "file_id": "ee4e6872dc0bbe3a481404ac2d8444ea", "stream_url": "https://api.pillows.su/api/download/ee4e6872dc0bbe3a481404ac2d8444ea", "download_url": "https://api.pillows.su/api/download/ee4e6872dc0bbe3a481404ac2d8444ea", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Dwd2(prod. ??)", "description": "OG Filename: Dwd2 unfinished.mp3 Leaked on 12/9/23.", "file_id": "73f44e6d1e1dd6f368254273a7d7c2aa", "stream_url": "https://api.pillows.su/api/download/73f44e6d1e1dd6f368254273a7d7c2aa", "download_url": "https://api.pillows.su/api/download/73f44e6d1e1dd6f368254273a7d7c2aa", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Downd PM(prod. Ss3bby & Res)", "description": "OG Filename: DowndPM Prod. Ss3bby N Res \uff0abonus\uff0a.m4a Leaked on 12/9/23. Released to the proc", "file_id": "9feeade6ef374f392495f569f023ee43", "stream_url": "https://api.pillows.su/api/download/9feeade6ef374f392495f569f023ee43", "download_url": "https://api.pillows.su/api/download/9feeade6ef374f392495f569f023ee43", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Thanku(prod. ??)", "description": "OG Filename: Thanku.mp3 Leaked on 12/9/23.", "file_id": "da40b935403cca71f80c9d862b8593a8", "stream_url": "https://api.pillows.su/api/download/da40b935403cca71f80c9d862b8593a8", "download_url": "https://api.pillows.su/api/download/da40b935403cca71f80c9d862b8593a8", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Voicemail(prod. ??)", "description": "OG Filename: Voicemail 1.mp3 Leaked on 12/9/23.", "file_id": "5d672cfdb3a0115734fb047714f4865a", "stream_url": "https://api.pillows.su/api/download/5d672cfdb3a0115734fb047714f4865a", "download_url": "https://api.pillows.su/api/download/5d672cfdb3a0115734fb047714f4865a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Open Open(prod. ??)", "description": "OG Filename: Open open.mp3 Leaked on 12/9/23.", "file_id": "84f9200dc6652dd5a1e8d19e60181ce6", "stream_url": "https://api.pillows.su/api/download/84f9200dc6652dd5a1e8d19e60181ce6", "download_url": "https://api.pillows.su/api/download/84f9200dc6652dd5a1e8d19e60181ce6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "In N Out(prod. Egress1)", "description": "OG Filename: In N Out (Prod. Egress1).mp3 Leaked on 12/9/23.", "file_id": "3dcb7655d7b72df4e565f74125890ff6", "stream_url": "https://api.pillows.su/api/download/3dcb7655d7b72df4e565f74125890ff6", "download_url": "https://api.pillows.su/api/download/3dcb7655d7b72df4e565f74125890ff6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Ain Bout The Net(by Syrealugly) (prod. Reklus1ve)", "description": "OG Filename: Ain Bout The Net W Sy Prod Reklusive.mp3 Leaked on 12/9/23.", "file_id": "9b7382efe99541c3918eeeda228bbb0f", "stream_url": "https://api.pillows.su/api/download/9b7382efe99541c3918eeeda228bbb0f", "download_url": "https://api.pillows.su/api/download/9b7382efe99541c3918eeeda228bbb0f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Gimme Minute(prod. ??)", "description": "OG Filename: Gimme Minute.mp3 Leaked on 12/9/23.", "file_id": "a1646b7f868127ea7a51b86ab09a1526", "stream_url": "https://api.pillows.su/api/download/a1646b7f868127ea7a51b86ab09a1526", "download_url": "https://api.pillows.su/api/download/a1646b7f868127ea7a51b86ab09a1526", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Time(feat. Nivky) (prod. Mag)", "description": "OG Filename: Time W Nivky (Mag).m4a Leaked on 12/9/23.", "file_id": "359600e34541773d8b14fb0bb4c71318", "stream_url": "https://api.pillows.su/api/download/359600e34541773d8b14fb0bb4c71318", "download_url": "https://api.pillows.su/api/download/359600e34541773d8b14fb0bb4c71318", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Fafafa(prod. ??)", "description": "OG Filename: Fafafa.mp3 Leaked on 12/9/23.", "file_id": "ab524fb9316abcc76f544d9aeb148a81", "stream_url": "https://api.pillows.su/api/download/ab524fb9316abcc76f544d9aeb148a81", "download_url": "https://api.pillows.su/api/download/ab524fb9316abcc76f544d9aeb148a81", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Kutthroat Face(prod. ??)", "description": "OG Filename: Kutthroat face 2.mp3 Leaked on 12/9/23. Open verse.", "file_id": "7e47568b5760e6cccc8a6c3a16da93f1", "stream_url": "https://api.pillows.su/api/download/7e47568b5760e6cccc8a6c3a16da93f1", "download_url": "https://api.pillows.su/api/download/7e47568b5760e6cccc8a6c3a16da93f1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Scooby Doo Spedd(by ??) (prod. ??)", "description": "OG Filename: scooby doo spedd.wav.m4a Leaked on 12/9/23.", "file_id": "511a6083e394a35424a1e8359cab6346", "stream_url": "https://api.pillows.su/api/download/511a6083e394a35424a1e8359cab6346", "download_url": "https://api.pillows.su/api/download/511a6083e394a35424a1e8359cab6346", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Once Again(prod. AnxientSoul)", "description": "OG Filename: Once Again (AnxientSoul).mp3 Leaked on 12/9/23.", "file_id": "f6638b65472f7f1af5cd6739ddcb1703", "stream_url": "https://api.pillows.su/api/download/f6638b65472f7f1af5cd6739ddcb1703", "download_url": "https://api.pillows.su/api/download/f6638b65472f7f1af5cd6739ddcb1703", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "You Not Raw(by Dully) (prod. Infernal)", "description": "OG Filename: you not raw w\u29f8@dully (infernal).mp3 Leaked on 12/9/23.", "file_id": "097481d86a2d81982aa78e6761f1644d", "stream_url": "https://api.pillows.su/api/download/097481d86a2d81982aa78e6761f1644d", "download_url": "https://api.pillows.su/api/download/097481d86a2d81982aa78e6761f1644d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Hold Dis(prod. ??)", "description": "OG Filename: Hold dis.m4a.mp3 Leaked on 12/9/23.", "file_id": "f176460251ad1d5195acb77560b7ca60", "stream_url": "https://api.pillows.su/api/download/f176460251ad1d5195acb77560b7ca60", "download_url": "https://api.pillows.su/api/download/f176460251ad1d5195acb77560b7ca60", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Nada(feat. Jtxpo) (prod. ??)", "description": "OG Filename: nada ft. jtxpo.m4a Leaked on 12/9/23.", "file_id": "39410e257dd452d4033998c5486d6c24", "stream_url": "https://api.pillows.su/api/download/39410e257dd452d4033998c5486d6c24", "download_url": "https://api.pillows.su/api/download/39410e257dd452d4033998c5486d6c24", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Ghosts(feat. Zuro) (prod. St47tic)", "description": "OG Filename: ghosts w\u29f8 zuro (st47ic).mp3 Leaked on 12/9/23.", "file_id": "39410e257dd452d4033998c5486d6c24", "stream_url": "https://api.pillows.su/api/download/39410e257dd452d4033998c5486d6c24", "download_url": "https://api.pillows.su/api/download/39410e257dd452d4033998c5486d6c24", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Diddy Bop(prod. ??)", "description": "OG Filename: diddy bop.mp3 Leaked on 12/9/23. Open verse.", "file_id": "bd61d4b841258d9cf949de7354c9e89b", "stream_url": "https://api.pillows.su/api/download/bd61d4b841258d9cf949de7354c9e89b", "download_url": "https://api.pillows.su/api/download/bd61d4b841258d9cf949de7354c9e89b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Yea(prod. Perk$hawty)", "description": "OG Filename: Yea (Perk$hawty).mp3 Leaked on 12/9/23.", "file_id": "bd61d4b841258d9cf949de7354c9e89b", "stream_url": "https://api.pillows.su/api/download/bd61d4b841258d9cf949de7354c9e89b", "download_url": "https://api.pillows.su/api/download/bd61d4b841258d9cf949de7354c9e89b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "For Jae(by Starsaga) (prod. ??)", "description": "OG Filename: For Jae 12.mp3 Leaked on 12/9/23.", "file_id": "2ba7cc68f9f9ab23f3ad514ab7955eec", "stream_url": "https://api.pillows.su/api/download/2ba7cc68f9f9ab23f3ad514ab7955eec", "download_url": "https://api.pillows.su/api/download/2ba7cc68f9f9ab23f3ad514ab7955eec", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Miscommunication(feat. Badkidmizu) (prod. ??)", "description": "OG Filename: Miscommunication (ft badkidmizu).mp3 Leaked on 12/9/23.", "file_id": "26516f868a33556c07236400b20dd052", "stream_url": "https://api.pillows.su/api/download/26516f868a33556c07236400b20dd052", "download_url": "https://api.pillows.su/api/download/26516f868a33556c07236400b20dd052", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "NettOpenForXav(prod. Cranes)", "description": "OG Filename: nettopenfor xav prodcranes.mp3 Leaked on 12/9/23. Open verse.", "file_id": "a2ecd4d862a59cfb1533a47cdca24b29", "stream_url": "https://api.pillows.su/api/download/a2ecd4d862a59cfb1533a47cdca24b29", "download_url": "https://api.pillows.su/api/download/a2ecd4d862a59cfb1533a47cdca24b29", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Fact(prod. Sammyboy)", "description": "OG Filename: FACT.mp3 Leaked on 12/9/23.", "file_id": "120cb95b2b0ea8f676fdfc1d70b83a0a", "stream_url": "https://api.pillows.su/api/download/120cb95b2b0ea8f676fdfc1d70b83a0a", "download_url": "https://api.pillows.su/api/download/120cb95b2b0ea8f676fdfc1d70b83a0a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Feva(feat. ??) (prod. ??)", "description": "OG Filename: Feva.mp3 Leaked on 12/9/23.", "file_id": "558de135cbf7e1f02360ebc1c4a56deb", "stream_url": "https://api.pillows.su/api/download/558de135cbf7e1f02360ebc1c4a56deb", "download_url": "https://api.pillows.su/api/download/558de135cbf7e1f02360ebc1c4a56deb", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Lavish(by Sad Plug) (prod. ??)", "description": "OG Filename: sad plu n me LAVISH.mp3 Leaked on 12/9/23.", "file_id": "d94d8a996e644b7032c8e55e681b3fe3", "stream_url": "https://api.pillows.su/api/download/d94d8a996e644b7032c8e55e681b3fe3", "download_url": "https://api.pillows.su/api/download/d94d8a996e644b7032c8e55e681b3fe3", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "2 Glocks(by Sad Plug) (prod. ??)", "description": "OG Filename: 2 glocks x sad plug.mp3 Leaked on 12/9/23.", "file_id": "1c7ccda74fdaeee7dc84ce36f0506ed5", "stream_url": "https://api.pillows.su/api/download/1c7ccda74fdaeee7dc84ce36f0506ed5", "download_url": "https://api.pillows.su/api/download/1c7ccda74fdaeee7dc84ce36f0506ed5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Ain't My Fucking Slime(by Syrealugly feat. Clay10 & Dar) (prod. Syrealugly)", "description": "OG Filename: Syrealugly - Ain\u2019t My Fuckimg Slime Ft Clay10 Dar Nettspend produced by. syrealugly.mp3 Leaked on 12/9/23.", "file_id": "324b9d5097fa122abc9d69c904bd75af", "stream_url": "https://api.pillows.su/api/download/324b9d5097fa122abc9d69c904bd75af", "download_url": "https://api.pillows.su/api/download/324b9d5097fa122abc9d69c904bd75af", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Fuckin Up A Check(prod. ??)", "description": "Leaked on 5/17/24.", "file_id": "0fd3221d51774c0ed91894de6f3d9e11", "stream_url": "https://api.pillows.su/api/download/0fd3221d51774c0ed91894de6f3d9e11", "download_url": "https://api.pillows.su/api/download/0fd3221d51774c0ed91894de6f3d9e11", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Mad(prod. ??)", "description": "HQ snippet leaked October 2023 to Nettspend's discord server.", "file_id": "c5aedf09f6512770182ced54963d87e4", "stream_url": "https://api.pillows.su/api/download/c5aedf09f6512770182ced54963d87e4", "download_url": "https://api.pillows.su/api/download/c5aedf09f6512770182ced54963d87e4", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Changed The Game(prod. ??)", "description": "Previewed to Nettspend's Instagram on 10/7/23 . HQ snippet leaked the same month to Nettspend's discord server. New LQ snippet surfaced in the \"We Not Like You\" MV BTS on 10/6/24 .", "file_id": "6695258deaac82fd1d64ea95f024fc44", "stream_url": "https://api.pillows.su/api/download/6695258deaac82fd1d64ea95f024fc44", "download_url": "https://api.pillows.su/api/download/6695258deaac82fd1d64ea95f024fc44", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Fat T(prod. ??)", "description": "OG Filename: fat t\ud83d\udd12.mp3 Leaked on 12/9/23.", "file_id": "1e37b1ecb9953305109b67a9a9b945bf", "stream_url": "https://api.pillows.su/api/download/1e37b1ecb9953305109b67a9a9b945bf", "download_url": "https://api.pillows.su/api/download/1e37b1ecb9953305109b67a9a9b945bf", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}, {"era": "Pre-BAFK(October 01, 2022 - May 26, 2023)", "name": "Perc Soda [V1](prod. OK)", "description": "Previewed to Nettspend's Instagram in 2023. This version had different lyrics, missing verse and different mixing.", "file_id": "669a67451c421622c5d1813528f7bb44", "stream_url": "https://api.pillows.su/api/download/669a67451c421622c5d1813528f7bb44", "download_url": "https://api.pillows.su/api/download/669a67451c421622c5d1813528f7bb44", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbYbPygOF-PXRG19g1e7HitFcisJmmJugTJiYYAkQpNkneM3j7cV3MEBKsujMvMN2Zgu5DERFU0BicatcLxb49nxYOp7tzNByH6L8BR5BdZ33CwsTX9FfxDGF7g3gDOH6pNlr-_W3ucexsh6Hw=w683-h129"}], "BAFK [V1](Oct 22, 2023 - Apr 11, 2024)": [{"era": "BAFK [V1](Oct 22, 2023 - Apr 11, 2024)", "name": "Model Sex [V1](prod. Zoot)", "description": "OG Filenam e: hotmodelsex prod zoot.mp3 Leaked on 12/9/23. This version has an open beat.", "file_id": "c626b3f0acd346eabd191eff94d7add8", "stream_url": "https://api.pillows.su/api/download/c626b3f0acd346eabd191eff94d7add8", "download_url": "https://api.pillows.su/api/download/c626b3f0acd346eabd191eff94d7add8", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbyhv7KWpe5S8Z83vU31AxmQZRHSukdRkfNThPF7tVosqeOdP80vF-0PuHsGO6SZM2S5SJ-DahANfDoG__W16tFBVquVD-utbwkv_7uffE_XfBFT5r3_GQISYYoOfqatRbzqjVP4oi0MnxSFro=w683-h129"}, {"era": "BAFK [V1](Oct 22, 2023 - Apr 11, 2024)", "name": "Model Sex [V4](prod. Natecxo)", "description": "OG Filename: Model Sex Prod Natecxo.mp3 Leaked on 12/9/23. This version has a different beat and distorted mixing.", "file_id": "c552b4faa2a6107173f16a581399829f", "stream_url": "https://api.pillows.su/api/download/c552b4faa2a6107173f16a581399829f", "download_url": "https://api.pillows.su/api/download/c552b4faa2a6107173f16a581399829f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbyhv7KWpe5S8Z83vU31AxmQZRHSukdRkfNThPF7tVosqeOdP80vF-0PuHsGO6SZM2S5SJ-DahANfDoG__W16tFBVquVD-utbwkv_7uffE_XfBFT5r3_GQISYYoOfqatRbzqjVP4oi0MnxSFro=w683-h129"}], "BAFK [V2](Apr 11, 2024 - Dec 31, 2024)": [{"era": "BAFK [V2](Apr 11, 2024 - Dec 31, 2024)", "name": "Vogue(prod. Ok)", "description": "Previsouly unheard song, leaked on 5/25/25", "file_id": "74910c9caf11bacbfdd02680109d9f81", "stream_url": "https://api.pillows.su/api/download/74910c9caf11bacbfdd02680109d9f81", "download_url": "https://api.pillows.su/api/download/74910c9caf11bacbfdd02680109d9f81", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJJyBQfeC5a5k5ZSIM51_yyf7sg4J9c_cdEWylegmspPCPH1YCSg4R1vrSkWHNHTiEMLfJib0SJHpC6fWSwIcMorfcBBZl6mHoz7FGk8xJhMHGRJ2qF4oa3m5K7LvX9iy5QHWNSR7cK267=w683-h129"}, {"era": "BAFK [V2](Apr 11, 2024 - Dec 31, 2024)", "name": "Tour Bus(feat. OsamaSon) (prod. Ok)", "description": "OG Filename: tour bus feat osama demov2-1.m4a Previewed on 4/17/24. HQ snippet leaked on 7/30/24. Leaked on 7/31/24.", "file_id": "809c46c3371efb1da9fb70709d2d2707", "stream_url": "https://api.pillows.su/api/download/809c46c3371efb1da9fb70709d2d2707", "download_url": "https://api.pillows.su/api/download/809c46c3371efb1da9fb70709d2d2707", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJJyBQfeC5a5k5ZSIM51_yyf7sg4J9c_cdEWylegmspPCPH1YCSg4R1vrSkWHNHTiEMLfJib0SJHpC6fWSwIcMorfcBBZl6mHoz7FGk8xJhMHGRJ2qF4oa3m5K7LvX9iy5QHWNSR7cK267=w683-h129"}, {"era": "BAFK [V2](Apr 11, 2024 - Dec 31, 2024)", "name": "Beebadooba(prod. Ok)(Feel Like Future/So Fried/Alive)", "description": "Previewed to Nettspend's Instagram on 5/16/24. Announced to a tracklist for Ian Connor's sick\u00f6 soundz mixtape on 2/2/25. Leaked on 2/14/25 and Ok would post the song on his Soundcloud the same day and delete it a few hours later.", "file_id": "27c5d21b9b17c0047781da5d1ac2e49b", "stream_url": "https://api.pillows.su/api/download/27c5d21b9b17c0047781da5d1ac2e49b", "download_url": "https://api.pillows.su/api/download/27c5d21b9b17c0047781da5d1ac2e49b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJJyBQfeC5a5k5ZSIM51_yyf7sg4J9c_cdEWylegmspPCPH1YCSg4R1vrSkWHNHTiEMLfJib0SJHpC6fWSwIcMorfcBBZl6mHoz7FGk8xJhMHGRJ2qF4oa3m5K7LvX9iy5QHWNSR7cK267=w683-h129"}, {"era": "BAFK [V2](Apr 11, 2024 - Dec 31, 2024)", "name": "In Tha Rich(prod. ??)", "description": "Previewed by stunmic on an instagram live on 7/27/24 . HQ snippet leaked on 7/12/25.", "file_id": "27447d9b12db40e624cd0a909ddb841d", "stream_url": "https://api.pillows.su/api/download/27447d9b12db40e624cd0a909ddb841d", "download_url": "https://api.pillows.su/api/download/27447d9b12db40e624cd0a909ddb841d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJJyBQfeC5a5k5ZSIM51_yyf7sg4J9c_cdEWylegmspPCPH1YCSg4R1vrSkWHNHTiEMLfJib0SJHpC6fWSwIcMorfcBBZl6mHoz7FGk8xJhMHGRJ2qF4oa3m5K7LvX9iy5QHWNSR7cK267=w683-h129"}]};
+    let currentEra = null;
+    let currentIndex = null;
+    let currentSong = null;
+    let playlist = [];
+
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const seekBar = document.getElementById('seek-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const playerTitle = document.getElementById('player-title');
+    const playerCover = document.getElementById('player-cover');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    function playSong(era, index) {
+        playlist = eras[era];
+        currentEra = era;
+        currentIndex = index;
+        loadAndPlayCurrent();
+    }
+
+    function highlightCurrentSong() {
+        document.querySelectorAll('.song.playing').forEach(el => el.classList.remove('playing'));
+        if (currentEra !== null && currentIndex !== null) {
+            const songId = `song-${currentEra.replace(/ /g, '_')}-${currentIndex}`;
+            const songEl = document.getElementById(songId);
+            if (songEl) songEl.classList.add('playing');
+        }
+    }
+
+    function loadAndPlayCurrent() {
+        if (!playlist || currentIndex === null || !playlist[currentIndex]) return;
+        const song = playlist[currentIndex];
+        player.src = song.stream_url;
+        playerTitle.textContent = song.name;
+        playerCover.src = song.cover || 'https://via.placeholder.com/60x60?text=No+Cover';
+        currentSong = song.stream_url;
+        player.play();
+        updateSkipButtons();
+        updateMediaSession(song);
+        highlightCurrentSong();
+    }
+
+    function updateSkipButtons() {
+        prevBtn.disabled = (currentIndex <= 0);
+        nextBtn.disabled = (currentIndex >= playlist.length - 1);
+    }
+
+    playBtn.onclick = function() {
+        if (player.src) {
+            if (player.paused) player.play();
+            else player.pause();
+        }
+    };
+
+    prevBtn.onclick = function() {
+        if (playlist && currentIndex > 0) {
+            currentIndex -= 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    nextBtn.onclick = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    player.onplay = function() {
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "";
+    };
+    player.onpause = function() {
+        playIcon.style.display = "";
+        pauseIcon.style.display = "none";
+    };
+
+    player.ontimeupdate = function() {
+        seekBar.value = player.currentTime || 0;
+        currentTimeEl.textContent = formatTime(player.currentTime);
+    };
+    player.onloadedmetadata = function() {
+        seekBar.max = player.duration || 0;
+        durationEl.textContent = formatTime(player.duration);
+    };
+    seekBar.oninput = function() {
+        player.currentTime = seekBar.value;
+    };
+
+    player.onended = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    function formatTime(sec) {
+        sec = Math.floor(sec);
+        return Math.floor(sec/60) + ":" + String(sec%60).padStart(2, '0');
+    }
+    function updateMediaSession(song) {
+        if ('mediaSession' in navigator && song) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.name,
+                artist: song.era,
+                album: "Unreleased",
+                artwork: [
+                    { src: song.cover || 'https://via.placeholder.com/90x90?text=No+Cover', sizes: '90x90', type: 'image/png' }
+                ]
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (playlist && currentIndex > 0) {
+                    currentIndex -= 1;
+                    loadAndPlayCurrent();
+                }
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                if (playlist && currentIndex < playlist.length - 1) {
+                    currentIndex += 1;
+                    loadAndPlayCurrent();
+                }
+            });
+        }
+    }
+
+    // --- Collapsible Eras ---
+    function toggleEra(idx) {
+        const songList = document.getElementById('song-list-' + idx);
+        const chevron = document.getElementById('chevron-' + idx);
+        const isOpen = songList.classList.contains('open');
+        if (isOpen) {
+            songList.classList.remove('open');
+            chevron.classList.remove('open');
+        } else {
+            songList.classList.add('open');
+            chevron.classList.add('open');
+        }
+    }
+    // Collapse all on load
+    window.addEventListener('DOMContentLoaded', function() {
+        
+            document.getElementById('song-list-0').classList.remove('open');
+            document.getElementById('chevron-0').classList.remove('open');
+        
+            document.getElementById('song-list-1').classList.remove('open');
+            document.getElementById('chevron-1').classList.remove('open');
+        
+            document.getElementById('song-list-2').classList.remove('open');
+            document.getElementById('chevron-2').classList.remove('open');
+        
+
+        // Tooltip logic
+        let tooltip = null;
+        let tooltipTimeout = null;
+
+        document.querySelectorAll('.song').forEach(song => {
+            song.addEventListener('mouseenter', function(e) {
+                const desc = song.getAttribute('data-description');
+                if (!desc) return;
+                if (tooltip) tooltip.remove();
+                tooltip = document.createElement('div');
+                tooltip.className = 'floating-song-description';
+                tooltip.innerHTML = desc;
+                document.body.appendChild(tooltip);
+
+                // Position tooltip
+                const rect = song.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 6) + 'px';
+                tooltip.style.minWidth = rect.width + 'px';
+
+                // Fade in
+                setTimeout(() => {
+                    if (tooltip) tooltip.classList.add('visible');
+                }, 10);
+            });
+            song.addEventListener('mouseleave', function(e) {
+                if (tooltip) {
+                    tooltip.classList.remove('visible');
+                    setTimeout(() => {
+                        if (tooltip) tooltip.remove();
+                        tooltip = null;
+                    }, 120);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

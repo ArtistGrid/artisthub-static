@@ -1,0 +1,963 @@
+<!doctype html>
+<html>
+<head>
+    <title>ArtistHub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #121212;
+            color: #fff;
+        }
+.container {
+    padding: 2rem;
+    padding-bottom: 120px; /* Add space for the player */
+}
+        .era {
+            margin-bottom: 2.2rem;
+            background: #181818;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px #0003;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .era-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2.1rem 2rem 2.1rem 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.18s;
+            border-bottom: 1px solid #232323;
+        }
+        .era-header:hover {
+            background: #232323;
+        }
+        .era-cover {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .era-title {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #1db954;
+            flex: 1;
+            letter-spacing: 0.01em;
+        }
+        .chevron {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(.4,2,.6,1), color 0.2s;
+            color: #aaa;
+        }
+        .chevron.open {
+            transform: rotate(90deg);
+            color: #1db954;
+        }
+        .song-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(.4,2,.6,1);
+            background: #181818;
+            padding: 0 2rem;
+        }
+        .song-list.open {
+            padding-bottom: 1.2rem;
+            max-height: 1000px;
+            transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
+        }
+        .song {
+            background: #222;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.18s, color 0.18s;
+            box-shadow: 0 1px 4px #0002;
+            margin-top: 0.7rem;
+        }
+        .song:first-child { margin-top: 1.2rem; }
+        .song:hover {
+            background: #1db95433;
+            color: #1db954;
+        }
+        /* Hide the inline description, we use JS tooltip instead */
+        .song .song-description {
+            display: none !important;
+        }
+        .song.playing {
+            background: #1db954 !important;
+            color: #181818 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 12px #1db95455;
+        }
+        .player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #181818;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #222;
+            box-shadow: 0 -2px 8px #0003;
+            z-index: 100;
+            gap: 1.5rem;
+        }
+        .player-cover {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .player-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .player-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.2rem;
+            text-shadow: 0 1px 2px #0008;
+        }
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .player-btn, .player-skip-btn {
+            background: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px #0003;
+            margin-right: 0.5rem;
+        }
+        .player-btn:hover, .player-skip-btn:hover {
+            background: #1ed760;
+        }
+        .player-skip-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        .player-time {
+            font-size: 0.98rem;
+            color: #ccc;
+            min-width: 40px;
+            text-align: right;
+        }
+        .seek-bar {
+            flex: 1;
+            accent-color: #1db954;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            margin: 0 0.5rem;
+        }
+        .seek-bar::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-ms-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar:focus {
+            outline: none;
+        }
+        /* Tooltip style */
+        .floating-song-description {
+            position: fixed;
+            background: #222;
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px #000b;
+            z-index: 99999;
+            min-width: 250px;
+            max-width: 400px;
+            font-size: 0.97rem;
+            white-space: pre-line;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+        .floating-song-description.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #1db954;">ArtistHub</h1>
+        
+            <div class="era" id="era-0">
+                <div class="era-header" onclick="toggleEra(0)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhb0UQzchncnwu7CtMCLT5r878VveXD0UjS9uMOMLvlRIhZUZ7I0rmKd37g5oO2NlEKrIix9dKnuEs61n_gr6hr5lJPQ2k6G8NFdgVzKyeXt1iME48yqIzxk9W7_SP-UmOhjCRuFKLuH-lBGphQ=w100-h100" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">JOJI [V1]</span>
+                    <span class="chevron" id="chevron-0">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-0">
+                    
+                        <div class="song" 
+                             id="song-JOJI_[V1]-0" 
+                             data-description="Remix of &#34;Sure Thing&#34; by Miguel that was previewed on Joji’s Vimeo account. The original sample comes from a now-deleted cover from a 13 year old girl. A more up-beat part of the outro was previewed on Vine sometime in 2015."
+                             onclick="playSong(&quot;JOJI [V1]&quot;, 0)">
+                            🏆 lov u(prod. Joji)aka. Sure Thing (Remix)
+                            <div class="song-description">Remix of "Sure Thing" by Miguel that was previewed on Joji’s Vimeo account. The original sample comes from a now-deleted cover from a 13 year old girl. A more up-beat part of the outro was previewed on Vine sometime in 2015.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-1">
+                <div class="era-header" onclick="toggleEra(1)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Chloe Burbank Volume 1 [V2]</span>
+                    <span class="chevron" id="chevron-1">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-1">
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-0" 
+                             data-description="Possible Filename: Amazonian Pet (demo) Exclusively released on WAV Media on October 27th, 2017, before its shut down on December 22nd, 2019. There’s a very loud and explicit voice recording at the end. It was privately uploaded onto Joji’s SoundCloud account on January 27th, 2016."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 0)">
+                            ⭐️ Amazonian Pet [V1](prod. Joji)aka. amazonian pet
+                            <div class="song-description">Possible Filename: Amazonian Pet (demo) Exclusively released on WAV Media on October 27th, 2017, before its shut down on December 22nd, 2019. There’s a very loud and explicit voice recording at the end. It was privately uploaded onto Joji’s SoundCloud account on January 27th, 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-1" 
+                             data-description="Slowed down version with a cut outro that was initially going to be released by Joji. It was privately uploaded onto Joji&#39;s SoundCloud account on January 27th, 2016."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 1)">
+                            amazonian pet [V2](prod. Joji)aka. Amazonian Pet
+                            <div class="song-description">Slowed down version with a cut outro that was initially going to be released by Joji. It was privately uploaded onto Joji's SoundCloud account on January 27th, 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-2" 
+                             data-description="A privated beat on Joji’s SoundCloud account, shown in a post on his Instagram. It was privately uploaded onto Joji&#39;s SoundCloud account on February 5th, 2016."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 2)">
+                            ✨ beat 4 rent [V1](prod. Joji)aka. Ears Bleed
+                            <div class="song-description">A privated beat on Joji’s SoundCloud account, shown in a post on his Instagram. It was privately uploaded onto Joji's SoundCloud account on February 5th, 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-3" 
+                             data-description="Released exclusively on WAV Media on October 27th, 2017, before it’s shut down on December 22nd, 2019. &#34;Diamonds&#34; was also a song title seen in Joji’s VICE interview."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 3)">
+                            ⭐️ diamondsonmydick [V2](prod. Joji)aka. Diamonds
+                            <div class="song-description">Released exclusively on WAV Media on October 27th, 2017, before it’s shut down on December 22nd, 2019. "Diamonds" was also a song title seen in Joji’s VICE interview.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-4" 
+                             data-description="OG Filename: Ears Bleed Bass TRAP ENHANCED - 2/5/16, 4.07 PM This version adds chain sounds and has different mixing compared to earlier versions. It was privately uploaded onto Joji&#39;s SoundCloud account on February 5th, 2016."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 4)">
+                            Ears Bleed [V2](prod. Joji)aka. beat 4 rent
+                            <div class="song-description">OG Filename: Ears Bleed Bass TRAP ENHANCED - 2/5/16, 4.07 PM This version adds chain sounds and has different mixing compared to earlier versions. It was privately uploaded onto Joji's SoundCloud account on February 5th, 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-5" 
+                             data-description="OG Filename: Ears Bleed KICK LOWERED - 2/5/16, 5.13 PM This version&#39;s only difference is different mixing compared to earlier versions. It was privately uploaded onto Joji&#39;s SoundCloud account on February 5th, 2016."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 5)">
+                            Ears Bleed [V3](prod. Joji)aka. beat 4 rent
+                            <div class="song-description">OG Filename: Ears Bleed KICK LOWERED - 2/5/16, 5.13 PM This version's only difference is different mixing compared to earlier versions. It was privately uploaded onto Joji's SoundCloud account on February 5th, 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-6" 
+                             data-description="OG Filename: Ears Bleed KICK LOWERED - 2/6/16, 8.29 PM This version has different mixing and an added harmony that was used in &#34;IDFLKMST&#34;. It was privately uploaded onto Joji&#39;s SoundCloud account on February 7th, 2016."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 6)">
+                            ✨ Ears Bleed [V4](prod. Joji)aka. beat 4 rent
+                            <div class="song-description">OG Filename: Ears Bleed KICK LOWERED - 2/6/16, 8.29 PM This version has different mixing and an added harmony that was used in "IDFLKMST". It was privately uploaded onto Joji's SoundCloud account on February 7th, 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-7" 
+                             data-description="OG Filename: int - 9/29/16, 12.58 AM A ukulele trap beat with an audio clip of Joji telling an intercom to shut the fuck up. It was privately uploaded onto Joji&#39;s SoundCloud account on September 29th, 2016."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 7)">
+                            im weird [V1](prod. Joji)aka. int
+                            <div class="song-description">OG Filename: int - 9/29/16, 12.58 AM A ukulele trap beat with an audio clip of Joji telling an intercom to shut the fuck up. It was privately uploaded onto Joji's SoundCloud account on September 29th, 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-8" 
+                             data-description="OG Filename: im weird 2 A ukulele trap beat with an audio clip of Joji telling an intercom to shut the fuck up. This version&#39;s only difference is different mixing compared to the previous version. It was privately uploaded onto Joji&#39;s SoundCloud account on October 1st, 2016."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 8)">
+                            im weird 2 [V2](prod. Joji)aka. int
+                            <div class="song-description">OG Filename: im weird 2 A ukulele trap beat with an audio clip of Joji telling an intercom to shut the fuck up. This version's only difference is different mixing compared to the previous version. It was privately uploaded onto Joji's SoundCloud account on October 1st, 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-9" 
+                             data-description="OG Filename: Miles Experiment2 - 5/3/16, 11.43 PM A once an unknown beat that was previewed on Joji’s Vine account sometime in 2016. This version has the same audio clip used in &#34;WORLD$TAR MONEY&#34; but pitched down. It was privately uploaded onto Joji&#39;s SoundCloud account on May 6th, 2016. Rumored to be one of the privated uploads from the anna gold YouTube channel."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 9)">
+                            ⭐️ Miles[V2](prod. Joji)aka. Miles Experiment2, Am I High? No*
+                            <div class="song-description">OG Filename: Miles Experiment2 - 5/3/16, 11.43 PM A once an unknown beat that was previewed on Joji’s Vine account sometime in 2016. This version has the same audio clip used in "WORLD$TAR MONEY" but pitched down. It was privately uploaded onto Joji's SoundCloud account on May 6th, 2016. Rumored to be one of the privated uploads from the anna gold YouTube channel.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-10" 
+                             data-description="Exclusively released on WAV Media on October 27th, 2017, before it’s shut down on December 22nd, 2019. Reuses elements from &#34;diamondsonmydick&#34; and &#34;rain on me&#34;."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 10)">
+                            ⭐️ nightmares of the invertebre(prod. Joji)aka. nightmares of the invertebrate*
+                            <div class="song-description">Exclusively released on WAV Media on October 27th, 2017, before it’s shut down on December 22nd, 2019. Reuses elements from "diamondsonmydick" and "rain on me".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-11" 
+                             data-description="OG Filename: Rajvi - 4/25/16, 11.45 PM An open verse demo with production from rei brown as seen in a Vine from Joji. It was also previewed in a clip with rei brown in jojivlogs 7 on August 6th, 2014. Thought to be for Green Echo, but it has Chloe Burbank cover art on SoundCloud. It was privately uploaded onto Joji&#39;s SoundCloud account on April 26th, 2016. Rumored to be one of the privated uploads from the anna gold YouTube channel."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 11)">
+                            ⭐️ Rajvi [V3](prod. Joji* & rei brown)
+                            <div class="song-description">OG Filename: Rajvi - 4/25/16, 11.45 PM An open verse demo with production from rei brown as seen in a Vine from Joji. It was also previewed in a clip with rei brown in jojivlogs 7 on August 6th, 2014. Thought to be for Green Echo, but it has Chloe Burbank cover art on SoundCloud. It was privately uploaded onto Joji's SoundCloud account on April 26th, 2016. Rumored to be one of the privated uploads from the anna gold YouTube channel.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-12" 
+                             data-description="OG Filename: 128a A scrapped part two to &#34;Antidote&#34; which also shares a line from &#34;rain on me&#34;. This version&#39;s only difference is different mixing compared to the later versions. It was privately uploaded onto Joji&#39;s SoundCloud account on August 26th, 2016."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 12)">
+                            128 [V1](prod. Joji)aka. Antidote Pt. 2, SAD TRAVIS PT. 2, Window Pt. 2
+                            <div class="song-description">OG Filename: 128a A scrapped part two to "Antidote" which also shares a line from "rain on me". This version's only difference is different mixing compared to the later versions. It was privately uploaded onto Joji's SoundCloud account on August 26th, 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-13" 
+                             data-description="OG Filename: SAD TRAVIS PT.2 - 8_26_16, 4.20 PM.mp3 A scrapped part two to &#34; Antidote &#34; which also shares a line from &#34; rain on me &#34; . This version&#39;s only difference is different mixing compared to the previous version. It was privately uploaded onto Joji&#39;s SoundCloud account on August 26th, 2016."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 13)">
+                            ⭐️ SAD TRAVIS PT. 2 [V2](prod. Joji)aka. 128, Antidote Pt. 2, Window Pt. 2
+                            <div class="song-description">OG Filename: SAD TRAVIS PT.2 - 8_26_16, 4.20 PM.mp3 A scrapped part two to " Antidote " which also shares a line from " rain on me " . This version's only difference is different mixing compared to the previous version. It was privately uploaded onto Joji's SoundCloud account on August 26th, 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Chloe_Burbank_Volume_1_[V2]-14" 
+                             data-description="OG Filename: SAD TRAVIS PT.2 - 8/27/16, 3.04 PM A scrapped part two to &#34; Antidote &#34; which also shares a line from &#34; rain on me &#34; . This version&#39;s only difference is a missing background vocal and different mixing. It was privately uploaded onto Joji&#39;s SoundCloud account on August 27th, 2016."
+                             onclick="playSong(&quot;Chloe Burbank Volume 1 [V2]&quot;, 14)">
+                            SAD TRAVIS PT. 2 [V3](prod. Joji)aka. 128, Antidote Pt. 2, Window Pt. 2
+                            <div class="song-description">OG Filename: SAD TRAVIS PT.2 - 8/27/16, 3.04 PM A scrapped part two to " Antidote " which also shares a line from " rain on me " . This version's only difference is a missing background vocal and different mixing. It was privately uploaded onto Joji's SoundCloud account on August 27th, 2016.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-2">
+                <div class="era-header" onclick="toggleEra(2)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhZyper_H5YVivIu4rB4hPzyMgBL4D5-X7spc9JqjffPxIWkhKvipYoq4_Cu53VqHPnmApBnNYcQrQY_I5I-QoHQL9SFtw_YM8JNLJEl3EN1jbCSRyGAuJDpfex1UsNY2B5mM7Pa_6sqJrN4VoY=w100-h99" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Pink Season</span>
+                    <span class="chevron" id="chevron-2">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-2">
+                    
+                        <div class="song" 
+                             id="song-Pink_Season-0" 
+                             data-description="OG Filename: Filthy Frank Theme.mp3 Theme Song for Filthy Frank by Holder. First used in the video &#34;I EAT ASS (JP101)&#34;."
+                             onclick="playSong(&quot;Pink Season&quot;, 0)">
+                            Filthy Frank Theme(prod. Holder)
+                            <div class="song-description">OG Filename: Filthy Frank Theme.mp3 Theme Song for Filthy Frank by Holder. First used in the video "I EAT ASS (JP101)".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Pink_Season-1" 
+                             data-description="OG Filename: James Sample4 Eq 1 SELL - 4/6/16, 4.33 PM An early version of the beat that was eventually used on &#34;Teriyaki God&#34;. It was privately uploaded onto Joji&#39;s SoundCloud account on April 6th, 2016."
+                             onclick="playSong(&quot;Pink Season&quot;, 1)">
+                            ⭐️ James [V4](prod. Pink Guy)aka. Teriyaki God
+                            <div class="song-description">OG Filename: James Sample4 Eq 1 SELL - 4/6/16, 4.33 PM An early version of the beat that was eventually used on "Teriyaki God". It was privately uploaded onto Joji's SoundCloud account on April 6th, 2016.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-3">
+                <div class="era-header" onclick="toggleEra(3)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbzZ3mMgIur1exw1j5VPYg4tbGt8McPUL7O812anIiGnaSv4Vg9coRFVabiGw4cXsNnefzjf7Ry9wy6Xd-31FVXGzrKSbb564uPcuSYg3xmKZ-X-BEoY06RsHpQEQYLu7xlW3DM8-Rz2PLDkrA=w100-h100" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">In Tongues</span>
+                    <span class="chevron" id="chevron-3">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-3">
+                    
+                        <div class="song" 
+                             id="song-In_Tongues-0" 
+                             data-description="Just an angry ass beat that goes hard for approximately 1 minute. Privately uploaded to Joji&#39;s SoundCloud account on May 31st, 2017."
+                             onclick="playSong(&quot;In Tongues&quot;, 0)">
+                            Angry Ass Beat Go Hard For 1 Minute(prod. Joji)
+                            <div class="song-description">Just an angry ass beat that goes hard for approximately 1 minute. Privately uploaded to Joji's SoundCloud account on May 31st, 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-In_Tongues-1" 
+                             data-description="OG Filename: waste my time.wav Demo without any differences besides mixing."
+                             onclick="playSong(&quot;In Tongues&quot;, 1)">
+                            I Don't Wanna Waste My Time [OG](prod. Joji)aka. IDWWMT, waste my time
+                            <div class="song-description">OG Filename: waste my time.wav Demo without any differences besides mixing.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-4">
+                <div class="era-header" onclick="toggleEra(4)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYJDWsVy38psBRYc4QysTjN1XUleZozev2-IyUA7nZX5dNyh-zVJGY8RTeUcHoydDW67Q2OnkOQu5bl2t7BQNLpPZFhk8RQInLMujz5GJRTMnUFVlV2svCMp-JJdIyr1jiSfMGjG36U2O2jQwg=w100-h100" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">BALLADS 1</span>
+                    <span class="chevron" id="chevron-4">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-4">
+                    
+                        <div class="song" 
+                             id="song-BALLADS_1-0" 
+                             data-description="OG Filename: Slow Dancing In The Dark - Joji - 24 bit - FR Master 3.wav Demo / master from the Director&#39;s Cut music video. The only difference is mixing. This is not the original file, this a rip from the video file that uses the original mix. It&#39;s a mix by Frankie Ramirez that didn&#39;t get used, much like his mix for &#34;Sanctuary&#34;."
+                             onclick="playSong(&quot;BALLADS 1&quot;, 0)">
+                            SLOW DANCING IN THE DARK [V3](prod. Joji & Patrick Wimberly)
+                            <div class="song-description">OG Filename: Slow Dancing In The Dark - Joji - 24 bit - FR Master 3.wav Demo / master from the Director's Cut music video. The only difference is mixing. This is not the original file, this a rip from the video file that uses the original mix. It's a mix by Frankie Ramirez that didn't get used, much like his mix for "Sanctuary".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-BALLADS_1-1" 
+                             data-description="OG Filename: TRIPPIE (ROUGH BEAT &amp; VOX) A very rough open verse demo that might have been intended for Trippie Redd. It was privately uploaded onto Joji&#39;s SoundCloud account on February 26th, 2018."
+                             onclick="playSong(&quot;BALLADS 1&quot;, 1)">
+                            ✨TRIPPIE(prod. Joji)
+                            <div class="song-description">OG Filename: TRIPPIE (ROUGH BEAT & VOX) A very rough open verse demo that might have been intended for Trippie Redd. It was privately uploaded onto Joji's SoundCloud account on February 26th, 2018.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-5">
+                <div class="era-header" onclick="toggleEra(5)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Nectar</span>
+                    <span class="chevron" id="chevron-5">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-5">
+                    
+                        <div class="song" 
+                             id="song-Nectar-0" 
+                             data-description="Instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 0)">
+                            Again
+                            <div class="song-description">Instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-1" 
+                             data-description="Instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 1)">
+                            Digging
+                            <div class="song-description">Instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-2" 
+                             data-description="Instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 2)">
+                            EnjoyTheView
+                            <div class="song-description">Instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-3" 
+                             data-description="An instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 3)">
+                            Hipster
+                            <div class="song-description">An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-4" 
+                             data-description="An instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 4)">
+                            House
+                            <div class="song-description">An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-5" 
+                             data-description="An instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 5)">
+                            Jazzhands
+                            <div class="song-description">An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-6" 
+                             data-description="An instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 6)">
+                            Joel1(prod. Joel Castillo*)
+                            <div class="song-description">An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-7" 
+                             data-description="An instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 7)">
+                            Joel2(prod. Joel Castillo*)
+                            <div class="song-description">An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-8" 
+                             data-description="An instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 8)">
+                            Joel3(prod. Joel Castillo*)
+                            <div class="song-description">An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-9" 
+                             data-description="An instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 9)">
+                            Joel4(prod. Joel Castillo*)
+                            <div class="song-description">An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-10" 
+                             data-description="An instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 10)">
+                            Joel5(prod. Joel Castillo*)
+                            <div class="song-description">An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-11" 
+                             data-description="An instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 11)">
+                            Mardi Graw
+                            <div class="song-description">An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-12" 
+                             data-description="An instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 12)">
+                            Medicine
+                            <div class="song-description">An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-13" 
+                             data-description="An instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 13)">
+                            NoBoundaries
+                            <div class="song-description">An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-14" 
+                             data-description="An instrumental that was sent to Joji in 2019. It&#39;s unknown if it was ever recorded on."
+                             onclick="playSong(&quot;Nectar&quot;, 14)">
+                            PrettyBoi
+                            <div class="song-description">An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-15" 
+                             data-description="OG Filename: Joji x Daniel Wilson - Like It (08.18.20) OG Filename: Like It - Joji - FR Rough Mix 1.1 - No Melodyne Two years after snippets for the song first leaked on October 11th, 2021, it was leaked after a successful groupbuy for $500. The price was originally $250, but someone was trying to vault the song for themselves to resell later on. The song features vocals from Daniel Wilson, who has wrote for a lot of songs for Joji such as &#34;Run&#34; and &#34;Sanctuary&#34;. The first verse was entirely written by Joji, and the night riding idea went on to be perfected with &#34;NIGHT RIDER&#34;. Joji please please please produce and write more if you&#39;re gonna continue making music..."
+                             onclick="playSong(&quot;Nectar&quot;, 15)">
+                            ⭐️ Like It [V2](prod. Digi)
+                            <div class="song-description">OG Filename: Joji x Daniel Wilson - Like It (08.18.20) OG Filename: Like It - Joji - FR Rough Mix 1.1 - No Melodyne Two years after snippets for the song first leaked on October 11th, 2021, it was leaked after a successful groupbuy for $500. The price was originally $250, but someone was trying to vault the song for themselves to resell later on. The song features vocals from Daniel Wilson, who has wrote for a lot of songs for Joji such as "Run" and "Sanctuary". The first verse was entirely written by Joji, and the night riding idea went on to be perfected with "NIGHT RIDER". Joji please please please produce and write more if you're gonna continue making music...</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-16" 
+                             data-description="OG Filename: run 1.4.1 LIM.mp3 Demo with more harmonies and a rougher mix on the chorus. Doesn&#39;t have the guitar solo at the end done by Jaco Caraco. Joji stated during The Extravaganza performance that he had no part in the guitar solo and that 88rising just sent it over to some guitarist, which may mean he wasn&#39;t trying to take credit for it, or that the version he wanted to put out originally didn&#39;t have it. Jaco did his thing though and it&#39;s a great addition to it."
+                             onclick="playSong(&quot;Nectar&quot;, 16)">
+                            ✨ Run [V4](prod. Joji & Justin Parker)
+                            <div class="song-description">OG Filename: run 1.4.1 LIM.mp3 Demo with more harmonies and a rougher mix on the chorus. Doesn't have the guitar solo at the end done by Jaco Caraco. Joji stated during The Extravaganza performance that he had no part in the guitar solo and that 88rising just sent it over to some guitarist, which may mean he wasn't trying to take credit for it, or that the version he wanted to put out originally didn't have it. Jaco did his thing though and it's a great addition to it.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-17" 
+                             data-description="OG Filename: run 1.4.2-LIM.mp3 Demo with more harmonies and a rougher mix on the chorus. Doesn&#39;t have the guitar solo at the end done by Jaco Caraco. Joji stated during The Extravaganza performance that he had no part in the guitar solo and that 88rising just sent it over to some guitarist, which may mean he wasn&#39;t trying to take credit for it, or that the version he wanted to put out originally didn&#39;t have it. Jaco did his thing though and it&#39;s a great addition to it. The only difference from this and the version above are just some mixing differences."
+                             onclick="playSong(&quot;Nectar&quot;, 17)">
+                            Run [V5](prod. Joji & Justin Parker)
+                            <div class="song-description">OG Filename: run 1.4.2-LIM.mp3 Demo with more harmonies and a rougher mix on the chorus. Doesn't have the guitar solo at the end done by Jaco Caraco. Joji stated during The Extravaganza performance that he had no part in the guitar solo and that 88rising just sent it over to some guitarist, which may mean he wasn't trying to take credit for it, or that the version he wanted to put out originally didn't have it. Jaco did his thing though and it's a great addition to it. The only difference from this and the version above are just some mixing differences.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-18" 
+                             data-description="OG Filename: Joji - Upgrade - Acoustic MX1 Bounce.mp3 Acoustic bounce without any drums. Sourced from DBREE so not entirely trustworthy."
+                             onclick="playSong(&quot;Nectar&quot;, 18)">
+                            Upgrade [V1](prod. Tobias Karlsson, Rickard Göransson, James Ghaleb)
+                            <div class="song-description">OG Filename: Joji - Upgrade - Acoustic MX1 Bounce.mp3 Acoustic bounce without any drums. Sourced from DBREE so not entirely trustworthy.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Nectar-19" 
+                             data-description="OG Filename: Joji - Upgrade - Acoustic MX2 Bounce.mp3 Acoustic bounce without any drums. Sourced from DBREE so not entirely trustworthy. This version adds back one of the kick tracks and it has a very slightly different mix."
+                             onclick="playSong(&quot;Nectar&quot;, 19)">
+                            Upgrade [V2](prod. Tobias Karlsson, Rickard Göransson, James Ghaleb)
+                            <div class="song-description">OG Filename: Joji - Upgrade - Acoustic MX2 Bounce.mp3 Acoustic bounce without any drums. Sourced from DBREE so not entirely trustworthy. This version adds back one of the kick tracks and it has a very slightly different mix.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-6">
+                <div class="era-header" onclick="toggleEra(6)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYe0efUjbd68q91buFmApOd5I7Z4PyhWGEfK8Sk8GpVne9tBGDqivONpu-SZTYwAZLHCz0Jhi1_5tnxY8NzgJBdgzhZdkA8aralAofg6GuQpeK2FOYFR-YyEhjsRPUofDo9C1ErkSlKfUctCiA=w100-h100" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">SMITHEREENS</span>
+                    <span class="chevron" id="chevron-6">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-6">
+                    
+                        <div class="song" 
+                             id="song-SMITHEREENS-0" 
+                             data-description="OG Filename: before the day is over 1.1 lim.mp3 Sam Dew&#39;s version of &#34;Before The Day Is Over&#34; before it was eventually sent to Joji. This version is more like the released version, but it still has a few lyric differences."
+                             onclick="playSong(&quot;SMITHEREENS&quot;, 0)">
+                            Sam Dew - Before The Day Is Over [V1](prod. Justin Parker)
+                            <div class="song-description">OG Filename: before the day is over 1.1 lim.mp3 Sam Dew's version of "Before The Day Is Over" before it was eventually sent to Joji. This version is more like the released version, but it still has a few lyric differences.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-SMITHEREENS-1" 
+                             data-description="OG Filename: before the day is over 2.3 joji stems M.mp3 Reference Track by Sam Dew for &#34;Before The Day Is Over&#34; with a few lyric differences. This version also has a completely different ending with added guitar and added kicks."
+                             onclick="playSong(&quot;SMITHEREENS&quot;, 1)">
+                            Before The Day Is Over [V4](ref. Sam Dew) (prod. Justin Parker)
+                            <div class="song-description">OG Filename: before the day is over 2.3 joji stems M.mp3 Reference Track by Sam Dew for "Before The Day Is Over" with a few lyric differences. This version also has a completely different ending with added guitar and added kicks.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-SMITHEREENS-2" 
+                             data-description="OG Filename: before the day is over 3.0 LIM joji.mp3 Reference Track by Sam Dew for &#34;Before The Day Is Over&#34; with a few lyric differences. This version has the main piano track muted for some reason, which sounds pretty bad."
+                             onclick="playSong(&quot;SMITHEREENS&quot;, 2)">
+                            Before The Day Is Over [V5](ref. Sam Dew) (prod. Justin Parker)
+                            <div class="song-description">OG Filename: before the day is over 3.0 LIM joji.mp3 Reference Track by Sam Dew for "Before The Day Is Over" with a few lyric differences. This version has the main piano track muted for some reason, which sounds pretty bad.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-SMITHEREENS-3" 
+                             data-description="OG Filename: Joji x Trey Campell - Lone Ranger 1.1 OG Filename (Metadata): Lone Ranger for Joji 1.1 Reference track for &#34;Lone Ranger&#34; by Trey Campbell for Joji. However, Joji only recorded a mumbled chorus before it was scrapped. Recorded sometime in 2021. It was intended to be groupbought for $500, but was cancelled and later on leaked."
+                             onclick="playSong(&quot;SMITHEREENS&quot;, 3)">
+                            Lone Ranger(ref. Trey Campbell)
+                            <div class="song-description">OG Filename: Joji x Trey Campell - Lone Ranger 1.1 OG Filename (Metadata): Lone Ranger for Joji 1.1 Reference track for "Lone Ranger" by Trey Campbell for Joji. However, Joji only recorded a mumbled chorus before it was scrapped. Recorded sometime in 2021. It was intended to be groupbought for $500, but was cancelled and later on leaked.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-SMITHEREENS-4" 
+                             data-description="OG Filename: Thune rgh2.1 102521.m4a Snippet first leaked by skyupsahl on January 14th, 2022, listing the song for sale on LEAKED.CX. Later leaked in full by toxic on LEAKED.CX. Possbly produced by Diplo."
+                             onclick="playSong(&quot;SMITHEREENS&quot;, 4)">
+                            Lil Yachty - Thune [V2](feat. Joji) (prod. Diplo*)
+                            <div class="song-description">OG Filename: Thune rgh2.1 102521.m4a Snippet first leaked by skyupsahl on January 14th, 2022, listing the song for sale on LEAKED.CX. Later leaked in full by toxic on LEAKED.CX. Possbly produced by Diplo.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-SMITHEREENS-5" 
+                             data-description="OG Filename: Joji feat.Yachty Thune alecNofx_01.m4a Leaked by toxic on LEAKED.CX. This version has a reference verse from Daylyt, a different intro and outro and different mixing. The filename says &#34;Joji feat.Yachty&#34; meaning it was maybe given to Joji, but I really doubt it. Possbly produced by Diplo."
+                             onclick="playSong(&quot;SMITHEREENS&quot;, 5)">
+                            ✨ Lil Yachty - Thune [V3](ref. Daylyt)(feat. Joji) (prod. Diplo*)
+                            <div class="song-description">OG Filename: Joji feat.Yachty Thune alecNofx_01.m4a Leaked by toxic on LEAKED.CX. This version has a reference verse from Daylyt, a different intro and outro and different mixing. The filename says "Joji feat.Yachty" meaning it was maybe given to Joji, but I really doubt it. Possbly produced by Diplo.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-SMITHEREENS-6" 
+                             data-description="OG Filename: Joji feat.Yachty Thune open3rdVerse.26 01.m4a Leaked by toxic on LEAKED.CX. This version has a shorter intro, an added chorus and drums, and Daylyt&#39;s verse was removed. The filename says &#34;Joji feat.Yachty&#34; meaning the song was maybe given to Joji, but I really doubt that. Possbly produced by Diplo."
+                             onclick="playSong(&quot;SMITHEREENS&quot;, 6)">
+                            Lil Yachty - Thune [V4](feat. Joji) (prod. Diplo*)
+                            <div class="song-description">OG Filename: Joji feat.Yachty Thune open3rdVerse.26 01.m4a Leaked by toxic on LEAKED.CX. This version has a shorter intro, an added chorus and drums, and Daylyt's verse was removed. The filename says "Joji feat.Yachty" meaning the song was maybe given to Joji, but I really doubt that. Possbly produced by Diplo.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-SMITHEREENS-7" 
+                             data-description="OG Filename: JOJI Untitled Untitled mumble demo from SMITHEREENS. Not one word is said throughout it but it has good production and a good flow. Possibly produced by Joel Little. And no, this is not a demo for Dissolve. I don&#39;t know why people keep saying this."
+                             onclick="playSong(&quot;SMITHEREENS&quot;, 7)">
+                            Untitled(prod. Joel Little*)aka. Joel Little Demo
+                            <div class="song-description">OG Filename: JOJI Untitled Untitled mumble demo from SMITHEREENS. Not one word is said throughout it but it has good production and a good flow. Possibly produced by Joel Little. And no, this is not a demo for Dissolve. I don't know why people keep saying this.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+    </div>
+    <!-- Spotify-style player with skip buttons -->
+    <div class="player">
+        <img id="player-cover" src=cover alt="cover" class="player-cover">
+        <div class="player-info">
+            <div id="player-title" class="player-title">Select a song</div>
+            <div class="player-controls">
+                <button id="prev-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="15,4 7,11 15,18"></polygon></svg>
+                </button>
+                <button id="play-btn" class="player-btn">
+                    <svg id="play-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff"><polygon points="6,4 24,14 6,24"></polygon></svg>
+                    <svg id="pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff" style="display:none;"><rect x="6" y="4" width="5" height="20"></rect><rect x="17" y="4" width="5" height="20"></rect></svg>
+                </button>
+                <button id="next-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="7,4 15,11 7,18"></polygon></svg>
+                </button>
+                <span id="current-time" class="player-time">0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" value="0" min="0" max="100" step="1">
+                <span id="duration" class="player-time">0:00</span>
+            </div>
+        </div>
+        <audio id="player" preload="metadata"></audio>
+    </div>
+    <script>
+    // All eras and songs as a JS object
+    const eras = {"JOJI [V1]": [{"era": "JOJI [V1]", "name": "\ud83c\udfc6 lov u(prod. Joji)aka. Sure Thing (Remix)", "description": "Remix of \"Sure Thing\" by Miguel that was previewed on Joji\u2019s Vimeo account. The original sample comes from a now-deleted cover from a 13 year old girl. A more up-beat part of the outro was previewed on Vine sometime in 2015.", "file_id": "30e2f08ae6acf08f8c179dad2110a348", "stream_url": "https://api.pillows.su/api/download/30e2f08ae6acf08f8c179dad2110a348", "download_url": "https://api.pillows.su/api/download/30e2f08ae6acf08f8c179dad2110a348", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb0UQzchncnwu7CtMCLT5r878VveXD0UjS9uMOMLvlRIhZUZ7I0rmKd37g5oO2NlEKrIix9dKnuEs61n_gr6hr5lJPQ2k6G8NFdgVzKyeXt1iME48yqIzxk9W7_SP-UmOhjCRuFKLuH-lBGphQ=w100-h100"}], "Chloe Burbank Volume 1 [V2]": [{"era": "Chloe Burbank Volume 1 [V2]", "name": "\u2b50\ufe0f Amazonian Pet [V1](prod. Joji)aka. amazonian pet", "description": "Possible Filename: Amazonian Pet (demo) Exclusively released on WAV Media on October 27th, 2017, before its shut down on December 22nd, 2019. There\u2019s a very loud and explicit voice recording at the end. It was privately uploaded onto Joji\u2019s SoundCloud account on January 27th, 2016.", "file_id": "6e56bea55094e8c0174a25d5fdda15ef", "stream_url": "https://api.pillows.su/api/download/6e56bea55094e8c0174a25d5fdda15ef", "download_url": "https://api.pillows.su/api/download/6e56bea55094e8c0174a25d5fdda15ef", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "amazonian pet [V2](prod. Joji)aka. Amazonian Pet", "description": "Slowed down version with a cut outro that was initially going to be released by Joji. It was privately uploaded onto Joji's SoundCloud account on January 27th, 2016.", "file_id": "196fdb74b8f5590da590dbd5c9535460", "stream_url": "https://api.pillows.su/api/download/196fdb74b8f5590da590dbd5c9535460", "download_url": "https://api.pillows.su/api/download/196fdb74b8f5590da590dbd5c9535460", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "\u2728 beat 4 rent [V1](prod. Joji)aka. Ears Bleed", "description": "A privated beat on Joji\u2019s SoundCloud account, shown in a post on his Instagram. It was privately uploaded onto Joji's SoundCloud account on February 5th, 2016.", "file_id": "112cfdeb800a0c29aa0ef69d1587a839", "stream_url": "https://api.pillows.su/api/download/112cfdeb800a0c29aa0ef69d1587a839", "download_url": "https://api.pillows.su/api/download/112cfdeb800a0c29aa0ef69d1587a839", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "\u2b50\ufe0f diamondsonmydick [V2](prod. Joji)aka. Diamonds", "description": "Released exclusively on WAV Media on October 27th, 2017, before it\u2019s shut down on December 22nd, 2019. \"Diamonds\" was also a song title seen in Joji\u2019s VICE interview.", "file_id": "d12f9d88a3cd377ab9c517c5165374ac", "stream_url": "https://api.pillows.su/api/download/d12f9d88a3cd377ab9c517c5165374ac", "download_url": "https://api.pillows.su/api/download/d12f9d88a3cd377ab9c517c5165374ac", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "Ears Bleed [V2](prod. Joji)aka. beat 4 rent", "description": "OG Filename: Ears Bleed Bass TRAP ENHANCED - 2/5/16, 4.07 PM This version adds chain sounds and has different mixing compared to earlier versions. It was privately uploaded onto Joji's SoundCloud account on February 5th, 2016.", "file_id": "afe92769ff79a8a17d5c64eb00180279", "stream_url": "https://api.pillows.su/api/download/afe92769ff79a8a17d5c64eb00180279", "download_url": "https://api.pillows.su/api/download/afe92769ff79a8a17d5c64eb00180279", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "Ears Bleed [V3](prod. Joji)aka. beat 4 rent", "description": "OG Filename: Ears Bleed KICK LOWERED - 2/5/16, 5.13 PM This version's only difference is different mixing compared to earlier versions. It was privately uploaded onto Joji's SoundCloud account on February 5th, 2016.", "file_id": "1d094f3569730d8bffd2754fa2ce6ffc", "stream_url": "https://api.pillows.su/api/download/1d094f3569730d8bffd2754fa2ce6ffc", "download_url": "https://api.pillows.su/api/download/1d094f3569730d8bffd2754fa2ce6ffc", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "\u2728 Ears Bleed [V4](prod. Joji)aka. beat 4 rent", "description": "OG Filename: Ears Bleed KICK LOWERED - 2/6/16, 8.29 PM This version has different mixing and an added harmony that was used in \"IDFLKMST\". It was privately uploaded onto Joji's SoundCloud account on February 7th, 2016.", "file_id": "0c704889c719d5ca6589895b26cd6812", "stream_url": "https://api.pillows.su/api/download/0c704889c719d5ca6589895b26cd6812", "download_url": "https://api.pillows.su/api/download/0c704889c719d5ca6589895b26cd6812", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "im weird [V1](prod. Joji)aka. int", "description": "OG Filename: int - 9/29/16, 12.58 AM A ukulele trap beat with an audio clip of Joji telling an intercom to shut the fuck up. It was privately uploaded onto Joji's SoundCloud account on September 29th, 2016.", "file_id": "0fd01b52ae98cb05d1603413755ef0db", "stream_url": "https://api.pillows.su/api/download/0fd01b52ae98cb05d1603413755ef0db", "download_url": "https://api.pillows.su/api/download/0fd01b52ae98cb05d1603413755ef0db", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "im weird 2 [V2](prod. Joji)aka. int", "description": "OG Filename: im weird 2 A ukulele trap beat with an audio clip of Joji telling an intercom to shut the fuck up. This version's only difference is different mixing compared to the previous version. It was privately uploaded onto Joji's SoundCloud account on October 1st, 2016.", "file_id": "f0aa6a8b7e99bebbaea31ec6fac5d30f", "stream_url": "https://api.pillows.su/api/download/f0aa6a8b7e99bebbaea31ec6fac5d30f", "download_url": "https://api.pillows.su/api/download/f0aa6a8b7e99bebbaea31ec6fac5d30f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "\u2b50\ufe0f Miles[V2](prod. Joji)aka. Miles Experiment2, Am I High? No*", "description": "OG Filename: Miles Experiment2 - 5/3/16, 11.43 PM A once an unknown beat that was previewed on Joji\u2019s Vine account sometime in 2016. This version has the same audio clip used in \"WORLD$TAR MONEY\" but pitched down. It was privately uploaded onto Joji's SoundCloud account on May 6th, 2016. Rumored to be one of the privated uploads from the anna gold YouTube channel.", "file_id": "addc510e615ee773c9295f15e43e52ae", "stream_url": "https://api.pillows.su/api/download/addc510e615ee773c9295f15e43e52ae", "download_url": "https://api.pillows.su/api/download/addc510e615ee773c9295f15e43e52ae", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "\u2b50\ufe0f nightmares of the invertebre(prod. Joji)aka. nightmares of the invertebrate*", "description": "Exclusively released on WAV Media on October 27th, 2017, before it\u2019s shut down on December 22nd, 2019. Reuses elements from \"diamondsonmydick\" and \"rain on me\".", "file_id": "26ae500186aa633c2d76c3da090f75af", "stream_url": "https://api.pillows.su/api/download/26ae500186aa633c2d76c3da090f75af", "download_url": "https://api.pillows.su/api/download/26ae500186aa633c2d76c3da090f75af", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "\u2b50\ufe0f Rajvi [V3](prod. Joji* & rei brown)", "description": "OG Filename: Rajvi - 4/25/16, 11.45 PM An open verse demo with production from rei brown as seen in a Vine from Joji. It was also previewed in a clip with rei brown in jojivlogs 7 on August 6th, 2014. Thought to be for Green Echo, but it has Chloe Burbank cover art on SoundCloud. It was privately uploaded onto Joji's SoundCloud account on April 26th, 2016. Rumored to be one of the privated uploads from the anna gold YouTube channel.", "file_id": "deb547dff2d3082302d5cb6f9159d4ce", "stream_url": "https://api.pillows.su/api/download/deb547dff2d3082302d5cb6f9159d4ce", "download_url": "https://api.pillows.su/api/download/deb547dff2d3082302d5cb6f9159d4ce", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "128 [V1](prod. Joji)aka. Antidote Pt. 2, SAD TRAVIS PT. 2, Window Pt. 2", "description": "OG Filename: 128a A scrapped part two to \"Antidote\" which also shares a line from \"rain on me\". This version's only difference is different mixing compared to the later versions. It was privately uploaded onto Joji's SoundCloud account on August 26th, 2016.", "file_id": "71e15aaf271b1b68cc8fb0b9871518e1", "stream_url": "https://api.pillows.su/api/download/71e15aaf271b1b68cc8fb0b9871518e1", "download_url": "https://api.pillows.su/api/download/71e15aaf271b1b68cc8fb0b9871518e1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "\u2b50\ufe0f SAD TRAVIS PT. 2 [V2](prod. Joji)aka. 128, Antidote Pt. 2, Window Pt. 2", "description": "OG Filename: SAD TRAVIS PT.2 - 8_26_16, 4.20 PM.mp3 A scrapped part two to \" Antidote \" which also shares a line from \" rain on me \" . This version's only difference is different mixing compared to the previous version. It was privately uploaded onto Joji's SoundCloud account on August 26th, 2016.", "file_id": "0df10af9efba41aded7138a83746ccc4", "stream_url": "https://api.pillows.su/api/download/0df10af9efba41aded7138a83746ccc4", "download_url": "https://api.pillows.su/api/download/0df10af9efba41aded7138a83746ccc4", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}, {"era": "Chloe Burbank Volume 1 [V2]", "name": "SAD TRAVIS PT. 2 [V3](prod. Joji)aka. 128, Antidote Pt. 2, Window Pt. 2", "description": "OG Filename: SAD TRAVIS PT.2 - 8/27/16, 3.04 PM A scrapped part two to \" Antidote \" which also shares a line from \" rain on me \" . This version's only difference is a missing background vocal and different mixing. It was privately uploaded onto Joji's SoundCloud account on August 27th, 2016.", "file_id": "41807726f640833a68ef552faa28e72c", "stream_url": "https://api.pillows.su/api/download/41807726f640833a68ef552faa28e72c", "download_url": "https://api.pillows.su/api/download/41807726f640833a68ef552faa28e72c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb3TqM7Ig_IyZK5HB2beJd5pwpgH6eLbmvKcPZ3NMqfKnMpHyec3Em1iY-h1Svcv7JpxKSFsLuPz-xK0oPwPy9J9Kduc17PwQEtpv1_KsT5EWNXw-Ran04yMh0Lyp6PsufCrIUCtnSyHSdv=w100-h100"}], "Pink Season": [{"era": "Pink Season", "name": "Filthy Frank Theme(prod. Holder)", "description": "OG Filename: Filthy Frank Theme.mp3 Theme Song for Filthy Frank by Holder. First used in the video \"I EAT ASS (JP101)\".", "file_id": "de5dd0b2fe0cd1ffe11425f58fa569f7", "stream_url": "https://api.pillows.su/api/download/de5dd0b2fe0cd1ffe11425f58fa569f7", "download_url": "https://api.pillows.su/api/download/de5dd0b2fe0cd1ffe11425f58fa569f7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZyper_H5YVivIu4rB4hPzyMgBL4D5-X7spc9JqjffPxIWkhKvipYoq4_Cu53VqHPnmApBnNYcQrQY_I5I-QoHQL9SFtw_YM8JNLJEl3EN1jbCSRyGAuJDpfex1UsNY2B5mM7Pa_6sqJrN4VoY=w100-h99"}, {"era": "Pink Season", "name": "\u2b50\ufe0f James [V4](prod. Pink Guy)aka. Teriyaki God", "description": "OG Filename: James Sample4 Eq 1 SELL - 4/6/16, 4.33 PM An early version of the beat that was eventually used on \"Teriyaki God\". It was privately uploaded onto Joji's SoundCloud account on April 6th, 2016.", "file_id": "988f4fef457f2b102928be30bd4e5e96", "stream_url": "https://api.pillows.su/api/download/988f4fef457f2b102928be30bd4e5e96", "download_url": "https://api.pillows.su/api/download/988f4fef457f2b102928be30bd4e5e96", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZyper_H5YVivIu4rB4hPzyMgBL4D5-X7spc9JqjffPxIWkhKvipYoq4_Cu53VqHPnmApBnNYcQrQY_I5I-QoHQL9SFtw_YM8JNLJEl3EN1jbCSRyGAuJDpfex1UsNY2B5mM7Pa_6sqJrN4VoY=w100-h99"}], "In Tongues": [{"era": "In Tongues", "name": "Angry Ass Beat Go Hard For 1 Minute(prod. Joji)", "description": "Just an angry ass beat that goes hard for approximately 1 minute. Privately uploaded to Joji's SoundCloud account on May 31st, 2017.", "file_id": "f166a809aa2b2b4c570ccb3dc93f8e41", "stream_url": "https://api.pillows.su/api/download/f166a809aa2b2b4c570ccb3dc93f8e41", "download_url": "https://api.pillows.su/api/download/f166a809aa2b2b4c570ccb3dc93f8e41", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbzZ3mMgIur1exw1j5VPYg4tbGt8McPUL7O812anIiGnaSv4Vg9coRFVabiGw4cXsNnefzjf7Ry9wy6Xd-31FVXGzrKSbb564uPcuSYg3xmKZ-X-BEoY06RsHpQEQYLu7xlW3DM8-Rz2PLDkrA=w100-h100"}, {"era": "In Tongues", "name": "I Don't Wanna Waste My Time [OG](prod. Joji)aka. IDWWMT, waste my time", "description": "OG Filename: waste my time.wav Demo without any differences besides mixing.", "file_id": "f7c0ed7db0d0a3bf9cb56252d4a7f267", "stream_url": "https://api.pillows.su/api/download/f7c0ed7db0d0a3bf9cb56252d4a7f267", "download_url": "https://api.pillows.su/api/download/f7c0ed7db0d0a3bf9cb56252d4a7f267", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbzZ3mMgIur1exw1j5VPYg4tbGt8McPUL7O812anIiGnaSv4Vg9coRFVabiGw4cXsNnefzjf7Ry9wy6Xd-31FVXGzrKSbb564uPcuSYg3xmKZ-X-BEoY06RsHpQEQYLu7xlW3DM8-Rz2PLDkrA=w100-h100"}], "BALLADS 1": [{"era": "BALLADS 1", "name": "SLOW DANCING IN THE DARK [V3](prod. Joji & Patrick Wimberly)", "description": "OG Filename: Slow Dancing In The Dark - Joji - 24 bit - FR Master 3.wav Demo / master from the Director's Cut music video. The only difference is mixing. This is not the original file, this a rip from the video file that uses the original mix. It's a mix by Frankie Ramirez that didn't get used, much like his mix for \"Sanctuary\".", "file_id": "7bdb3bb503d9a98b600acd2de6434810", "stream_url": "https://api.pillows.su/api/download/7bdb3bb503d9a98b600acd2de6434810", "download_url": "https://api.pillows.su/api/download/7bdb3bb503d9a98b600acd2de6434810", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYJDWsVy38psBRYc4QysTjN1XUleZozev2-IyUA7nZX5dNyh-zVJGY8RTeUcHoydDW67Q2OnkOQu5bl2t7BQNLpPZFhk8RQInLMujz5GJRTMnUFVlV2svCMp-JJdIyr1jiSfMGjG36U2O2jQwg=w100-h100"}, {"era": "BALLADS 1", "name": "\u2728TRIPPIE(prod. Joji)", "description": "OG Filename: TRIPPIE (ROUGH BEAT & VOX) A very rough open verse demo that might have been intended for Trippie Redd. It was privately uploaded onto Joji's SoundCloud account on February 26th, 2018.", "file_id": "c5a32f8bdb735fcaa819a9c5516730ed", "stream_url": "https://api.pillows.su/api/download/c5a32f8bdb735fcaa819a9c5516730ed", "download_url": "https://api.pillows.su/api/download/c5a32f8bdb735fcaa819a9c5516730ed", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYJDWsVy38psBRYc4QysTjN1XUleZozev2-IyUA7nZX5dNyh-zVJGY8RTeUcHoydDW67Q2OnkOQu5bl2t7BQNLpPZFhk8RQInLMujz5GJRTMnUFVlV2svCMp-JJdIyr1jiSfMGjG36U2O2jQwg=w100-h100"}], "Nectar": [{"era": "Nectar", "name": "Again", "description": "Instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "a6085c4fe045ae99f2c36720d9763f79", "stream_url": "https://api.pillows.su/api/download/a6085c4fe045ae99f2c36720d9763f79", "download_url": "https://api.pillows.su/api/download/a6085c4fe045ae99f2c36720d9763f79", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Digging", "description": "Instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "5e30dc8f1c785849d9d2e764adc5943f", "stream_url": "https://api.pillows.su/api/download/5e30dc8f1c785849d9d2e764adc5943f", "download_url": "https://api.pillows.su/api/download/5e30dc8f1c785849d9d2e764adc5943f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "EnjoyTheView", "description": "Instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "1a6a32df2be586a14dff7fe37ab8a3f1", "stream_url": "https://api.pillows.su/api/download/1a6a32df2be586a14dff7fe37ab8a3f1", "download_url": "https://api.pillows.su/api/download/1a6a32df2be586a14dff7fe37ab8a3f1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Hipster", "description": "An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "cb749ac1c4e510d2feeb2b4e80343a68", "stream_url": "https://api.pillows.su/api/download/cb749ac1c4e510d2feeb2b4e80343a68", "download_url": "https://api.pillows.su/api/download/cb749ac1c4e510d2feeb2b4e80343a68", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "House", "description": "An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "6155094b327518f213dc8c66f599dad1", "stream_url": "https://api.pillows.su/api/download/6155094b327518f213dc8c66f599dad1", "download_url": "https://api.pillows.su/api/download/6155094b327518f213dc8c66f599dad1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Jazzhands", "description": "An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "91c47b35d7dffbec369a027c1f0500d1", "stream_url": "https://api.pillows.su/api/download/91c47b35d7dffbec369a027c1f0500d1", "download_url": "https://api.pillows.su/api/download/91c47b35d7dffbec369a027c1f0500d1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Joel1(prod. Joel Castillo*)", "description": "An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "4d835ab6de1055ba4780e3e4a467004d", "stream_url": "https://api.pillows.su/api/download/4d835ab6de1055ba4780e3e4a467004d", "download_url": "https://api.pillows.su/api/download/4d835ab6de1055ba4780e3e4a467004d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Joel2(prod. Joel Castillo*)", "description": "An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "eb25ca2986b62ac1b40ededbb46f0ab9", "stream_url": "https://api.pillows.su/api/download/eb25ca2986b62ac1b40ededbb46f0ab9", "download_url": "https://api.pillows.su/api/download/eb25ca2986b62ac1b40ededbb46f0ab9", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Joel3(prod. Joel Castillo*)", "description": "An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "27036df3b94b0d42b01e82e914175821", "stream_url": "https://api.pillows.su/api/download/27036df3b94b0d42b01e82e914175821", "download_url": "https://api.pillows.su/api/download/27036df3b94b0d42b01e82e914175821", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Joel4(prod. Joel Castillo*)", "description": "An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "176dee6aa0bf2fc32809b24d668573e1", "stream_url": "https://api.pillows.su/api/download/176dee6aa0bf2fc32809b24d668573e1", "download_url": "https://api.pillows.su/api/download/176dee6aa0bf2fc32809b24d668573e1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Joel5(prod. Joel Castillo*)", "description": "An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "8cbc59a9ef96cb3ea48542be50de7731", "stream_url": "https://api.pillows.su/api/download/8cbc59a9ef96cb3ea48542be50de7731", "download_url": "https://api.pillows.su/api/download/8cbc59a9ef96cb3ea48542be50de7731", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Mardi Graw", "description": "An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "18646a0ebcab6a8cfb7cfefa8c7bba61", "stream_url": "https://api.pillows.su/api/download/18646a0ebcab6a8cfb7cfefa8c7bba61", "download_url": "https://api.pillows.su/api/download/18646a0ebcab6a8cfb7cfefa8c7bba61", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Medicine", "description": "An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "2d3e984f8eaf54c6a9e141facc335511", "stream_url": "https://api.pillows.su/api/download/2d3e984f8eaf54c6a9e141facc335511", "download_url": "https://api.pillows.su/api/download/2d3e984f8eaf54c6a9e141facc335511", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "NoBoundaries", "description": "An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "166cae2d01527b67e3b7daeeba0f8d0d", "stream_url": "https://api.pillows.su/api/download/166cae2d01527b67e3b7daeeba0f8d0d", "download_url": "https://api.pillows.su/api/download/166cae2d01527b67e3b7daeeba0f8d0d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "PrettyBoi", "description": "An instrumental that was sent to Joji in 2019. It's unknown if it was ever recorded on.", "file_id": "3909339a184443de07297a9fcf6734e0", "stream_url": "https://api.pillows.su/api/download/3909339a184443de07297a9fcf6734e0", "download_url": "https://api.pillows.su/api/download/3909339a184443de07297a9fcf6734e0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "\u2b50\ufe0f Like It [V2](prod. Digi)", "description": "OG Filename: Joji x Daniel Wilson - Like It (08.18.20) OG Filename: Like It - Joji - FR Rough Mix 1.1 - No Melodyne Two years after snippets for the song first leaked on October 11th, 2021, it was leaked after a successful groupbuy for $500. The price was originally $250, but someone was trying to vault the song for themselves to resell later on. The song features vocals from Daniel Wilson, who has wrote for a lot of songs for Joji such as \"Run\" and \"Sanctuary\". The first verse was entirely written by Joji, and the night riding idea went on to be perfected with \"NIGHT RIDER\". Joji please please please produce and write more if you're gonna continue making music...", "file_id": "5baaba5fe28ff2ce4e445b581254e82d", "stream_url": "https://api.pillows.su/api/download/5baaba5fe28ff2ce4e445b581254e82d", "download_url": "https://api.pillows.su/api/download/5baaba5fe28ff2ce4e445b581254e82d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "\u2728 Run [V4](prod. Joji & Justin Parker)", "description": "OG Filename: run 1.4.1 LIM.mp3 Demo with more harmonies and a rougher mix on the chorus. Doesn't have the guitar solo at the end done by Jaco Caraco. Joji stated during The Extravaganza performance that he had no part in the guitar solo and that 88rising just sent it over to some guitarist, which may mean he wasn't trying to take credit for it, or that the version he wanted to put out originally didn't have it. Jaco did his thing though and it's a great addition to it.", "file_id": "47de8302ba0ada733d4e885338b5fdf2", "stream_url": "https://api.pillows.su/api/download/47de8302ba0ada733d4e885338b5fdf2", "download_url": "https://api.pillows.su/api/download/47de8302ba0ada733d4e885338b5fdf2", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Run [V5](prod. Joji & Justin Parker)", "description": "OG Filename: run 1.4.2-LIM.mp3 Demo with more harmonies and a rougher mix on the chorus. Doesn't have the guitar solo at the end done by Jaco Caraco. Joji stated during The Extravaganza performance that he had no part in the guitar solo and that 88rising just sent it over to some guitarist, which may mean he wasn't trying to take credit for it, or that the version he wanted to put out originally didn't have it. Jaco did his thing though and it's a great addition to it. The only difference from this and the version above are just some mixing differences.", "file_id": "44b9060b138e34cc9821d4c3be1047f3", "stream_url": "https://api.pillows.su/api/download/44b9060b138e34cc9821d4c3be1047f3", "download_url": "https://api.pillows.su/api/download/44b9060b138e34cc9821d4c3be1047f3", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Upgrade [V1](prod. Tobias Karlsson, Rickard G\u00f6ransson, James Ghaleb)", "description": "OG Filename: Joji - Upgrade - Acoustic MX1 Bounce.mp3 Acoustic bounce without any drums. Sourced from DBREE so not entirely trustworthy.", "file_id": "36cd8f2005f8d2570d35d08bc9f4704a", "stream_url": "https://api.pillows.su/api/download/36cd8f2005f8d2570d35d08bc9f4704a", "download_url": "https://api.pillows.su/api/download/36cd8f2005f8d2570d35d08bc9f4704a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}, {"era": "Nectar", "name": "Upgrade [V2](prod. Tobias Karlsson, Rickard G\u00f6ransson, James Ghaleb)", "description": "OG Filename: Joji - Upgrade - Acoustic MX2 Bounce.mp3 Acoustic bounce without any drums. Sourced from DBREE so not entirely trustworthy. This version adds back one of the kick tracks and it has a very slightly different mix.", "file_id": "f23c84c6141ecb044c7c44b1726ba6e9", "stream_url": "https://api.pillows.su/api/download/f23c84c6141ecb044c7c44b1726ba6e9", "download_url": "https://api.pillows.su/api/download/f23c84c6141ecb044c7c44b1726ba6e9", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaJ6bpwY7vb987w8mKTlSdJlDeo5cnBVcPI8-zuZSLwuLktDf4gj5dCvKL960TpeHsQeeoKQ5X-Xq9XFBgi71vL7f_ItBrBStFcbNRjJrkySTYKzhOE2yemktZqOInF79LZmD2Eng7YYXD-=w100-h100"}], "SMITHEREENS": [{"era": "SMITHEREENS", "name": "Sam Dew - Before The Day Is Over [V1](prod. Justin Parker)", "description": "OG Filename: before the day is over 1.1 lim.mp3 Sam Dew's version of \"Before The Day Is Over\" before it was eventually sent to Joji. This version is more like the released version, but it still has a few lyric differences.", "file_id": "196e6eee96d266bced55d6e68fd1542c", "stream_url": "https://api.pillows.su/api/download/196e6eee96d266bced55d6e68fd1542c", "download_url": "https://api.pillows.su/api/download/196e6eee96d266bced55d6e68fd1542c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYe0efUjbd68q91buFmApOd5I7Z4PyhWGEfK8Sk8GpVne9tBGDqivONpu-SZTYwAZLHCz0Jhi1_5tnxY8NzgJBdgzhZdkA8aralAofg6GuQpeK2FOYFR-YyEhjsRPUofDo9C1ErkSlKfUctCiA=w100-h100"}, {"era": "SMITHEREENS", "name": "Before The Day Is Over [V4](ref. Sam Dew) (prod. Justin Parker)", "description": "OG Filename: before the day is over 2.3 joji stems M.mp3 Reference Track by Sam Dew for \"Before The Day Is Over\" with a few lyric differences. This version also has a completely different ending with added guitar and added kicks.", "file_id": "80e8de983f4662673fd7d1db454b707a", "stream_url": "https://api.pillows.su/api/download/80e8de983f4662673fd7d1db454b707a", "download_url": "https://api.pillows.su/api/download/80e8de983f4662673fd7d1db454b707a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYe0efUjbd68q91buFmApOd5I7Z4PyhWGEfK8Sk8GpVne9tBGDqivONpu-SZTYwAZLHCz0Jhi1_5tnxY8NzgJBdgzhZdkA8aralAofg6GuQpeK2FOYFR-YyEhjsRPUofDo9C1ErkSlKfUctCiA=w100-h100"}, {"era": "SMITHEREENS", "name": "Before The Day Is Over [V5](ref. Sam Dew) (prod. Justin Parker)", "description": "OG Filename: before the day is over 3.0 LIM joji.mp3 Reference Track by Sam Dew for \"Before The Day Is Over\" with a few lyric differences. This version has the main piano track muted for some reason, which sounds pretty bad.", "file_id": "83f4f03e8a545953aa03cdbdc8855e3f", "stream_url": "https://api.pillows.su/api/download/83f4f03e8a545953aa03cdbdc8855e3f", "download_url": "https://api.pillows.su/api/download/83f4f03e8a545953aa03cdbdc8855e3f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYe0efUjbd68q91buFmApOd5I7Z4PyhWGEfK8Sk8GpVne9tBGDqivONpu-SZTYwAZLHCz0Jhi1_5tnxY8NzgJBdgzhZdkA8aralAofg6GuQpeK2FOYFR-YyEhjsRPUofDo9C1ErkSlKfUctCiA=w100-h100"}, {"era": "SMITHEREENS", "name": "Lone Ranger(ref. Trey Campbell)", "description": "OG Filename: Joji x Trey Campell - Lone Ranger 1.1 OG Filename (Metadata): Lone Ranger for Joji 1.1 Reference track for \"Lone Ranger\" by Trey Campbell for Joji. However, Joji only recorded a mumbled chorus before it was scrapped. Recorded sometime in 2021. It was intended to be groupbought for $500, but was cancelled and later on leaked.", "file_id": "dc5258380379ef4bf6256a50943f1d1b", "stream_url": "https://api.pillows.su/api/download/dc5258380379ef4bf6256a50943f1d1b", "download_url": "https://api.pillows.su/api/download/dc5258380379ef4bf6256a50943f1d1b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYe0efUjbd68q91buFmApOd5I7Z4PyhWGEfK8Sk8GpVne9tBGDqivONpu-SZTYwAZLHCz0Jhi1_5tnxY8NzgJBdgzhZdkA8aralAofg6GuQpeK2FOYFR-YyEhjsRPUofDo9C1ErkSlKfUctCiA=w100-h100"}, {"era": "SMITHEREENS", "name": "Lil Yachty - Thune [V2](feat. Joji) (prod. Diplo*)", "description": "OG Filename: Thune rgh2.1 102521.m4a Snippet first leaked by skyupsahl on January 14th, 2022, listing the song for sale on LEAKED.CX. Later leaked in full by toxic on LEAKED.CX. Possbly produced by Diplo.", "file_id": "9a7ca522108fe1eb97f6c4c5c989f33e", "stream_url": "https://api.pillows.su/api/download/9a7ca522108fe1eb97f6c4c5c989f33e", "download_url": "https://api.pillows.su/api/download/9a7ca522108fe1eb97f6c4c5c989f33e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYe0efUjbd68q91buFmApOd5I7Z4PyhWGEfK8Sk8GpVne9tBGDqivONpu-SZTYwAZLHCz0Jhi1_5tnxY8NzgJBdgzhZdkA8aralAofg6GuQpeK2FOYFR-YyEhjsRPUofDo9C1ErkSlKfUctCiA=w100-h100"}, {"era": "SMITHEREENS", "name": "\u2728 Lil Yachty - Thune [V3](ref. Daylyt)(feat. Joji) (prod. Diplo*)", "description": "OG Filename: Joji feat.Yachty Thune alecNofx_01.m4a Leaked by toxic on LEAKED.CX. This version has a reference verse from Daylyt, a different intro and outro and different mixing. The filename says \"Joji feat.Yachty\" meaning it was maybe given to Joji, but I really doubt it. Possbly produced by Diplo.", "file_id": "e6883b6874a548178f549274585c40c8", "stream_url": "https://api.pillows.su/api/download/e6883b6874a548178f549274585c40c8", "download_url": "https://api.pillows.su/api/download/e6883b6874a548178f549274585c40c8", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYe0efUjbd68q91buFmApOd5I7Z4PyhWGEfK8Sk8GpVne9tBGDqivONpu-SZTYwAZLHCz0Jhi1_5tnxY8NzgJBdgzhZdkA8aralAofg6GuQpeK2FOYFR-YyEhjsRPUofDo9C1ErkSlKfUctCiA=w100-h100"}, {"era": "SMITHEREENS", "name": "Lil Yachty - Thune [V4](feat. Joji) (prod. Diplo*)", "description": "OG Filename: Joji feat.Yachty Thune open3rdVerse.26 01.m4a Leaked by toxic on LEAKED.CX. This version has a shorter intro, an added chorus and drums, and Daylyt's verse was removed. The filename says \"Joji feat.Yachty\" meaning the song was maybe given to Joji, but I really doubt that. Possbly produced by Diplo.", "file_id": "70ff7a8e26c2b5e50e301a4aced10351", "stream_url": "https://api.pillows.su/api/download/70ff7a8e26c2b5e50e301a4aced10351", "download_url": "https://api.pillows.su/api/download/70ff7a8e26c2b5e50e301a4aced10351", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYe0efUjbd68q91buFmApOd5I7Z4PyhWGEfK8Sk8GpVne9tBGDqivONpu-SZTYwAZLHCz0Jhi1_5tnxY8NzgJBdgzhZdkA8aralAofg6GuQpeK2FOYFR-YyEhjsRPUofDo9C1ErkSlKfUctCiA=w100-h100"}, {"era": "SMITHEREENS", "name": "Untitled(prod. Joel Little*)aka. Joel Little Demo", "description": "OG Filename: JOJI Untitled Untitled mumble demo from SMITHEREENS. Not one word is said throughout it but it has good production and a good flow. Possibly produced by Joel Little. And no, this is not a demo for Dissolve. I don't know why people keep saying this.", "file_id": "a6eaf88175f3ebd045fe8bb4d2b4cf14", "stream_url": "https://api.pillows.su/api/download/a6eaf88175f3ebd045fe8bb4d2b4cf14", "download_url": "https://api.pillows.su/api/download/a6eaf88175f3ebd045fe8bb4d2b4cf14", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYe0efUjbd68q91buFmApOd5I7Z4PyhWGEfK8Sk8GpVne9tBGDqivONpu-SZTYwAZLHCz0Jhi1_5tnxY8NzgJBdgzhZdkA8aralAofg6GuQpeK2FOYFR-YyEhjsRPUofDo9C1ErkSlKfUctCiA=w100-h100"}]};
+    let currentEra = null;
+    let currentIndex = null;
+    let currentSong = null;
+    let playlist = [];
+
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const seekBar = document.getElementById('seek-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const playerTitle = document.getElementById('player-title');
+    const playerCover = document.getElementById('player-cover');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    function playSong(era, index) {
+        playlist = eras[era];
+        currentEra = era;
+        currentIndex = index;
+        loadAndPlayCurrent();
+    }
+
+    function highlightCurrentSong() {
+        document.querySelectorAll('.song.playing').forEach(el => el.classList.remove('playing'));
+        if (currentEra !== null && currentIndex !== null) {
+            const songId = `song-${currentEra.replace(/ /g, '_')}-${currentIndex}`;
+            const songEl = document.getElementById(songId);
+            if (songEl) songEl.classList.add('playing');
+        }
+    }
+
+    function loadAndPlayCurrent() {
+        if (!playlist || currentIndex === null || !playlist[currentIndex]) return;
+        const song = playlist[currentIndex];
+        player.src = song.stream_url;
+        playerTitle.textContent = song.name;
+        playerCover.src = song.cover || 'https://via.placeholder.com/60x60?text=No+Cover';
+        currentSong = song.stream_url;
+        player.play();
+        updateSkipButtons();
+        updateMediaSession(song);
+        highlightCurrentSong();
+    }
+
+    function updateSkipButtons() {
+        prevBtn.disabled = (currentIndex <= 0);
+        nextBtn.disabled = (currentIndex >= playlist.length - 1);
+    }
+
+    playBtn.onclick = function() {
+        if (player.src) {
+            if (player.paused) player.play();
+            else player.pause();
+        }
+    };
+
+    prevBtn.onclick = function() {
+        if (playlist && currentIndex > 0) {
+            currentIndex -= 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    nextBtn.onclick = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    player.onplay = function() {
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "";
+    };
+    player.onpause = function() {
+        playIcon.style.display = "";
+        pauseIcon.style.display = "none";
+    };
+
+    player.ontimeupdate = function() {
+        seekBar.value = player.currentTime || 0;
+        currentTimeEl.textContent = formatTime(player.currentTime);
+    };
+    player.onloadedmetadata = function() {
+        seekBar.max = player.duration || 0;
+        durationEl.textContent = formatTime(player.duration);
+    };
+    seekBar.oninput = function() {
+        player.currentTime = seekBar.value;
+    };
+
+    player.onended = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    function formatTime(sec) {
+        sec = Math.floor(sec);
+        return Math.floor(sec/60) + ":" + String(sec%60).padStart(2, '0');
+    }
+    function updateMediaSession(song) {
+        if ('mediaSession' in navigator && song) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.name,
+                artist: song.era,
+                album: "Unreleased",
+                artwork: [
+                    { src: song.cover || 'https://via.placeholder.com/90x90?text=No+Cover', sizes: '90x90', type: 'image/png' }
+                ]
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (playlist && currentIndex > 0) {
+                    currentIndex -= 1;
+                    loadAndPlayCurrent();
+                }
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                if (playlist && currentIndex < playlist.length - 1) {
+                    currentIndex += 1;
+                    loadAndPlayCurrent();
+                }
+            });
+        }
+    }
+
+    // --- Collapsible Eras ---
+    function toggleEra(idx) {
+        const songList = document.getElementById('song-list-' + idx);
+        const chevron = document.getElementById('chevron-' + idx);
+        const isOpen = songList.classList.contains('open');
+        if (isOpen) {
+            songList.classList.remove('open');
+            chevron.classList.remove('open');
+        } else {
+            songList.classList.add('open');
+            chevron.classList.add('open');
+        }
+    }
+    // Collapse all on load
+    window.addEventListener('DOMContentLoaded', function() {
+        
+            document.getElementById('song-list-0').classList.remove('open');
+            document.getElementById('chevron-0').classList.remove('open');
+        
+            document.getElementById('song-list-1').classList.remove('open');
+            document.getElementById('chevron-1').classList.remove('open');
+        
+            document.getElementById('song-list-2').classList.remove('open');
+            document.getElementById('chevron-2').classList.remove('open');
+        
+            document.getElementById('song-list-3').classList.remove('open');
+            document.getElementById('chevron-3').classList.remove('open');
+        
+            document.getElementById('song-list-4').classList.remove('open');
+            document.getElementById('chevron-4').classList.remove('open');
+        
+            document.getElementById('song-list-5').classList.remove('open');
+            document.getElementById('chevron-5').classList.remove('open');
+        
+            document.getElementById('song-list-6').classList.remove('open');
+            document.getElementById('chevron-6').classList.remove('open');
+        
+
+        // Tooltip logic
+        let tooltip = null;
+        let tooltipTimeout = null;
+
+        document.querySelectorAll('.song').forEach(song => {
+            song.addEventListener('mouseenter', function(e) {
+                const desc = song.getAttribute('data-description');
+                if (!desc) return;
+                if (tooltip) tooltip.remove();
+                tooltip = document.createElement('div');
+                tooltip.className = 'floating-song-description';
+                tooltip.innerHTML = desc;
+                document.body.appendChild(tooltip);
+
+                // Position tooltip
+                const rect = song.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 6) + 'px';
+                tooltip.style.minWidth = rect.width + 'px';
+
+                // Fade in
+                setTimeout(() => {
+                    if (tooltip) tooltip.classList.add('visible');
+                }, 10);
+            });
+            song.addEventListener('mouseleave', function(e) {
+                if (tooltip) {
+                    tooltip.classList.remove('visible');
+                    setTimeout(() => {
+                        if (tooltip) tooltip.remove();
+                        tooltip = null;
+                    }, 120);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

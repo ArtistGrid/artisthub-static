@@ -1,0 +1,987 @@
+<!doctype html>
+<html>
+<head>
+    <title>ArtistHub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #121212;
+            color: #fff;
+        }
+.container {
+    padding: 2rem;
+    padding-bottom: 120px; /* Add space for the player */
+}
+        .era {
+            margin-bottom: 2.2rem;
+            background: #181818;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px #0003;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .era-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2.1rem 2rem 2.1rem 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.18s;
+            border-bottom: 1px solid #232323;
+        }
+        .era-header:hover {
+            background: #232323;
+        }
+        .era-cover {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .era-title {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #1db954;
+            flex: 1;
+            letter-spacing: 0.01em;
+        }
+        .chevron {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(.4,2,.6,1), color 0.2s;
+            color: #aaa;
+        }
+        .chevron.open {
+            transform: rotate(90deg);
+            color: #1db954;
+        }
+        .song-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(.4,2,.6,1);
+            background: #181818;
+            padding: 0 2rem;
+        }
+        .song-list.open {
+            padding-bottom: 1.2rem;
+            max-height: 1000px;
+            transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
+        }
+        .song {
+            background: #222;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.18s, color 0.18s;
+            box-shadow: 0 1px 4px #0002;
+            margin-top: 0.7rem;
+        }
+        .song:first-child { margin-top: 1.2rem; }
+        .song:hover {
+            background: #1db95433;
+            color: #1db954;
+        }
+        /* Hide the inline description, we use JS tooltip instead */
+        .song .song-description {
+            display: none !important;
+        }
+        .song.playing {
+            background: #1db954 !important;
+            color: #181818 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 12px #1db95455;
+        }
+        .player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #181818;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #222;
+            box-shadow: 0 -2px 8px #0003;
+            z-index: 100;
+            gap: 1.5rem;
+        }
+        .player-cover {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .player-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .player-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.2rem;
+            text-shadow: 0 1px 2px #0008;
+        }
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .player-btn, .player-skip-btn {
+            background: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px #0003;
+            margin-right: 0.5rem;
+        }
+        .player-btn:hover, .player-skip-btn:hover {
+            background: #1ed760;
+        }
+        .player-skip-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        .player-time {
+            font-size: 0.98rem;
+            color: #ccc;
+            min-width: 40px;
+            text-align: right;
+        }
+        .seek-bar {
+            flex: 1;
+            accent-color: #1db954;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            margin: 0 0.5rem;
+        }
+        .seek-bar::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-ms-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar:focus {
+            outline: none;
+        }
+        /* Tooltip style */
+        .floating-song-description {
+            position: fixed;
+            background: #222;
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px #000b;
+            z-index: 99999;
+            min-width: 250px;
+            max-width: 400px;
+            font-size: 0.97rem;
+            white-space: pre-line;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+        .floating-song-description.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #1db954;">ArtistHub</h1>
+        
+            <div class="era" id="era-0">
+                <div class="era-header" onclick="toggleEra(0)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhZoCE3CCfy-ZzDeUrTruDXUy1gcdRJTO8N1Jl-v3amaDA5NsgT0kI-LJ3NcWkMge2zV82sNNquFUFZkKOvGqwrXfwfva53kkZVUoF8IrPRp3LbrF2NXhBOV8ONsfLGT63510Sw_MWZ2W0cs798=w102-h106" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Snotty World (Deluxe)</span>
+                    <span class="chevron" id="chevron-0">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-0">
+                    
+                        <div class="song" 
+                             id="song-Snotty_World_(Deluxe)-0" 
+                             data-description="Previewed By Beno on IG Live July 2021"
+                             onclick="playSong(&quot;Snotty World (Deluxe)&quot;, 0)">
+                            Say What*
+                            <div class="song-description">Previewed By Beno on IG Live July 2021</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Snotty_World_(Deluxe)-1" 
+                             data-description="Previewed By Beno on IG Live September 2021"
+                             onclick="playSong(&quot;Snotty World (Deluxe)&quot;, 1)">
+                            Rockstar Way*
+                            <div class="song-description">Previewed By Beno on IG Live September 2021</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-1">
+                <div class="era-header" onclick="toggleEra(1)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Snotty Hill</span>
+                    <span class="chevron" id="chevron-1">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-1">
+                    
+                        <div class="song" 
+                             id="song-Snotty_Hill-0" 
+                             data-description="The SSN Remix was first previewed on October 19th, 2021. Remix is from September 2021. Beno &amp; Meechie explained that SSN which wasnt released at the time was the first track they played for Carti. Remix of &#34;SSN&#34; was likely made before the song was released."
+                             onclick="playSong(&quot;Snotty Hill&quot;, 0)">
+                            🥇 SSN (Remix)(feat. Playboi Carti)(prod. artist)
+                            <div class="song-description">The SSN Remix was first previewed on October 19th, 2021. Remix is from September 2021. Beno & Meechie explained that SSN which wasnt released at the time was the first track they played for Carti. Remix of "SSN" was likely made before the song was released.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Snotty_Hill-1" 
+                             data-description="Previewed On September 1, 2021"
+                             onclick="playSong(&quot;Snotty Hill&quot;, 1)">
+                            How We Livin*
+                            <div class="song-description">Previewed On September 1, 2021</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Snotty_Hill-2" 
+                             data-description="Previewed on November 1, 2021"
+                             onclick="playSong(&quot;Snotty Hill&quot;, 2)">
+                            Slidin In The Cat*
+                            <div class="song-description">Previewed on November 1, 2021</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Snotty_Hill-3" 
+                             data-description="Previewed on November 1, 2021"
+                             onclick="playSong(&quot;Snotty Hill&quot;, 3)">
+                            No Bap*
+                            <div class="song-description">Previewed on November 1, 2021</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Snotty_Hill-4" 
+                             data-description="Previewed on December 1, 2021"
+                             onclick="playSong(&quot;Snotty Hill&quot;, 4)">
+                            Flipped The Switch(feat. internationaljefe)
+                            <div class="song-description">Previewed on December 1, 2021</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Snotty_Hill-5" 
+                             data-description="Previewed by Beno around the Destroy Lonely NO STYLIST sessions. Could be solo Beno."
+                             onclick="playSong(&quot;Snotty Hill&quot;, 5)">
+                            Destroy Lonely - High AF (Remix)(feat. Homixide Gang)(prod. XTCY)
+                            <div class="song-description">Previewed by Beno around the Destroy Lonely NO STYLIST sessions. Could be solo Beno.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Snotty_Hill-6" 
+                             data-description="Track 3 on Snotty Hill Previewed multiple times before someone hacked Homixide Gang&#39;s Spotify and leaked it. Removed 4 days later. unknown if a finished version exists as this one is not mixed."
+                             onclick="playSong(&quot;Snotty Hill&quot;, 6)">
+                            Stuck in My Ways(prod. Richxxzno)
+                            <div class="song-description">Track 3 on Snotty Hill Previewed multiple times before someone hacked Homixide Gang's Spotify and leaked it. Removed 4 days later. unknown if a finished version exists as this one is not mixed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Snotty_Hill-7" 
+                             data-description="OG Filename: Snotty - 1017 ALYX 95M (javaunrough)_1 Track 5 on Snotty Hill Previewed by Matthew Williams on his Instagram story in December 2021. Fucking tags of doom snippet surfaced on July 18th, 2025."
+                             onclick="playSong(&quot;Snotty Hill&quot;, 7)">
+                            🥇 1017 ALYX 95M(prod. DMC Global & D. Hill)
+                            <div class="song-description">OG Filename: Snotty - 1017 ALYX 95M (javaunrough)_1 Track 5 on Snotty Hill Previewed by Matthew Williams on his Instagram story in December 2021. Fucking tags of doom snippet surfaced on July 18th, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Snotty_Hill-8" 
+                             data-description="Track 7 on Snotty Hill"
+                             onclick="playSong(&quot;Snotty Hill&quot;, 8)">
+                            Can't You Tell(prod. D. Hill)
+                            <div class="song-description">Track 7 on Snotty Hill</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Snotty_Hill-9" 
+                             data-description="Track 10 on Snotty Hill Previewed by 5unna in November / December of 2021"
+                             onclick="playSong(&quot;Snotty Hill&quot;, 9)">
+                            Huh(feat. 5unna)(prod. Kicstan)(Chopsticks)
+                            <div class="song-description">Track 10 on Snotty Hill Previewed by 5unna in November / December of 2021</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Snotty_Hill-10" 
+                             data-description="Track 12 on Snotty Hill Previewed by D. Hill on his last Instagram post on September 5, 2021."
+                             onclick="playSong(&quot;Snotty Hill&quot;, 10)">
+                            Different(feat. Biggaveli)(prod. Kicstan)
+                            <div class="song-description">Track 12 on Snotty Hill Previewed by D. Hill on his last Instagram post on September 5, 2021.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Snotty_Hill-11" 
+                             data-description="Track 13 on Snotty Hill Previously unheard until 2 back to back snippets randomly leaked on .cx on July 16, 2025."
+                             onclick="playSong(&quot;Snotty Hill&quot;, 11)">
+                            Homixide Gvng(prod. D. Hill)
+                            <div class="song-description">Track 13 on Snotty Hill Previously unheard until 2 back to back snippets randomly leaked on .cx on July 16, 2025.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-2">
+                <div class="era-header" onclick="toggleEra(2)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhaHHF1u9q7fkwYasbUxCLgVCMbGD1GQu4a2PHCAWyH0RaIOF88SwXqPPgJprQ5UasVg2lgDDirWyz_ZlVdcMZII4RZ4E81-xs0txuoQqQRJz_3jyj7eRLdx4asFYg02HfGRZkCoY8xymxILKzE=w102-h104" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Homixide Lifestyle(55 Ganganati)</span>
+                    <span class="chevron" id="chevron-2">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-2">
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle(55_Ganganati)-0" 
+                             data-description="Leaked on December 16th, 2023 as a bonus to the 2 My Room lone gb."
+                             onclick="playSong(&quot;Homixide Lifestyle(55 Ganganati)&quot;, 0)">
+                            DEMON
+                            <div class="song-description">Leaked on December 16th, 2023 as a bonus to the 2 My Room lone gb.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle(55_Ganganati)-1" 
+                             data-description="Previewed by Beno on Instagram in March of 2022. The song was recorded on March 6, 2022. Leaked by propkers22 on December 23, 2023 as a part of a birthday playlist consisting a handful of leaks from multiple artists."
+                             onclick="playSong(&quot;Homixide Lifestyle(55 Ganganati)&quot;, 1)">
+                            ✨ Homixide Out(prod. Lil 88)
+                            <div class="song-description">Previewed by Beno on Instagram in March of 2022. The song was recorded on March 6, 2022. Leaked by propkers22 on December 23, 2023 as a part of a birthday playlist consisting a handful of leaks from multiple artists.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle(55_Ganganati)-2" 
+                             data-description="Tana reposted the song on his main SoundCloud account (Tana) not his main insta"
+                             onclick="playSong(&quot;Homixide Lifestyle(55 Ganganati)&quot;, 2)">
+                            Balenci Boots(feat. tana)(prod. CGM Beats & Mingo)
+                            <div class="song-description">Tana reposted the song on his main SoundCloud account (Tana) not his main insta</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle(55_Ganganati)-3" 
+                             data-description="Was teased and seen in track lists leading up to the release of HL. Later released on Snot or Not without intro. OG version with intro leaked on September 30, 2023."
+                             onclick="playSong(&quot;Homixide Lifestyle(55 Ganganati)&quot;, 3)">
+                            ⭐ Uzi Work [V1](prod. KP Beatz & ​ssort)
+                            <div class="song-description">Was teased and seen in track lists leading up to the release of HL. Later released on Snot or Not without intro. OG version with intro leaked on September 30, 2023.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle(55_Ganganati)-4" 
+                             data-description="Leaked randomly on September 23, 2023"
+                             onclick="playSong(&quot;Homixide Lifestyle(55 Ganganati)&quot;, 4)">
+                            ✨ Switch Up(prod. F1LTHY)
+                            <div class="song-description">Leaked randomly on September 23, 2023</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle(55_Ganganati)-5" 
+                             data-description="Previewed by Beno on a ig live in March 2022. Leaked on December 26, 2023 as a bonus to the 2 My Room lone gb."
+                             onclick="playSong(&quot;Homixide Lifestyle(55 Ganganati)&quot;, 5)">
+                            5HIP(feat. Biggaveli)(prod. Lil 88, omgzanoza, Muhlir & SHAZY)
+                            <div class="song-description">Previewed by Beno on a ig live in March 2022. Leaked on December 26, 2023 as a bonus to the 2 My Room lone gb.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle(55_Ganganati)-6" 
+                             data-description="The song was first previewed by Ken on his spam user00xman via an Instagram live along with 7 other songs. The song leaked on December 30, 2023 after a succesful GB for $800"
+                             onclick="playSong(&quot;Homixide Lifestyle(55 Ganganati)&quot;, 6)">
+                            Ken Carson - Ain't No Way(feat. Destroy Lonely & Homixide Gang)(prod. ​star boy & Outtatown)
+                            <div class="song-description">The song was first previewed by Ken on his spam user00xman via an Instagram live along with 7 other songs. The song leaked on December 30, 2023 after a succesful GB for $800</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle(55_Ganganati)-7" 
+                             data-description="Previewed by Beno on IG Live"
+                             onclick="playSong(&quot;Homixide Lifestyle(55 Ganganati)&quot;, 7)">
+                            Rockstar Stepper*(feat. R5 Homixide)(prod. Lil 88)
+                            <div class="song-description">Previewed by Beno on IG Live</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-3">
+                <div class="era-header" onclick="toggleEra(3)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhayiKilczHt14eG92jaJZhKwE6emA46miLJwgZxt7pIHfSx-NAtm-9jLYV2voMQtrD0uJoubZdlMGi-YaoVbU9hOiYNc_lCLOiG9uTP2431XlGmCoUruzEvBb5UabsddfMVHtvxboAUKfkUNZM=w102-h82" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Snot or Not</span>
+                    <span class="chevron" id="chevron-3">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-3">
+                    
+                        <div class="song" 
+                             id="song-Snot_or_Not-0" 
+                             data-description="Samples Five Finger Death Punch. Solo Beno."
+                             onclick="playSong(&quot;Snot or Not&quot;, 0)">
+                            ✨ Save(Say)
+                            <div class="song-description">Samples Five Finger Death Punch. Solo Beno.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-4">
+                <div class="era-header" onclick="toggleEra(4)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbQnTgqjheT99FeZyK2uA8f7hJnVVbFTCxQyAHY6qZZI7-6d3kjhkatmAYS2mKZqDKxrAtUPektb07zuSklGsS9JJXQ8F97MSNs_dawJiXtiV8XBT38in_9eCtbUTAoGnfXZw2xv562gaieoik=w102-h129" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">5TH AMNDMNT</span>
+                    <span class="chevron" id="chevron-4">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-4">
+                    
+                        <div class="song" 
+                             id="song-5TH_AMNDMNT-0" 
+                             data-description="OG Filename: 05.09.23 SONG #2 Snippet first surfaced on July 9th, 2025. Song surfaced on July 10th, 2025"
+                             onclick="playSong(&quot;5TH AMNDMNT&quot;, 0)">
+                            ⭐ Flow*
+                            <div class="song-description">OG Filename: 05.09.23 SONG #2 Snippet first surfaced on July 9th, 2025. Song surfaced on July 10th, 2025</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-5TH_AMNDMNT-1" 
+                             data-description="Leaked on October 12, 2024"
+                             onclick="playSong(&quot;5TH AMNDMNT&quot;, 1)">
+                            Cocaine White(feat. Rich Amiri)
+                            <div class="song-description">Leaked on October 12, 2024</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-5TH_AMNDMNT-2" 
+                             data-description=""
+                             onclick="playSong(&quot;5TH AMNDMNT&quot;, 2)">
+                            Goin Brazy*(feat. L5)
+                            <div class="song-description"></div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-5">
+                <div class="era-header" onclick="toggleEra(5)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhZ0RI8R5spFEWBljqwTdTuVEh9zV8GpyiOrpZ8I61VjoA9uNe3qkSDLRPlW35Q-sPfUgEyJ055H5CI3Hha6Q-K1c43pHwCUyCUMbj7THA5yE__6AtnXD-jFEe1kZHtoxA6lXRilXwWxPRuUfDQ=w102-h140" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">i5u5we5</span>
+                    <span class="chevron" id="chevron-5">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-5">
+                    
+                        <div class="song" 
+                             id="song-i5u5we5-0" 
+                             data-description="Previewed on Homixide Beno!’s birthday as a happy birthday message."
+                             onclick="playSong(&quot;i5u5we5&quot;, 0)">
+                            Japanese Tags*
+                            <div class="song-description">Previewed on Homixide Beno!’s birthday as a happy birthday message.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-i5u5we5-1" 
+                             data-description=""
+                             onclick="playSong(&quot;i5u5we5&quot;, 1)">
+                            Get It*
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-i5u5we5-2" 
+                             data-description=""
+                             onclick="playSong(&quot;i5u5we5&quot;, 2)">
+                            Ridin*
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-i5u5we5-3" 
+                             data-description="Previewed by beno on live"
+                             onclick="playSong(&quot;i5u5we5&quot;, 3)">
+                            High as Fuck*
+                            <div class="song-description">Previewed by beno on live</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-i5u5we5-4" 
+                             data-description="Previewed on a twitch live"
+                             onclick="playSong(&quot;i5u5we5&quot;, 4)">
+                            Set*
+                            <div class="song-description">Previewed on a twitch live</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-i5u5we5-5" 
+                             data-description="Previewed by Homixde Beno on a instagram live"
+                             onclick="playSong(&quot;i5u5we5&quot;, 5)">
+                            Pressure*
+                            <div class="song-description">Previewed by Homixde Beno on a instagram live</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-i5u5we5-6" 
+                             data-description="Previewed by Beno on live"
+                             onclick="playSong(&quot;i5u5we5&quot;, 6)">
+                            Test Us*
+                            <div class="song-description">Previewed by Beno on live</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-6">
+                <div class="era-header" onclick="toggleEra(6)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Homixide Lifestyle 2</span>
+                    <span class="chevron" id="chevron-6">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-6">
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-0" 
+                             data-description="OG Filename: 3-13-25 HXG 1 (GR!NCH) Snippet leaked on July 9th, 2025. Song surfaced on July 10th, 2025."
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 0)">
+                            GR!NCH
+                            <div class="song-description">OG Filename: 3-13-25 HXG 1 (GR!NCH) Snippet leaked on July 9th, 2025. Song surfaced on July 10th, 2025.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-1" 
+                             data-description="OG Filename: 3-14-25 HXG 2 (AYYYE!) Snippet leaked on July 9th, 2025. Full song surfaced on July 10th, 2025"
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 1)">
+                            AYYYE!(Rockstar Villian, Hardrock)
+                            <div class="song-description">OG Filename: 3-14-25 HXG 2 (AYYYE!) Snippet leaked on July 9th, 2025. Full song surfaced on July 10th, 2025</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-2" 
+                             data-description=""
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 2)">
+                            Stick*
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-3" 
+                             data-description="Previewed by homixide meechie during a instagram live."
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 3)">
+                            Hurt 'Em*(prod. Section 8)
+                            <div class="song-description">Previewed by homixide meechie during a instagram live.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-4" 
+                             data-description="Previewed by homixide meechie during a instagram live."
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 4)">
+                            Redrum*(prod. Section 8
+                            <div class="song-description">Previewed by homixide meechie during a instagram live.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-5" 
+                             data-description="OG Filename (snippet): 2-24-25 HXG 3 (Pave... “RAMBO” was first previewed by homixide gang on 2/27/25"
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 5)">
+                            Rambo*(prod. Zodiac, trisstt & artist)(Vanguard)
+                            <div class="song-description">OG Filename (snippet): 2-24-25 HXG 3 (Pave... “RAMBO” was first previewed by homixide gang on 2/27/25</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-6" 
+                             data-description="Previewed by homixidebeno5 On Instagram 4/22/2025"
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 6)">
+                            Off The Block*(prod. Pi’erre Bourne)
+                            <div class="song-description">Previewed by homixidebeno5 On Instagram 4/22/2025</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-7" 
+                             data-description="On July 19, 2024, Homixide Gang would take it to their Tiktok account (@homixide55555) posting a 12 second long video of the song captioning “BODYBAG OTW 🩸” The same 12 second snippet of the song would also be posted again by the duo for a Tiktok slideshow on the 25th of July 2024."
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 7)">
+                            🥇 BODYBAG*
+                            <div class="song-description">On July 19, 2024, Homixide Gang would take it to their Tiktok account (@homixide55555) posting a 12 second long video of the song captioning “BODYBAG OTW 🩸” The same 12 second snippet of the song would also be posted again by the duo for a Tiktok slideshow on the 25th of July 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-8" 
+                             data-description="A snippet of the song would be preview via Homixide benos Finsta and the duos official Tiktok account on July 29, 2024."
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 8)">
+                            Lose It*(prod. KP Beatz, Semsi, Carter Bryson & Michael Makho)
+                            <div class="song-description">A snippet of the song would be preview via Homixide benos Finsta and the duos official Tiktok account on July 29, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-9" 
+                             data-description="A minute long snippet of the song would be previewed on Benos instagram account and on Homixide Gangs Offical tiktok on August 21, 2024."
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 9)">
+                            My Way*(prod. Zodiac)
+                            <div class="song-description">A minute long snippet of the song would be previewed on Benos instagram account and on Homixide Gangs Offical tiktok on August 21, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-10" 
+                             data-description="Previewed on tana’s Instagram story on September 12th, 2024"
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 10)">
+                            Get Lucky*(prod. ​tana, ​ollieyeah & ​leadbluntt)
+                            <div class="song-description">Previewed on tana’s Instagram story on September 12th, 2024</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-11" 
+                             data-description=""
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 11)">
+                            No Love*(prod. ​​legion)
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-12" 
+                             data-description=""
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 12)">
+                            Snotty*
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-13" 
+                             data-description="Previewed On IG."
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 13)">
+                            God’s Way*
+                            <div class="song-description">Previewed On IG.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-14" 
+                             data-description="Song was recorded on November 14, 2024 and Previewed on December 18, 2024"
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 14)">
+                            Hold It Down*
+                            <div class="song-description">Song was recorded on November 14, 2024 and Previewed on December 18, 2024</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-15" 
+                             data-description=""
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 15)">
+                            🥇 Al Capone*(prod. ​​F1LTHY, Lucian, ​ssort & SLOWBURNZ)
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-16" 
+                             data-description=""
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 16)">
+                            Meds*(prod. Section 8, Fazi & Colorado)
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-17" 
+                             data-description=""
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 17)">
+                            500 Degrees*
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-18" 
+                             data-description=""
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 18)">
+                            Demon*
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Homixide_Lifestyle_2-19" 
+                             data-description="Version of 5G that has a intro."
+                             onclick="playSong(&quot;Homixide Lifestyle 2&quot;, 19)">
+                            Insane [V?](prod. DJ Moon)(Lifestyle 2, Goin INSANE)
+                            <div class="song-description">Version of 5G that has a intro.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+    </div>
+    <!-- Spotify-style player with skip buttons -->
+    <div class="player">
+        <img id="player-cover" src=cover alt="cover" class="player-cover">
+        <div class="player-info">
+            <div id="player-title" class="player-title">Select a song</div>
+            <div class="player-controls">
+                <button id="prev-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="15,4 7,11 15,18"></polygon></svg>
+                </button>
+                <button id="play-btn" class="player-btn">
+                    <svg id="play-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff"><polygon points="6,4 24,14 6,24"></polygon></svg>
+                    <svg id="pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff" style="display:none;"><rect x="6" y="4" width="5" height="20"></rect><rect x="17" y="4" width="5" height="20"></rect></svg>
+                </button>
+                <button id="next-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="7,4 15,11 7,18"></polygon></svg>
+                </button>
+                <span id="current-time" class="player-time">0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" value="0" min="0" max="100" step="1">
+                <span id="duration" class="player-time">0:00</span>
+            </div>
+        </div>
+        <audio id="player" preload="metadata"></audio>
+    </div>
+    <script>
+    // All eras and songs as a JS object
+    const eras = {"Snotty World (Deluxe)": [{"era": "Snotty World (Deluxe)", "name": "Say What*", "description": "Previewed By Beno on IG Live July 2021", "file_id": "991afd647d2fa361dfdb855136a1419a", "stream_url": "https://api.pillows.su/api/download/991afd647d2fa361dfdb855136a1419a", "download_url": "https://api.pillows.su/api/download/991afd647d2fa361dfdb855136a1419a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZoCE3CCfy-ZzDeUrTruDXUy1gcdRJTO8N1Jl-v3amaDA5NsgT0kI-LJ3NcWkMge2zV82sNNquFUFZkKOvGqwrXfwfva53kkZVUoF8IrPRp3LbrF2NXhBOV8ONsfLGT63510Sw_MWZ2W0cs798=w102-h106"}, {"era": "Snotty World (Deluxe)", "name": "Rockstar Way*", "description": "Previewed By Beno on IG Live September 2021", "file_id": "6f3d4795cb325b872deabb2e4940dd79", "stream_url": "https://api.pillows.su/api/download/6f3d4795cb325b872deabb2e4940dd79", "download_url": "https://api.pillows.su/api/download/6f3d4795cb325b872deabb2e4940dd79", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZoCE3CCfy-ZzDeUrTruDXUy1gcdRJTO8N1Jl-v3amaDA5NsgT0kI-LJ3NcWkMge2zV82sNNquFUFZkKOvGqwrXfwfva53kkZVUoF8IrPRp3LbrF2NXhBOV8ONsfLGT63510Sw_MWZ2W0cs798=w102-h106"}], "Snotty Hill": [{"era": "Snotty Hill", "name": "\ud83e\udd47 SSN (Remix)(feat. Playboi Carti)(prod. artist)", "description": "The SSN Remix was first previewed on October 19th, 2021. Remix is from September 2021. Beno & Meechie explained that SSN which wasnt released at the time was the first track they played for Carti. Remix of \"SSN\" was likely made before the song was released.", "file_id": "59dab832a4f93f9779f5dc716b92a987", "stream_url": "https://api.pillows.su/api/download/59dab832a4f93f9779f5dc716b92a987", "download_url": "https://api.pillows.su/api/download/59dab832a4f93f9779f5dc716b92a987", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105"}, {"era": "Snotty Hill", "name": "How We Livin*", "description": "Previewed On September 1, 2021", "file_id": "a3bdff7c1e0577fd777adad183158ff6", "stream_url": "https://api.pillows.su/api/download/a3bdff7c1e0577fd777adad183158ff6", "download_url": "https://api.pillows.su/api/download/a3bdff7c1e0577fd777adad183158ff6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105"}, {"era": "Snotty Hill", "name": "Slidin In The Cat*", "description": "Previewed on November 1, 2021", "file_id": "11ca3d8a2578808aa30c7bfc5b0aca3f", "stream_url": "https://api.pillows.su/api/download/11ca3d8a2578808aa30c7bfc5b0aca3f", "download_url": "https://api.pillows.su/api/download/11ca3d8a2578808aa30c7bfc5b0aca3f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105"}, {"era": "Snotty Hill", "name": "No Bap*", "description": "Previewed on November 1, 2021", "file_id": "73654e9bac2cf25ab06ed977b96c2d43", "stream_url": "https://api.pillows.su/api/download/73654e9bac2cf25ab06ed977b96c2d43", "download_url": "https://api.pillows.su/api/download/73654e9bac2cf25ab06ed977b96c2d43", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105"}, {"era": "Snotty Hill", "name": "Flipped The Switch(feat. internationaljefe)", "description": "Previewed on December 1, 2021", "file_id": "54d2826e5c82f89500d740005da27830", "stream_url": "https://api.pillows.su/api/download/54d2826e5c82f89500d740005da27830", "download_url": "https://api.pillows.su/api/download/54d2826e5c82f89500d740005da27830", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105"}, {"era": "Snotty Hill", "name": "Destroy Lonely - High AF (Remix)(feat. Homixide Gang)(prod. XTCY)", "description": "Previewed by Beno around the Destroy Lonely NO STYLIST sessions. Could be solo Beno.", "file_id": "7ea9be5fe3521babc5eb43a1285bed48", "stream_url": "https://api.pillows.su/api/download/7ea9be5fe3521babc5eb43a1285bed48", "download_url": "https://api.pillows.su/api/download/7ea9be5fe3521babc5eb43a1285bed48", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105"}, {"era": "Snotty Hill", "name": "Stuck in My Ways(prod. Richxxzno)", "description": "Track 3 on Snotty Hill Previewed multiple times before someone hacked Homixide Gang's Spotify and leaked it. Removed 4 days later. unknown if a finished version exists as this one is not mixed.", "file_id": "ab80a9b1686376f66768f3f0f708fbc5", "stream_url": "https://api.pillows.su/api/download/ab80a9b1686376f66768f3f0f708fbc5", "download_url": "https://api.pillows.su/api/download/ab80a9b1686376f66768f3f0f708fbc5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105"}, {"era": "Snotty Hill", "name": "\ud83e\udd47 1017 ALYX 95M(prod. DMC Global & D. Hill)", "description": "OG Filename: Snotty - 1017 ALYX 95M (javaunrough)_1 Track 5 on Snotty Hill Previewed by Matthew Williams on his Instagram story in December 2021. Fucking tags of doom snippet surfaced on July 18th, 2025.", "file_id": "43c8db71ccd2a0a40dfa61773cb1a2e5", "stream_url": "https://api.pillows.su/api/download/43c8db71ccd2a0a40dfa61773cb1a2e5", "download_url": "https://api.pillows.su/api/download/43c8db71ccd2a0a40dfa61773cb1a2e5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105"}, {"era": "Snotty Hill", "name": "Can't You Tell(prod. D. Hill)", "description": "Track 7 on Snotty Hill", "file_id": "46a59a364a89b1dd680ab6b7afd5be05", "stream_url": "https://api.pillows.su/api/download/46a59a364a89b1dd680ab6b7afd5be05", "download_url": "https://api.pillows.su/api/download/46a59a364a89b1dd680ab6b7afd5be05", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105"}, {"era": "Snotty Hill", "name": "Huh(feat. 5unna)(prod. Kicstan)(Chopsticks)", "description": "Track 10 on Snotty Hill Previewed by 5unna in November / December of 2021", "file_id": "283f8c81f4f76474153da497061fab3b", "stream_url": "https://api.pillows.su/api/download/283f8c81f4f76474153da497061fab3b", "download_url": "https://api.pillows.su/api/download/283f8c81f4f76474153da497061fab3b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105"}, {"era": "Snotty Hill", "name": "Different(feat. Biggaveli)(prod. Kicstan)", "description": "Track 12 on Snotty Hill Previewed by D. Hill on his last Instagram post on September 5, 2021.", "file_id": "d5f68365afa675ae50cefa93593d6e7f", "stream_url": "https://api.pillows.su/api/download/d5f68365afa675ae50cefa93593d6e7f", "download_url": "https://api.pillows.su/api/download/d5f68365afa675ae50cefa93593d6e7f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105"}, {"era": "Snotty Hill", "name": "Homixide Gvng(prod. D. Hill)", "description": "Track 13 on Snotty Hill Previously unheard until 2 back to back snippets randomly leaked on .cx on July 16, 2025.", "file_id": "48d832697cd0fb329955de9ade62a403", "stream_url": "https://api.pillows.su/api/download/48d832697cd0fb329955de9ade62a403", "download_url": "https://api.pillows.su/api/download/48d832697cd0fb329955de9ade62a403", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaCRK1gmTdRFkSLUP7R003cnlvcKp6m5_hV4B6eqMCpEnhQZjqAAhCMEFvo88imSdRWN7u3qZvc24bF7pkVDinZzgfJ_KBw4I3gyv8bUvPgWrms75hf5dqHmwW5spqG_QPt7Va6ZxEheV1Ad6c=w102-h105"}], "Homixide Lifestyle(55 Ganganati)": [{"era": "Homixide Lifestyle(55 Ganganati)", "name": "DEMON", "description": "Leaked on December 16th, 2023 as a bonus to the 2 My Room lone gb.", "file_id": "2eb5189bdc59bcea845afe5dc89fcc8b", "stream_url": "https://api.pillows.su/api/download/2eb5189bdc59bcea845afe5dc89fcc8b", "download_url": "https://api.pillows.su/api/download/2eb5189bdc59bcea845afe5dc89fcc8b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaHHF1u9q7fkwYasbUxCLgVCMbGD1GQu4a2PHCAWyH0RaIOF88SwXqPPgJprQ5UasVg2lgDDirWyz_ZlVdcMZII4RZ4E81-xs0txuoQqQRJz_3jyj7eRLdx4asFYg02HfGRZkCoY8xymxILKzE=w102-h104"}, {"era": "Homixide Lifestyle(55 Ganganati)", "name": "\u2728 Homixide Out(prod. Lil 88)", "description": "Previewed by Beno on Instagram in March of 2022. The song was recorded on March 6, 2022. Leaked by propkers22 on December 23, 2023 as a part of a birthday playlist consisting a handful of leaks from multiple artists.", "file_id": "3cc974dbe2432fdac9d693e6885f0b20", "stream_url": "https://api.pillows.su/api/download/3cc974dbe2432fdac9d693e6885f0b20", "download_url": "https://api.pillows.su/api/download/3cc974dbe2432fdac9d693e6885f0b20", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaHHF1u9q7fkwYasbUxCLgVCMbGD1GQu4a2PHCAWyH0RaIOF88SwXqPPgJprQ5UasVg2lgDDirWyz_ZlVdcMZII4RZ4E81-xs0txuoQqQRJz_3jyj7eRLdx4asFYg02HfGRZkCoY8xymxILKzE=w102-h104"}, {"era": "Homixide Lifestyle(55 Ganganati)", "name": "Balenci Boots(feat. tana)(prod. CGM Beats & Mingo)", "description": "Tana reposted the song on his main SoundCloud account (Tana) not his main insta", "file_id": "946fa28331087f3be9eece96e91f9a08", "stream_url": "https://api.pillows.su/api/download/946fa28331087f3be9eece96e91f9a08", "download_url": "https://api.pillows.su/api/download/946fa28331087f3be9eece96e91f9a08", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaHHF1u9q7fkwYasbUxCLgVCMbGD1GQu4a2PHCAWyH0RaIOF88SwXqPPgJprQ5UasVg2lgDDirWyz_ZlVdcMZII4RZ4E81-xs0txuoQqQRJz_3jyj7eRLdx4asFYg02HfGRZkCoY8xymxILKzE=w102-h104"}, {"era": "Homixide Lifestyle(55 Ganganati)", "name": "\u2b50 Uzi Work [V1](prod. KP Beatz & \u200bssort)", "description": "Was teased and seen in track lists leading up to the release of HL. Later released on Snot or Not without intro. OG version with intro leaked on September 30, 2023.", "file_id": "796beb599c15cef073bdd02c1c9ca82a", "stream_url": "https://api.pillows.su/api/download/796beb599c15cef073bdd02c1c9ca82a", "download_url": "https://api.pillows.su/api/download/796beb599c15cef073bdd02c1c9ca82a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaHHF1u9q7fkwYasbUxCLgVCMbGD1GQu4a2PHCAWyH0RaIOF88SwXqPPgJprQ5UasVg2lgDDirWyz_ZlVdcMZII4RZ4E81-xs0txuoQqQRJz_3jyj7eRLdx4asFYg02HfGRZkCoY8xymxILKzE=w102-h104"}, {"era": "Homixide Lifestyle(55 Ganganati)", "name": "\u2728 Switch Up(prod. F1LTHY)", "description": "Leaked randomly on September 23, 2023", "file_id": "dd655f1d7baea9eb15fddb57eaaa660c", "stream_url": "https://api.pillows.su/api/download/dd655f1d7baea9eb15fddb57eaaa660c", "download_url": "https://api.pillows.su/api/download/dd655f1d7baea9eb15fddb57eaaa660c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaHHF1u9q7fkwYasbUxCLgVCMbGD1GQu4a2PHCAWyH0RaIOF88SwXqPPgJprQ5UasVg2lgDDirWyz_ZlVdcMZII4RZ4E81-xs0txuoQqQRJz_3jyj7eRLdx4asFYg02HfGRZkCoY8xymxILKzE=w102-h104"}, {"era": "Homixide Lifestyle(55 Ganganati)", "name": "5HIP(feat. Biggaveli)(prod. Lil 88, omgzanoza, Muhlir & SHAZY)", "description": "Previewed by Beno on a ig live in March 2022. Leaked on December 26, 2023 as a bonus to the 2 My Room lone gb.", "file_id": "97cc61b4ae924438a64e6e7ca265b324", "stream_url": "https://api.pillows.su/api/download/97cc61b4ae924438a64e6e7ca265b324", "download_url": "https://api.pillows.su/api/download/97cc61b4ae924438a64e6e7ca265b324", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaHHF1u9q7fkwYasbUxCLgVCMbGD1GQu4a2PHCAWyH0RaIOF88SwXqPPgJprQ5UasVg2lgDDirWyz_ZlVdcMZII4RZ4E81-xs0txuoQqQRJz_3jyj7eRLdx4asFYg02HfGRZkCoY8xymxILKzE=w102-h104"}, {"era": "Homixide Lifestyle(55 Ganganati)", "name": "Ken Carson - Ain't No Way(feat. Destroy Lonely & Homixide Gang)(prod. \u200bstar boy & Outtatown)", "description": "The song was first previewed by Ken on his spam user00xman via an Instagram live along with 7 other songs. The song leaked on December 30, 2023 after a succesful GB for $800", "file_id": "167ef9cb30565a755f804bc2af72a2e8", "stream_url": "https://api.pillows.su/api/download/167ef9cb30565a755f804bc2af72a2e8", "download_url": "https://api.pillows.su/api/download/167ef9cb30565a755f804bc2af72a2e8", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaHHF1u9q7fkwYasbUxCLgVCMbGD1GQu4a2PHCAWyH0RaIOF88SwXqPPgJprQ5UasVg2lgDDirWyz_ZlVdcMZII4RZ4E81-xs0txuoQqQRJz_3jyj7eRLdx4asFYg02HfGRZkCoY8xymxILKzE=w102-h104"}, {"era": "Homixide Lifestyle(55 Ganganati)", "name": "Rockstar Stepper*(feat. R5 Homixide)(prod. Lil 88)", "description": "Previewed by Beno on IG Live", "file_id": "22b7d10d4c397163bf67aff2fcfabcb9", "stream_url": "https://api.pillows.su/api/download/22b7d10d4c397163bf67aff2fcfabcb9", "download_url": "https://api.pillows.su/api/download/22b7d10d4c397163bf67aff2fcfabcb9", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhaHHF1u9q7fkwYasbUxCLgVCMbGD1GQu4a2PHCAWyH0RaIOF88SwXqPPgJprQ5UasVg2lgDDirWyz_ZlVdcMZII4RZ4E81-xs0txuoQqQRJz_3jyj7eRLdx4asFYg02HfGRZkCoY8xymxILKzE=w102-h104"}], "Snot or Not": [{"era": "Snot or Not", "name": "\u2728 Save(Say)", "description": "Samples Five Finger Death Punch. Solo Beno.", "file_id": "f465e9e754acc75d23594ec01a77666f", "stream_url": "https://api.pillows.su/api/download/f465e9e754acc75d23594ec01a77666f", "download_url": "https://api.pillows.su/api/download/f465e9e754acc75d23594ec01a77666f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhayiKilczHt14eG92jaJZhKwE6emA46miLJwgZxt7pIHfSx-NAtm-9jLYV2voMQtrD0uJoubZdlMGi-YaoVbU9hOiYNc_lCLOiG9uTP2431XlGmCoUruzEvBb5UabsddfMVHtvxboAUKfkUNZM=w102-h82"}], "5TH AMNDMNT": [{"era": "5TH AMNDMNT", "name": "\u2b50 Flow*", "description": "OG Filename: 05.09.23 SONG #2 Snippet first surfaced on July 9th, 2025. Song surfaced on July 10th, 2025", "file_id": "6fb2a5660791c2ebb5cb1860c6e2c601", "stream_url": "https://api.pillows.su/api/download/6fb2a5660791c2ebb5cb1860c6e2c601", "download_url": "https://api.pillows.su/api/download/6fb2a5660791c2ebb5cb1860c6e2c601", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbQnTgqjheT99FeZyK2uA8f7hJnVVbFTCxQyAHY6qZZI7-6d3kjhkatmAYS2mKZqDKxrAtUPektb07zuSklGsS9JJXQ8F97MSNs_dawJiXtiV8XBT38in_9eCtbUTAoGnfXZw2xv562gaieoik=w102-h129"}, {"era": "5TH AMNDMNT", "name": "Cocaine White(feat. Rich Amiri)", "description": "Leaked on October 12, 2024", "file_id": "c5475e63a816d2dcd70f392f1c54e09d", "stream_url": "https://api.pillows.su/api/download/c5475e63a816d2dcd70f392f1c54e09d", "download_url": "https://api.pillows.su/api/download/c5475e63a816d2dcd70f392f1c54e09d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbQnTgqjheT99FeZyK2uA8f7hJnVVbFTCxQyAHY6qZZI7-6d3kjhkatmAYS2mKZqDKxrAtUPektb07zuSklGsS9JJXQ8F97MSNs_dawJiXtiV8XBT38in_9eCtbUTAoGnfXZw2xv562gaieoik=w102-h129"}, {"era": "5TH AMNDMNT", "name": "Goin Brazy*(feat. L5)", "description": "", "file_id": "e44befdc8c6c50c8a71053cd8f484523", "stream_url": "https://api.pillows.su/api/download/e44befdc8c6c50c8a71053cd8f484523", "download_url": "https://api.pillows.su/api/download/e44befdc8c6c50c8a71053cd8f484523", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbQnTgqjheT99FeZyK2uA8f7hJnVVbFTCxQyAHY6qZZI7-6d3kjhkatmAYS2mKZqDKxrAtUPektb07zuSklGsS9JJXQ8F97MSNs_dawJiXtiV8XBT38in_9eCtbUTAoGnfXZw2xv562gaieoik=w102-h129"}], "i5u5we5": [{"era": "i5u5we5", "name": "Japanese Tags*", "description": "Previewed on Homixide Beno!\u2019s birthday as a happy birthday message.", "file_id": "5b11c0f36d464316480f42b03d30672b", "stream_url": "https://api.pillows.su/api/download/5b11c0f36d464316480f42b03d30672b", "download_url": "https://api.pillows.su/api/download/5b11c0f36d464316480f42b03d30672b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZ0RI8R5spFEWBljqwTdTuVEh9zV8GpyiOrpZ8I61VjoA9uNe3qkSDLRPlW35Q-sPfUgEyJ055H5CI3Hha6Q-K1c43pHwCUyCUMbj7THA5yE__6AtnXD-jFEe1kZHtoxA6lXRilXwWxPRuUfDQ=w102-h140"}, {"era": "i5u5we5", "name": "Get It*", "description": "", "file_id": "7b3f829a028b11076a419d00e1d3e757", "stream_url": "https://api.pillows.su/api/download/7b3f829a028b11076a419d00e1d3e757", "download_url": "https://api.pillows.su/api/download/7b3f829a028b11076a419d00e1d3e757", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZ0RI8R5spFEWBljqwTdTuVEh9zV8GpyiOrpZ8I61VjoA9uNe3qkSDLRPlW35Q-sPfUgEyJ055H5CI3Hha6Q-K1c43pHwCUyCUMbj7THA5yE__6AtnXD-jFEe1kZHtoxA6lXRilXwWxPRuUfDQ=w102-h140"}, {"era": "i5u5we5", "name": "Ridin*", "description": "", "file_id": "c0e2f4d06a0f824d206369d6eac41882", "stream_url": "https://api.pillows.su/api/download/c0e2f4d06a0f824d206369d6eac41882", "download_url": "https://api.pillows.su/api/download/c0e2f4d06a0f824d206369d6eac41882", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZ0RI8R5spFEWBljqwTdTuVEh9zV8GpyiOrpZ8I61VjoA9uNe3qkSDLRPlW35Q-sPfUgEyJ055H5CI3Hha6Q-K1c43pHwCUyCUMbj7THA5yE__6AtnXD-jFEe1kZHtoxA6lXRilXwWxPRuUfDQ=w102-h140"}, {"era": "i5u5we5", "name": "High as Fuck*", "description": "Previewed by beno on live", "file_id": "c3d6cf3a4240efa157de3a21f3d35fd2", "stream_url": "https://api.pillows.su/api/download/c3d6cf3a4240efa157de3a21f3d35fd2", "download_url": "https://api.pillows.su/api/download/c3d6cf3a4240efa157de3a21f3d35fd2", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZ0RI8R5spFEWBljqwTdTuVEh9zV8GpyiOrpZ8I61VjoA9uNe3qkSDLRPlW35Q-sPfUgEyJ055H5CI3Hha6Q-K1c43pHwCUyCUMbj7THA5yE__6AtnXD-jFEe1kZHtoxA6lXRilXwWxPRuUfDQ=w102-h140"}, {"era": "i5u5we5", "name": "Set*", "description": "Previewed on a twitch live", "file_id": "40544f86bc8b0154ee9adcc561e8aba3", "stream_url": "https://api.pillows.su/api/download/40544f86bc8b0154ee9adcc561e8aba3", "download_url": "https://api.pillows.su/api/download/40544f86bc8b0154ee9adcc561e8aba3", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZ0RI8R5spFEWBljqwTdTuVEh9zV8GpyiOrpZ8I61VjoA9uNe3qkSDLRPlW35Q-sPfUgEyJ055H5CI3Hha6Q-K1c43pHwCUyCUMbj7THA5yE__6AtnXD-jFEe1kZHtoxA6lXRilXwWxPRuUfDQ=w102-h140"}, {"era": "i5u5we5", "name": "Pressure*", "description": "Previewed by Homixde Beno on a instagram live", "file_id": "505501bad0e6da8006cdc22493b57e33", "stream_url": "https://api.pillows.su/api/download/505501bad0e6da8006cdc22493b57e33", "download_url": "https://api.pillows.su/api/download/505501bad0e6da8006cdc22493b57e33", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZ0RI8R5spFEWBljqwTdTuVEh9zV8GpyiOrpZ8I61VjoA9uNe3qkSDLRPlW35Q-sPfUgEyJ055H5CI3Hha6Q-K1c43pHwCUyCUMbj7THA5yE__6AtnXD-jFEe1kZHtoxA6lXRilXwWxPRuUfDQ=w102-h140"}, {"era": "i5u5we5", "name": "Test Us*", "description": "Previewed by Beno on live", "file_id": "45319681c94cb072ff586d12cb161bee", "stream_url": "https://api.pillows.su/api/download/45319681c94cb072ff586d12cb161bee", "download_url": "https://api.pillows.su/api/download/45319681c94cb072ff586d12cb161bee", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZ0RI8R5spFEWBljqwTdTuVEh9zV8GpyiOrpZ8I61VjoA9uNe3qkSDLRPlW35Q-sPfUgEyJ055H5CI3Hha6Q-K1c43pHwCUyCUMbj7THA5yE__6AtnXD-jFEe1kZHtoxA6lXRilXwWxPRuUfDQ=w102-h140"}], "Homixide Lifestyle 2": [{"era": "Homixide Lifestyle 2", "name": "GR!NCH", "description": "OG Filename: 3-13-25 HXG 1 (GR!NCH) Snippet leaked on July 9th, 2025. Song surfaced on July 10th, 2025.", "file_id": "60522c42b416c0dbb7cd0f9870a03422", "stream_url": "https://api.pillows.su/api/download/60522c42b416c0dbb7cd0f9870a03422", "download_url": "https://api.pillows.su/api/download/60522c42b416c0dbb7cd0f9870a03422", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "AYYYE!(Rockstar Villian, Hardrock)", "description": "OG Filename: 3-14-25 HXG 2 (AYYYE!) Snippet leaked on July 9th, 2025. Full song surfaced on July 10th, 2025", "file_id": "9f912f4dc653ec9f22b4f86a15c62ef7", "stream_url": "https://api.pillows.su/api/download/9f912f4dc653ec9f22b4f86a15c62ef7", "download_url": "https://api.pillows.su/api/download/9f912f4dc653ec9f22b4f86a15c62ef7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "Stick*", "description": "", "file_id": "806deaf28bad640093ac817ac78f7fe6", "stream_url": "https://api.pillows.su/api/download/806deaf28bad640093ac817ac78f7fe6", "download_url": "https://api.pillows.su/api/download/806deaf28bad640093ac817ac78f7fe6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "Hurt 'Em*(prod. Section 8)", "description": "Previewed by homixide meechie during a instagram live.", "file_id": "5f711737d33465e05d5248862b01ca05", "stream_url": "https://api.pillows.su/api/download/5f711737d33465e05d5248862b01ca05", "download_url": "https://api.pillows.su/api/download/5f711737d33465e05d5248862b01ca05", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "Redrum*(prod. Section 8", "description": "Previewed by homixide meechie during a instagram live.", "file_id": "b70f9489973662f43d091351bbc60040", "stream_url": "https://api.pillows.su/api/download/b70f9489973662f43d091351bbc60040", "download_url": "https://api.pillows.su/api/download/b70f9489973662f43d091351bbc60040", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "Rambo*(prod. Zodiac, trisstt & artist)(Vanguard)", "description": "OG Filename (snippet): 2-24-25 HXG 3 (Pave... \u201cRAMBO\u201d was first previewed by homixide gang on 2/27/25", "file_id": "1d93ed148b8c2c2bddc4a54150e4b7ab", "stream_url": "https://api.pillows.su/api/download/1d93ed148b8c2c2bddc4a54150e4b7ab", "download_url": "https://api.pillows.su/api/download/1d93ed148b8c2c2bddc4a54150e4b7ab", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "Off The Block*(prod. Pi\u2019erre Bourne)", "description": "Previewed by homixidebeno5 On Instagram 4/22/2025", "file_id": "c7110d2d448236ca4040aadd5df684c5", "stream_url": "https://api.pillows.su/api/download/c7110d2d448236ca4040aadd5df684c5", "download_url": "https://api.pillows.su/api/download/c7110d2d448236ca4040aadd5df684c5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "\ud83e\udd47 BODYBAG*", "description": "On July 19, 2024, Homixide Gang would take it to their Tiktok account (@homixide55555) posting a 12 second long video of the song captioning \u201cBODYBAG OTW \ud83e\ude78\u201d The same 12 second snippet of the song would also be posted again by the duo for a Tiktok slideshow on the 25th of July 2024.", "file_id": "3610fbf789559dfcb45f9140bfd0c04e", "stream_url": "https://api.pillows.su/api/download/3610fbf789559dfcb45f9140bfd0c04e", "download_url": "https://api.pillows.su/api/download/3610fbf789559dfcb45f9140bfd0c04e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "Lose It*(prod. KP Beatz, Semsi, Carter Bryson & Michael Makho)", "description": "A snippet of the song would be preview via Homixide benos Finsta and the duos official Tiktok account on July 29, 2024.", "file_id": "50493608c237f3989ec026012e55c0c3", "stream_url": "https://api.pillows.su/api/download/50493608c237f3989ec026012e55c0c3", "download_url": "https://api.pillows.su/api/download/50493608c237f3989ec026012e55c0c3", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "My Way*(prod. Zodiac)", "description": "A minute long snippet of the song would be previewed on Benos instagram account and on Homixide Gangs Offical tiktok on August 21, 2024.", "file_id": "186e591fd29b38255d4172b9ae0037b6", "stream_url": "https://api.pillows.su/api/download/186e591fd29b38255d4172b9ae0037b6", "download_url": "https://api.pillows.su/api/download/186e591fd29b38255d4172b9ae0037b6", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "Get Lucky*(prod. \u200btana, \u200bollieyeah & \u200bleadbluntt)", "description": "Previewed on tana\u2019s Instagram story on September 12th, 2024", "file_id": "a7de509922b7942bbe359f4ad8b1a47b", "stream_url": "https://api.pillows.su/api/download/a7de509922b7942bbe359f4ad8b1a47b", "download_url": "https://api.pillows.su/api/download/a7de509922b7942bbe359f4ad8b1a47b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "No Love*(prod. \u200b\u200blegion)", "description": "", "file_id": "1611ed94bed6e06681e1ceb7d6bdb8b3", "stream_url": "https://api.pillows.su/api/download/1611ed94bed6e06681e1ceb7d6bdb8b3", "download_url": "https://api.pillows.su/api/download/1611ed94bed6e06681e1ceb7d6bdb8b3", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "Snotty*", "description": "", "file_id": "76cca8c672e044e86b8bc88da977684a", "stream_url": "https://api.pillows.su/api/download/76cca8c672e044e86b8bc88da977684a", "download_url": "https://api.pillows.su/api/download/76cca8c672e044e86b8bc88da977684a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "God\u2019s Way*", "description": "Previewed On IG.", "file_id": "eba3fd514e64d678978d2acb4227d6c8", "stream_url": "https://api.pillows.su/api/download/eba3fd514e64d678978d2acb4227d6c8", "download_url": "https://api.pillows.su/api/download/eba3fd514e64d678978d2acb4227d6c8", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "Hold It Down*", "description": "Song was recorded on November 14, 2024 and Previewed on December 18, 2024", "file_id": "dc2eaa92ee41301c3ff9960101812100", "stream_url": "https://api.pillows.su/api/download/dc2eaa92ee41301c3ff9960101812100", "download_url": "https://api.pillows.su/api/download/dc2eaa92ee41301c3ff9960101812100", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "\ud83e\udd47 Al Capone*(prod. \u200b\u200bF1LTHY, Lucian, \u200bssort & SLOWBURNZ)", "description": "", "file_id": "32b901c91f5f39532628a68ef88cd87a", "stream_url": "https://api.pillows.su/api/download/32b901c91f5f39532628a68ef88cd87a", "download_url": "https://api.pillows.su/api/download/32b901c91f5f39532628a68ef88cd87a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "Meds*(prod. Section 8, Fazi & Colorado)", "description": "", "file_id": "1850815fd58e5ce9554dc197c53dc672", "stream_url": "https://api.pillows.su/api/download/1850815fd58e5ce9554dc197c53dc672", "download_url": "https://api.pillows.su/api/download/1850815fd58e5ce9554dc197c53dc672", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "500 Degrees*", "description": "", "file_id": "25705622e4e5a4a0a0199fac42ea8eb0", "stream_url": "https://api.pillows.su/api/download/25705622e4e5a4a0a0199fac42ea8eb0", "download_url": "https://api.pillows.su/api/download/25705622e4e5a4a0a0199fac42ea8eb0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "Demon*", "description": "", "file_id": "3484ba153c765a9d3d38afb887d776e5", "stream_url": "https://api.pillows.su/api/download/3484ba153c765a9d3d38afb887d776e5", "download_url": "https://api.pillows.su/api/download/3484ba153c765a9d3d38afb887d776e5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}, {"era": "Homixide Lifestyle 2", "name": "Insane [V?](prod. DJ Moon)(Lifestyle 2, Goin INSANE)", "description": "Version of 5G that has a intro.", "file_id": "e9d6ef6db0cc28e2dd712fbfc7ce9225", "stream_url": "https://api.pillows.su/api/download/e9d6ef6db0cc28e2dd712fbfc7ce9225", "download_url": "https://api.pillows.su/api/download/e9d6ef6db0cc28e2dd712fbfc7ce9225", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbb3yj21Zn9hyp7LXadlYTNtqdGID6NcYbvV040QZVmwC43Iik1i00QXcS6Z2nQY-wMu2JsHXwIoAa6w1k2cIR1pJqkpbxc6esVfLfjKPTSJwLC_SFfqH4JH2T1b3oQkzoqzu84Io0mzssFVWQ=w102-h158"}]};
+    let currentEra = null;
+    let currentIndex = null;
+    let currentSong = null;
+    let playlist = [];
+
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const seekBar = document.getElementById('seek-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const playerTitle = document.getElementById('player-title');
+    const playerCover = document.getElementById('player-cover');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    function playSong(era, index) {
+        playlist = eras[era];
+        currentEra = era;
+        currentIndex = index;
+        loadAndPlayCurrent();
+    }
+
+    function highlightCurrentSong() {
+        document.querySelectorAll('.song.playing').forEach(el => el.classList.remove('playing'));
+        if (currentEra !== null && currentIndex !== null) {
+            const songId = `song-${currentEra.replace(/ /g, '_')}-${currentIndex}`;
+            const songEl = document.getElementById(songId);
+            if (songEl) songEl.classList.add('playing');
+        }
+    }
+
+    function loadAndPlayCurrent() {
+        if (!playlist || currentIndex === null || !playlist[currentIndex]) return;
+        const song = playlist[currentIndex];
+        player.src = song.stream_url;
+        playerTitle.textContent = song.name;
+        playerCover.src = song.cover || 'https://via.placeholder.com/60x60?text=No+Cover';
+        currentSong = song.stream_url;
+        player.play();
+        updateSkipButtons();
+        updateMediaSession(song);
+        highlightCurrentSong();
+    }
+
+    function updateSkipButtons() {
+        prevBtn.disabled = (currentIndex <= 0);
+        nextBtn.disabled = (currentIndex >= playlist.length - 1);
+    }
+
+    playBtn.onclick = function() {
+        if (player.src) {
+            if (player.paused) player.play();
+            else player.pause();
+        }
+    };
+
+    prevBtn.onclick = function() {
+        if (playlist && currentIndex > 0) {
+            currentIndex -= 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    nextBtn.onclick = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    player.onplay = function() {
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "";
+    };
+    player.onpause = function() {
+        playIcon.style.display = "";
+        pauseIcon.style.display = "none";
+    };
+
+    player.ontimeupdate = function() {
+        seekBar.value = player.currentTime || 0;
+        currentTimeEl.textContent = formatTime(player.currentTime);
+    };
+    player.onloadedmetadata = function() {
+        seekBar.max = player.duration || 0;
+        durationEl.textContent = formatTime(player.duration);
+    };
+    seekBar.oninput = function() {
+        player.currentTime = seekBar.value;
+    };
+
+    player.onended = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    function formatTime(sec) {
+        sec = Math.floor(sec);
+        return Math.floor(sec/60) + ":" + String(sec%60).padStart(2, '0');
+    }
+    function updateMediaSession(song) {
+        if ('mediaSession' in navigator && song) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.name,
+                artist: song.era,
+                album: "Unreleased",
+                artwork: [
+                    { src: song.cover || 'https://via.placeholder.com/90x90?text=No+Cover', sizes: '90x90', type: 'image/png' }
+                ]
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (playlist && currentIndex > 0) {
+                    currentIndex -= 1;
+                    loadAndPlayCurrent();
+                }
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                if (playlist && currentIndex < playlist.length - 1) {
+                    currentIndex += 1;
+                    loadAndPlayCurrent();
+                }
+            });
+        }
+    }
+
+    // --- Collapsible Eras ---
+    function toggleEra(idx) {
+        const songList = document.getElementById('song-list-' + idx);
+        const chevron = document.getElementById('chevron-' + idx);
+        const isOpen = songList.classList.contains('open');
+        if (isOpen) {
+            songList.classList.remove('open');
+            chevron.classList.remove('open');
+        } else {
+            songList.classList.add('open');
+            chevron.classList.add('open');
+        }
+    }
+    // Collapse all on load
+    window.addEventListener('DOMContentLoaded', function() {
+        
+            document.getElementById('song-list-0').classList.remove('open');
+            document.getElementById('chevron-0').classList.remove('open');
+        
+            document.getElementById('song-list-1').classList.remove('open');
+            document.getElementById('chevron-1').classList.remove('open');
+        
+            document.getElementById('song-list-2').classList.remove('open');
+            document.getElementById('chevron-2').classList.remove('open');
+        
+            document.getElementById('song-list-3').classList.remove('open');
+            document.getElementById('chevron-3').classList.remove('open');
+        
+            document.getElementById('song-list-4').classList.remove('open');
+            document.getElementById('chevron-4').classList.remove('open');
+        
+            document.getElementById('song-list-5').classList.remove('open');
+            document.getElementById('chevron-5').classList.remove('open');
+        
+            document.getElementById('song-list-6').classList.remove('open');
+            document.getElementById('chevron-6').classList.remove('open');
+        
+
+        // Tooltip logic
+        let tooltip = null;
+        let tooltipTimeout = null;
+
+        document.querySelectorAll('.song').forEach(song => {
+            song.addEventListener('mouseenter', function(e) {
+                const desc = song.getAttribute('data-description');
+                if (!desc) return;
+                if (tooltip) tooltip.remove();
+                tooltip = document.createElement('div');
+                tooltip.className = 'floating-song-description';
+                tooltip.innerHTML = desc;
+                document.body.appendChild(tooltip);
+
+                // Position tooltip
+                const rect = song.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 6) + 'px';
+                tooltip.style.minWidth = rect.width + 'px';
+
+                // Fade in
+                setTimeout(() => {
+                    if (tooltip) tooltip.classList.add('visible');
+                }, 10);
+            });
+            song.addEventListener('mouseleave', function(e) {
+                if (tooltip) {
+                    tooltip.classList.remove('visible');
+                    setTimeout(() => {
+                        if (tooltip) tooltip.remove();
+                        tooltip = null;
+                    }, 120);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

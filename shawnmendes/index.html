@@ -1,0 +1,619 @@
+<!doctype html>
+<html>
+<head>
+    <title>ArtistHub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #121212;
+            color: #fff;
+        }
+.container {
+    padding: 2rem;
+    padding-bottom: 120px; /* Add space for the player */
+}
+        .era {
+            margin-bottom: 2.2rem;
+            background: #181818;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px #0003;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .era-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2.1rem 2rem 2.1rem 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.18s;
+            border-bottom: 1px solid #232323;
+        }
+        .era-header:hover {
+            background: #232323;
+        }
+        .era-cover {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .era-title {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #1db954;
+            flex: 1;
+            letter-spacing: 0.01em;
+        }
+        .chevron {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(.4,2,.6,1), color 0.2s;
+            color: #aaa;
+        }
+        .chevron.open {
+            transform: rotate(90deg);
+            color: #1db954;
+        }
+        .song-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(.4,2,.6,1);
+            background: #181818;
+            padding: 0 2rem;
+        }
+        .song-list.open {
+            padding-bottom: 1.2rem;
+            max-height: 1000px;
+            transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
+        }
+        .song {
+            background: #222;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.18s, color 0.18s;
+            box-shadow: 0 1px 4px #0002;
+            margin-top: 0.7rem;
+        }
+        .song:first-child { margin-top: 1.2rem; }
+        .song:hover {
+            background: #1db95433;
+            color: #1db954;
+        }
+        /* Hide the inline description, we use JS tooltip instead */
+        .song .song-description {
+            display: none !important;
+        }
+        .song.playing {
+            background: #1db954 !important;
+            color: #181818 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 12px #1db95455;
+        }
+        .player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #181818;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #222;
+            box-shadow: 0 -2px 8px #0003;
+            z-index: 100;
+            gap: 1.5rem;
+        }
+        .player-cover {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .player-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .player-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.2rem;
+            text-shadow: 0 1px 2px #0008;
+        }
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .player-btn, .player-skip-btn {
+            background: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px #0003;
+            margin-right: 0.5rem;
+        }
+        .player-btn:hover, .player-skip-btn:hover {
+            background: #1ed760;
+        }
+        .player-skip-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        .player-time {
+            font-size: 0.98rem;
+            color: #ccc;
+            min-width: 40px;
+            text-align: right;
+        }
+        .seek-bar {
+            flex: 1;
+            accent-color: #1db954;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            margin: 0 0.5rem;
+        }
+        .seek-bar::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-ms-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar:focus {
+            outline: none;
+        }
+        /* Tooltip style */
+        .floating-song-description {
+            position: fixed;
+            background: #222;
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px #000b;
+            z-index: 99999;
+            min-width: 250px;
+            max-width: 400px;
+            font-size: 0.97rem;
+            white-space: pre-line;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+        .floating-song-description.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #1db954;">ArtistHub</h1>
+        
+            <div class="era" id="era-0">
+                <div class="era-header" onclick="toggleEra(0)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhZfY4DWANaUhA9cbUEWDzrkD9iRthOWzylA5qE5pPW-gPizsjbvaAe3GhI7JZe4CpMhjQVZs1K--4bBEBFsVwI8F4rnq8xTS0WdEH409r2ioRYt6bWsmQguZj5Yjj0_blpvOtrBVviFM8nD98U0swQZZof7D-Hly6gND9he=w105-h96" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Illuminate</span>
+                    <span class="chevron" id="chevron-0">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-0">
+                    
+                        <div class="song" 
+                             id="song-Illuminate-0" 
+                             data-description="This song allegedly belongs in this era."
+                             onclick="playSong(&quot;Illuminate&quot;, 0)">
+                            Cold In California(prod. Dan Wilson)
+                            <div class="song-description">This song allegedly belongs in this era.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Illuminate-1" 
+                             data-description="Recorded in 2016."
+                             onclick="playSong(&quot;Illuminate&quot;, 1)">
+                            Different Kind of Love
+                            <div class="song-description">Recorded in 2016.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Illuminate-2" 
+                             data-description="This song allegedly belongs in this era."
+                             onclick="playSong(&quot;Illuminate&quot;, 2)">
+                            Eye of the Storm
+                            <div class="song-description">This song allegedly belongs in this era.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Illuminate-3" 
+                             data-description="Guitar demo, with no percussion and a few lyric changes."
+                             onclick="playSong(&quot;Illuminate&quot;, 3)">
+                            Honest [V1]
+                            <div class="song-description">Guitar demo, with no percussion and a few lyric changes.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Illuminate-4" 
+                             data-description="Co-written with Sia. This song allegedly belongs in this era."
+                             onclick="playSong(&quot;Illuminate&quot;, 4)">
+                            Sure Of Myself
+                            <div class="song-description">Co-written with Sia. This song allegedly belongs in this era.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Illuminate-5" 
+                             data-description="Shawn teased the song on his social media before it leaked in full. This song allegedly belongs in this era."
+                             onclick="playSong(&quot;Illuminate&quot;, 5)">
+                            What If I Told You a Story
+                            <div class="song-description">Shawn teased the song on his social media before it leaked in full. This song allegedly belongs in this era.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-1">
+                <div class="era-header" onclick="toggleEra(1)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbMj8ME3NpofYOIFHUViltcDScjXyoxg3vndQP0XIK0XipKdlKHsnjIW09adWb0uVGHplIhekw2V1j8f0NPfd5ECiEKkDntdEJWXpqcusXSztkjkdgOtWIwiV_hcpRU72kDQ01gmKURJJs3ZXTvNVsdpGCELj0eWjX0Sg=w105-h98" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Shawn Mendes</span>
+                    <span class="chevron" id="chevron-1">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-1">
+                    
+                        <div class="song" 
+                             id="song-Shawn_Mendes-0" 
+                             data-description="Recorded in 2017."
+                             onclick="playSong(&quot;Shawn Mendes&quot;, 0)">
+                            Love Me Or Leave Me
+                            <div class="song-description">Recorded in 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Shawn_Mendes-1" 
+                             data-description="Title track says &#39;E Guitar&#39;, meaning it&#39;s a guitar demo in E chord. This song allegedly belongs in this era."
+                             onclick="playSong(&quot;Shawn Mendes&quot;, 1)">
+                            Satisfied(prod. Scott Harris, Shawn Mendes & Charlie Puth)
+                            <div class="song-description">Title track says 'E Guitar', meaning it's a guitar demo in E chord. This song allegedly belongs in this era.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Shawn_Mendes-2" 
+                             data-description="The chorus only has guitar, so there might be a more final version of the song might exist. Recorded in 2017."
+                             onclick="playSong(&quot;Shawn Mendes&quot;, 2)">
+                            The Only Reason I Came To This Party
+                            <div class="song-description">The chorus only has guitar, so there might be a more final version of the song might exist. Recorded in 2017.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Shawn_Mendes-3" 
+                             data-description="Recorded in 2017."
+                             onclick="playSong(&quot;Shawn Mendes&quot;, 3)">
+                            You Make Me Feel
+                            <div class="song-description">Recorded in 2017.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-2">
+                <div class="era-header" onclick="toggleEra(2)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYcaha7VqpyYI72jnVl_UgVoAo4kZuBwn8wy21M1koDzTL4Hjv0WJf9M5bXdKluTAw4K7R4eSZ2TKcq8pfwauOryNms9lujx5FMA9v4QfDvNLaBJ4lkoVuPdnLqxtSpDh-zA7-JRv2x-DXU17Q=w105-h97" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Shawn</span>
+                    <span class="chevron" id="chevron-2">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-2">
+                    
+                        <div class="song" 
+                             id="song-Shawn-0" 
+                             data-description="A snippet leaked on November 11, 2023. Said to have been recorded in 2022."
+                             onclick="playSong(&quot;Shawn&quot;, 0)">
+                            Let Me Go
+                            <div class="song-description">A snippet leaked on November 11, 2023. Said to have been recorded in 2022.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Shawn-1" 
+                             data-description="A snippet leaked on November 11, 2023. Said to have been recorded in 2022."
+                             onclick="playSong(&quot;Shawn&quot;, 1)">
+                            You're Not Coming Home
+                            <div class="song-description">A snippet leaked on November 11, 2023. Said to have been recorded in 2022.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Shawn-2" 
+                             data-description=""
+                             onclick="playSong(&quot;Shawn&quot;, 2)">
+                            Don't Speak Your Language(prod. Shawn Mendes & Teddy Geiger)
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Shawn-3" 
+                             data-description="It is said by SatansFavourite on Leaked .CX that two other files exist with different time lengths."
+                             onclick="playSong(&quot;Shawn&quot;, 3)">
+                            Letter to Myself [V2](feat. Pink $weats)
+                            <div class="song-description">It is said by SatansFavourite on Leaked .CX that two other files exist with different time lengths.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Shawn-4" 
+                             data-description="It is said by SatansFavourite on Leaked .CX that two other files exist with different time lengths."
+                             onclick="playSong(&quot;Shawn&quot;, 4)">
+                            Letter to Myself [V3](feat. Pink $weats)
+                            <div class="song-description">It is said by SatansFavourite on Leaked .CX that two other files exist with different time lengths.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+    </div>
+    <!-- Spotify-style player with skip buttons -->
+    <div class="player">
+        <img id="player-cover" src=cover alt="cover" class="player-cover">
+        <div class="player-info">
+            <div id="player-title" class="player-title">Select a song</div>
+            <div class="player-controls">
+                <button id="prev-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="15,4 7,11 15,18"></polygon></svg>
+                </button>
+                <button id="play-btn" class="player-btn">
+                    <svg id="play-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff"><polygon points="6,4 24,14 6,24"></polygon></svg>
+                    <svg id="pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff" style="display:none;"><rect x="6" y="4" width="5" height="20"></rect><rect x="17" y="4" width="5" height="20"></rect></svg>
+                </button>
+                <button id="next-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="7,4 15,11 7,18"></polygon></svg>
+                </button>
+                <span id="current-time" class="player-time">0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" value="0" min="0" max="100" step="1">
+                <span id="duration" class="player-time">0:00</span>
+            </div>
+        </div>
+        <audio id="player" preload="metadata"></audio>
+    </div>
+    <script>
+    // All eras and songs as a JS object
+    const eras = {"Illuminate": [{"era": "Illuminate", "name": "Cold In California(prod. Dan Wilson)", "description": "This song allegedly belongs in this era.", "file_id": "daed549d1e047b5f9ae5619510176e5f", "stream_url": "https://api.pillows.su/api/download/daed549d1e047b5f9ae5619510176e5f", "download_url": "https://api.pillows.su/api/download/daed549d1e047b5f9ae5619510176e5f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZfY4DWANaUhA9cbUEWDzrkD9iRthOWzylA5qE5pPW-gPizsjbvaAe3GhI7JZe4CpMhjQVZs1K--4bBEBFsVwI8F4rnq8xTS0WdEH409r2ioRYt6bWsmQguZj5Yjj0_blpvOtrBVviFM8nD98U0swQZZof7D-Hly6gND9he=w105-h96"}, {"era": "Illuminate", "name": "Different Kind of Love", "description": "Recorded in 2016.", "file_id": "78c4eea8b4fbaf24efe4455151767c1f", "stream_url": "https://api.pillows.su/api/download/78c4eea8b4fbaf24efe4455151767c1f", "download_url": "https://api.pillows.su/api/download/78c4eea8b4fbaf24efe4455151767c1f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZfY4DWANaUhA9cbUEWDzrkD9iRthOWzylA5qE5pPW-gPizsjbvaAe3GhI7JZe4CpMhjQVZs1K--4bBEBFsVwI8F4rnq8xTS0WdEH409r2ioRYt6bWsmQguZj5Yjj0_blpvOtrBVviFM8nD98U0swQZZof7D-Hly6gND9he=w105-h96"}, {"era": "Illuminate", "name": "Eye of the Storm", "description": "This song allegedly belongs in this era.", "file_id": "fb1ba886e2c41e56dcfbbaf1f88fb576", "stream_url": "https://api.pillows.su/api/download/fb1ba886e2c41e56dcfbbaf1f88fb576", "download_url": "https://api.pillows.su/api/download/fb1ba886e2c41e56dcfbbaf1f88fb576", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZfY4DWANaUhA9cbUEWDzrkD9iRthOWzylA5qE5pPW-gPizsjbvaAe3GhI7JZe4CpMhjQVZs1K--4bBEBFsVwI8F4rnq8xTS0WdEH409r2ioRYt6bWsmQguZj5Yjj0_blpvOtrBVviFM8nD98U0swQZZof7D-Hly6gND9he=w105-h96"}, {"era": "Illuminate", "name": "Honest [V1]", "description": "Guitar demo, with no percussion and a few lyric changes.", "file_id": "35e33276d0529b968bd3192ec5e1cae3", "stream_url": "https://api.pillows.su/api/download/35e33276d0529b968bd3192ec5e1cae3", "download_url": "https://api.pillows.su/api/download/35e33276d0529b968bd3192ec5e1cae3", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZfY4DWANaUhA9cbUEWDzrkD9iRthOWzylA5qE5pPW-gPizsjbvaAe3GhI7JZe4CpMhjQVZs1K--4bBEBFsVwI8F4rnq8xTS0WdEH409r2ioRYt6bWsmQguZj5Yjj0_blpvOtrBVviFM8nD98U0swQZZof7D-Hly6gND9he=w105-h96"}, {"era": "Illuminate", "name": "Sure Of Myself", "description": "Co-written with Sia. This song allegedly belongs in this era.", "file_id": "77092e3e84b59cfb3d414515b2e30b37", "stream_url": "https://api.pillows.su/api/download/77092e3e84b59cfb3d414515b2e30b37", "download_url": "https://api.pillows.su/api/download/77092e3e84b59cfb3d414515b2e30b37", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZfY4DWANaUhA9cbUEWDzrkD9iRthOWzylA5qE5pPW-gPizsjbvaAe3GhI7JZe4CpMhjQVZs1K--4bBEBFsVwI8F4rnq8xTS0WdEH409r2ioRYt6bWsmQguZj5Yjj0_blpvOtrBVviFM8nD98U0swQZZof7D-Hly6gND9he=w105-h96"}, {"era": "Illuminate", "name": "What If I Told You a Story", "description": "Shawn teased the song on his social media before it leaked in full. This song allegedly belongs in this era.", "file_id": "80f4c466d81533b8f099a7b955e3d46f", "stream_url": "https://api.pillows.su/api/download/80f4c466d81533b8f099a7b955e3d46f", "download_url": "https://api.pillows.su/api/download/80f4c466d81533b8f099a7b955e3d46f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZfY4DWANaUhA9cbUEWDzrkD9iRthOWzylA5qE5pPW-gPizsjbvaAe3GhI7JZe4CpMhjQVZs1K--4bBEBFsVwI8F4rnq8xTS0WdEH409r2ioRYt6bWsmQguZj5Yjj0_blpvOtrBVviFM8nD98U0swQZZof7D-Hly6gND9he=w105-h96"}], "Shawn Mendes": [{"era": "Shawn Mendes", "name": "Love Me Or Leave Me", "description": "Recorded in 2017.", "file_id": "ee047185a61294637b1f9f8a040892f2", "stream_url": "https://api.pillows.su/api/download/ee047185a61294637b1f9f8a040892f2", "download_url": "https://api.pillows.su/api/download/ee047185a61294637b1f9f8a040892f2", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbMj8ME3NpofYOIFHUViltcDScjXyoxg3vndQP0XIK0XipKdlKHsnjIW09adWb0uVGHplIhekw2V1j8f0NPfd5ECiEKkDntdEJWXpqcusXSztkjkdgOtWIwiV_hcpRU72kDQ01gmKURJJs3ZXTvNVsdpGCELj0eWjX0Sg=w105-h98"}, {"era": "Shawn Mendes", "name": "Satisfied(prod. Scott Harris, Shawn Mendes & Charlie Puth)", "description": "Title track says 'E Guitar', meaning it's a guitar demo in E chord. This song allegedly belongs in this era.", "file_id": "216dc286c31999916d483582fa650777", "stream_url": "https://api.pillows.su/api/download/216dc286c31999916d483582fa650777", "download_url": "https://api.pillows.su/api/download/216dc286c31999916d483582fa650777", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbMj8ME3NpofYOIFHUViltcDScjXyoxg3vndQP0XIK0XipKdlKHsnjIW09adWb0uVGHplIhekw2V1j8f0NPfd5ECiEKkDntdEJWXpqcusXSztkjkdgOtWIwiV_hcpRU72kDQ01gmKURJJs3ZXTvNVsdpGCELj0eWjX0Sg=w105-h98"}, {"era": "Shawn Mendes", "name": "The Only Reason I Came To This Party", "description": "The chorus only has guitar, so there might be a more final version of the song might exist. Recorded in 2017.", "file_id": "39d85c529f0af5bf8ca09eef92e3948e", "stream_url": "https://api.pillows.su/api/download/39d85c529f0af5bf8ca09eef92e3948e", "download_url": "https://api.pillows.su/api/download/39d85c529f0af5bf8ca09eef92e3948e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbMj8ME3NpofYOIFHUViltcDScjXyoxg3vndQP0XIK0XipKdlKHsnjIW09adWb0uVGHplIhekw2V1j8f0NPfd5ECiEKkDntdEJWXpqcusXSztkjkdgOtWIwiV_hcpRU72kDQ01gmKURJJs3ZXTvNVsdpGCELj0eWjX0Sg=w105-h98"}, {"era": "Shawn Mendes", "name": "You Make Me Feel", "description": "Recorded in 2017.", "file_id": "c6389266dddd0dfb0a86aff6fbd5e349", "stream_url": "https://api.pillows.su/api/download/c6389266dddd0dfb0a86aff6fbd5e349", "download_url": "https://api.pillows.su/api/download/c6389266dddd0dfb0a86aff6fbd5e349", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbMj8ME3NpofYOIFHUViltcDScjXyoxg3vndQP0XIK0XipKdlKHsnjIW09adWb0uVGHplIhekw2V1j8f0NPfd5ECiEKkDntdEJWXpqcusXSztkjkdgOtWIwiV_hcpRU72kDQ01gmKURJJs3ZXTvNVsdpGCELj0eWjX0Sg=w105-h98"}], "Shawn": [{"era": "Shawn", "name": "Let Me Go", "description": "A snippet leaked on November 11, 2023. Said to have been recorded in 2022.", "file_id": "01d569f89d41841413d13f03f9815c52", "stream_url": "https://api.pillows.su/api/download/01d569f89d41841413d13f03f9815c52", "download_url": "https://api.pillows.su/api/download/01d569f89d41841413d13f03f9815c52", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYcaha7VqpyYI72jnVl_UgVoAo4kZuBwn8wy21M1koDzTL4Hjv0WJf9M5bXdKluTAw4K7R4eSZ2TKcq8pfwauOryNms9lujx5FMA9v4QfDvNLaBJ4lkoVuPdnLqxtSpDh-zA7-JRv2x-DXU17Q=w105-h97"}, {"era": "Shawn", "name": "You're Not Coming Home", "description": "A snippet leaked on November 11, 2023. Said to have been recorded in 2022.", "file_id": "4627d62ffb9afe3f4c7fbf3ae3e4ef6e", "stream_url": "https://api.pillows.su/api/download/4627d62ffb9afe3f4c7fbf3ae3e4ef6e", "download_url": "https://api.pillows.su/api/download/4627d62ffb9afe3f4c7fbf3ae3e4ef6e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYcaha7VqpyYI72jnVl_UgVoAo4kZuBwn8wy21M1koDzTL4Hjv0WJf9M5bXdKluTAw4K7R4eSZ2TKcq8pfwauOryNms9lujx5FMA9v4QfDvNLaBJ4lkoVuPdnLqxtSpDh-zA7-JRv2x-DXU17Q=w105-h97"}, {"era": "Shawn", "name": "Don't Speak Your Language(prod. Shawn Mendes & Teddy Geiger)", "description": "", "file_id": "88d9d7610fd78e30005eb52a1822454b", "stream_url": "https://api.pillows.su/api/download/88d9d7610fd78e30005eb52a1822454b", "download_url": "https://api.pillows.su/api/download/88d9d7610fd78e30005eb52a1822454b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYcaha7VqpyYI72jnVl_UgVoAo4kZuBwn8wy21M1koDzTL4Hjv0WJf9M5bXdKluTAw4K7R4eSZ2TKcq8pfwauOryNms9lujx5FMA9v4QfDvNLaBJ4lkoVuPdnLqxtSpDh-zA7-JRv2x-DXU17Q=w105-h97"}, {"era": "Shawn", "name": "Letter to Myself [V2](feat. Pink $weats)", "description": "It is said by SatansFavourite on Leaked .CX that two other files exist with different time lengths.", "file_id": "5a68a16efbdf0832cd48c22f905a5f1e", "stream_url": "https://api.pillows.su/api/download/5a68a16efbdf0832cd48c22f905a5f1e", "download_url": "https://api.pillows.su/api/download/5a68a16efbdf0832cd48c22f905a5f1e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYcaha7VqpyYI72jnVl_UgVoAo4kZuBwn8wy21M1koDzTL4Hjv0WJf9M5bXdKluTAw4K7R4eSZ2TKcq8pfwauOryNms9lujx5FMA9v4QfDvNLaBJ4lkoVuPdnLqxtSpDh-zA7-JRv2x-DXU17Q=w105-h97"}, {"era": "Shawn", "name": "Letter to Myself [V3](feat. Pink $weats)", "description": "It is said by SatansFavourite on Leaked .CX that two other files exist with different time lengths.", "file_id": "da37c790e4481e52fdbd6204ea42ca32", "stream_url": "https://api.pillows.su/api/download/da37c790e4481e52fdbd6204ea42ca32", "download_url": "https://api.pillows.su/api/download/da37c790e4481e52fdbd6204ea42ca32", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYcaha7VqpyYI72jnVl_UgVoAo4kZuBwn8wy21M1koDzTL4Hjv0WJf9M5bXdKluTAw4K7R4eSZ2TKcq8pfwauOryNms9lujx5FMA9v4QfDvNLaBJ4lkoVuPdnLqxtSpDh-zA7-JRv2x-DXU17Q=w105-h97"}]};
+    let currentEra = null;
+    let currentIndex = null;
+    let currentSong = null;
+    let playlist = [];
+
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const seekBar = document.getElementById('seek-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const playerTitle = document.getElementById('player-title');
+    const playerCover = document.getElementById('player-cover');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    function playSong(era, index) {
+        playlist = eras[era];
+        currentEra = era;
+        currentIndex = index;
+        loadAndPlayCurrent();
+    }
+
+    function highlightCurrentSong() {
+        document.querySelectorAll('.song.playing').forEach(el => el.classList.remove('playing'));
+        if (currentEra !== null && currentIndex !== null) {
+            const songId = `song-${currentEra.replace(/ /g, '_')}-${currentIndex}`;
+            const songEl = document.getElementById(songId);
+            if (songEl) songEl.classList.add('playing');
+        }
+    }
+
+    function loadAndPlayCurrent() {
+        if (!playlist || currentIndex === null || !playlist[currentIndex]) return;
+        const song = playlist[currentIndex];
+        player.src = song.stream_url;
+        playerTitle.textContent = song.name;
+        playerCover.src = song.cover || 'https://via.placeholder.com/60x60?text=No+Cover';
+        currentSong = song.stream_url;
+        player.play();
+        updateSkipButtons();
+        updateMediaSession(song);
+        highlightCurrentSong();
+    }
+
+    function updateSkipButtons() {
+        prevBtn.disabled = (currentIndex <= 0);
+        nextBtn.disabled = (currentIndex >= playlist.length - 1);
+    }
+
+    playBtn.onclick = function() {
+        if (player.src) {
+            if (player.paused) player.play();
+            else player.pause();
+        }
+    };
+
+    prevBtn.onclick = function() {
+        if (playlist && currentIndex > 0) {
+            currentIndex -= 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    nextBtn.onclick = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    player.onplay = function() {
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "";
+    };
+    player.onpause = function() {
+        playIcon.style.display = "";
+        pauseIcon.style.display = "none";
+    };
+
+    player.ontimeupdate = function() {
+        seekBar.value = player.currentTime || 0;
+        currentTimeEl.textContent = formatTime(player.currentTime);
+    };
+    player.onloadedmetadata = function() {
+        seekBar.max = player.duration || 0;
+        durationEl.textContent = formatTime(player.duration);
+    };
+    seekBar.oninput = function() {
+        player.currentTime = seekBar.value;
+    };
+
+    player.onended = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    function formatTime(sec) {
+        sec = Math.floor(sec);
+        return Math.floor(sec/60) + ":" + String(sec%60).padStart(2, '0');
+    }
+    function updateMediaSession(song) {
+        if ('mediaSession' in navigator && song) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.name,
+                artist: song.era,
+                album: "Unreleased",
+                artwork: [
+                    { src: song.cover || 'https://via.placeholder.com/90x90?text=No+Cover', sizes: '90x90', type: 'image/png' }
+                ]
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (playlist && currentIndex > 0) {
+                    currentIndex -= 1;
+                    loadAndPlayCurrent();
+                }
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                if (playlist && currentIndex < playlist.length - 1) {
+                    currentIndex += 1;
+                    loadAndPlayCurrent();
+                }
+            });
+        }
+    }
+
+    // --- Collapsible Eras ---
+    function toggleEra(idx) {
+        const songList = document.getElementById('song-list-' + idx);
+        const chevron = document.getElementById('chevron-' + idx);
+        const isOpen = songList.classList.contains('open');
+        if (isOpen) {
+            songList.classList.remove('open');
+            chevron.classList.remove('open');
+        } else {
+            songList.classList.add('open');
+            chevron.classList.add('open');
+        }
+    }
+    // Collapse all on load
+    window.addEventListener('DOMContentLoaded', function() {
+        
+            document.getElementById('song-list-0').classList.remove('open');
+            document.getElementById('chevron-0').classList.remove('open');
+        
+            document.getElementById('song-list-1').classList.remove('open');
+            document.getElementById('chevron-1').classList.remove('open');
+        
+            document.getElementById('song-list-2').classList.remove('open');
+            document.getElementById('chevron-2').classList.remove('open');
+        
+
+        // Tooltip logic
+        let tooltip = null;
+        let tooltipTimeout = null;
+
+        document.querySelectorAll('.song').forEach(song => {
+            song.addEventListener('mouseenter', function(e) {
+                const desc = song.getAttribute('data-description');
+                if (!desc) return;
+                if (tooltip) tooltip.remove();
+                tooltip = document.createElement('div');
+                tooltip.className = 'floating-song-description';
+                tooltip.innerHTML = desc;
+                document.body.appendChild(tooltip);
+
+                // Position tooltip
+                const rect = song.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 6) + 'px';
+                tooltip.style.minWidth = rect.width + 'px';
+
+                // Fade in
+                setTimeout(() => {
+                    if (tooltip) tooltip.classList.add('visible');
+                }, 10);
+            });
+            song.addEventListener('mouseleave', function(e) {
+                if (tooltip) {
+                    tooltip.classList.remove('visible');
+                    setTimeout(() => {
+                        if (tooltip) tooltip.remove();
+                        tooltip = null;
+                    }, 120);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

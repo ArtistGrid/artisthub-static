@@ -1,0 +1,595 @@
+<!doctype html>
+<html>
+<head>
+    <title>ArtistHub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #121212;
+            color: #fff;
+        }
+.container {
+    padding: 2rem;
+    padding-bottom: 120px; /* Add space for the player */
+}
+        .era {
+            margin-bottom: 2.2rem;
+            background: #181818;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px #0003;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .era-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2.1rem 2rem 2.1rem 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.18s;
+            border-bottom: 1px solid #232323;
+        }
+        .era-header:hover {
+            background: #232323;
+        }
+        .era-cover {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .era-title {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #1db954;
+            flex: 1;
+            letter-spacing: 0.01em;
+        }
+        .chevron {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(.4,2,.6,1), color 0.2s;
+            color: #aaa;
+        }
+        .chevron.open {
+            transform: rotate(90deg);
+            color: #1db954;
+        }
+        .song-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(.4,2,.6,1);
+            background: #181818;
+            padding: 0 2rem;
+        }
+        .song-list.open {
+            padding-bottom: 1.2rem;
+            max-height: 1000px;
+            transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
+        }
+        .song {
+            background: #222;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.18s, color 0.18s;
+            box-shadow: 0 1px 4px #0002;
+            margin-top: 0.7rem;
+        }
+        .song:first-child { margin-top: 1.2rem; }
+        .song:hover {
+            background: #1db95433;
+            color: #1db954;
+        }
+        /* Hide the inline description, we use JS tooltip instead */
+        .song .song-description {
+            display: none !important;
+        }
+        .song.playing {
+            background: #1db954 !important;
+            color: #181818 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 12px #1db95455;
+        }
+        .player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #181818;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #222;
+            box-shadow: 0 -2px 8px #0003;
+            z-index: 100;
+            gap: 1.5rem;
+        }
+        .player-cover {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .player-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .player-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.2rem;
+            text-shadow: 0 1px 2px #0008;
+        }
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .player-btn, .player-skip-btn {
+            background: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px #0003;
+            margin-right: 0.5rem;
+        }
+        .player-btn:hover, .player-skip-btn:hover {
+            background: #1ed760;
+        }
+        .player-skip-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        .player-time {
+            font-size: 0.98rem;
+            color: #ccc;
+            min-width: 40px;
+            text-align: right;
+        }
+        .seek-bar {
+            flex: 1;
+            accent-color: #1db954;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            margin: 0 0.5rem;
+        }
+        .seek-bar::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-ms-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar:focus {
+            outline: none;
+        }
+        /* Tooltip style */
+        .floating-song-description {
+            position: fixed;
+            background: #222;
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px #000b;
+            z-index: 99999;
+            min-width: 250px;
+            max-width: 400px;
+            font-size: 0.97rem;
+            white-space: pre-line;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+        .floating-song-description.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #1db954;">ArtistHub</h1>
+        
+            <div class="era" id="era-0">
+                <div class="era-header" onclick="toggleEra(0)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbm29_CabZKe-5lVcPPwnazTT-9B9CJkZ8Mmqe5ctkjV5KIlJ9uHC-2TndcQMQJDj0ESOiX4VAPLIAHtQcbIXaAGqXZQxzEbC89wP17yut-0LF6ejCeSRggE7_edMNRZvavjAMm-5dwC_Ka=w102-h117" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">2 Piece No Fries</span>
+                    <span class="chevron" id="chevron-0">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-0">
+                    
+                        <div class="song" 
+                             id="song-2_Piece_No_Fries-0" 
+                             data-description="Snippet posted by Yuno on February 3, 2023. Was confirmed by Yuno to have been meant for &#34;2 Piece No Fries&#34;. Leaked randomly on leaked.cx on May 27, 2024."
+                             onclick="playSong(&quot;2 Piece No Fries&quot;, 0)">
+                            ⭐ MARY JANE
+                            <div class="song-description">Snippet posted by Yuno on February 3, 2023. Was confirmed by Yuno to have been meant for "2 Piece No Fries". Leaked randomly on leaked.cx on May 27, 2024.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-1">
+                <div class="era-header" onclick="toggleEra(1)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYOIeDyVlknvkKxuA43i67ggK_j4wYgjmkk4ShbGj8Hoj_jgTxXbopeatFdFRLqXyVdpgIKcMdQBea1_Uxq1jxHwTlE7ZiU_1wGOMNo4WS5Oi6MQLdQ4s-s2IDyVIbQQyStFK5XR9gOiDFaUJo=w102-h101" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Yuno Certified Trash</span>
+                    <span class="chevron" id="chevron-1">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-1">
+                    
+                        <div class="song" 
+                             id="song-Yuno_Certified_Trash-0" 
+                             data-description="Main verse extended at the end and random autotune changes in the middle. Leaked on June 5, 2024."
+                             onclick="playSong(&quot;Yuno Certified Trash&quot;, 0)">
+                            Trick Or Treat [V1]
+                            <div class="song-description">Main verse extended at the end and random autotune changes in the middle. Leaked on June 5, 2024.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-2">
+                <div class="era-header" onclick="toggleEra(2)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhb37W0ORpbes56OsTszUc9-2VB8uMu40-Pua9GLbZGfuY2M6hX0SiUZ6rtksqfib5aw0J0hhm8sOS6gIzz-MG28AG84TLKOyLkylpwW3Jm6V_YYXhHxiyvjleMI_uQ5IitndqsjSywiK1tWpS8=w102-h101" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Yunotopia(Yuno Miles VS The Multiverse)</span>
+                    <span class="chevron" id="chevron-2">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-2">
+                    
+                        <div class="song" 
+                             id="song-Yunotopia(Yuno_Miles_VS_The_Multiverse)-0" 
+                             data-description="Snippet posted on a random YouTube account. The snippet is captioned &#34;this is back when i was trash 💀&#34; and has a supposedly finished music video made for it. Leaked in full randomly on leaked.cx about half a year later, but the link was soon taken down. This was considered to be a holy grail for a while until it was found that the song had been uploaded to YouTube in full by someone who downloaded it before the link died. Footage in the music video seems to have been reused for the &#34;Solar Eclipse&#34; music video, meaning it is probably from around the same time. Yuno&#39;s vocals were used on a song of the same name by $ponge, but this is probably unofficial and just a stem edit. The last chorus is placed offgrid for some reason."
+                             onclick="playSong(&quot;Yunotopia(Yuno Miles VS The Multiverse)&quot;, 0)">
+                            ⭐ Snapchat
+                            <div class="song-description">Snippet posted on a random YouTube account. The snippet is captioned "this is back when i was trash 💀" and has a supposedly finished music video made for it. Leaked in full randomly on leaked.cx about half a year later, but the link was soon taken down. This was considered to be a holy grail for a while until it was found that the song had been uploaded to YouTube in full by someone who downloaded it before the link died. Footage in the music video seems to have been reused for the "Solar Eclipse" music video, meaning it is probably from around the same time. Yuno's vocals were used on a song of the same name by $ponge, but this is probably unofficial and just a stem edit. The last chorus is placed offgrid for some reason.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Yunotopia(Yuno_Miles_VS_The_Multiverse)-1" 
+                             data-description="Contains a beatswitch (described by the leaker as &#34;immediate&#34;) which is just the released song, &#34;Skechers On My Feet&#34;, which places this song as being from January 2024 at the latest (if Skechers On My Feet was ever actually part of this song). It seems that the music video was shot the same day as the music video for &#34;Light Up Shoes&#34;, as it looks to be the same outfit (other than the shoes) and the same location. A good chunk of the song was posted to YouTube in low quality by a random youtube channel called &#34;Wrld Of Leaks&#34; on May 27, 2024, which could be the full song, but it cuts very strangely, loops towards the start, and is five seconds shorter than the real song supposedly is, so it probably isn&#39;t. A lossless snippet is also leaked, although it is tagged. Was seemingly leaked in full on leaked.cx, but much like Snapchat, it has since been taken down."
+                             onclick="playSong(&quot;Yunotopia(Yuno Miles VS The Multiverse)&quot;, 1)">
+                            🏆🥇 Skechers(prod. ??? & ???)(Sketchers, Skechers On My Feet)
+                            <div class="song-description">Contains a beatswitch (described by the leaker as "immediate") which is just the released song, "Skechers On My Feet", which places this song as being from January 2024 at the latest (if Skechers On My Feet was ever actually part of this song). It seems that the music video was shot the same day as the music video for "Light Up Shoes", as it looks to be the same outfit (other than the shoes) and the same location. A good chunk of the song was posted to YouTube in low quality by a random youtube channel called "Wrld Of Leaks" on May 27, 2024, which could be the full song, but it cuts very strangely, loops towards the start, and is five seconds shorter than the real song supposedly is, so it probably isn't. A lossless snippet is also leaked, although it is tagged. Was seemingly leaked in full on leaked.cx, but much like Snapchat, it has since been taken down.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Yunotopia(Yuno_Miles_VS_The_Multiverse)-2" 
+                             data-description="Partial snippet posted by Yuno Miles on his alt account, with a cover for an album called &#34;Yuno Miles VS The Multiverse&#34;. Interpolates &#34;Shirt Off&#34; by Gucci Mane, although he was likely more inspired by Playboi Carti&#39;s &#34;Stop Breathing.&#34; Was likely considered for Yunotopia."
+                             onclick="playSong(&quot;Yunotopia(Yuno Miles VS The Multiverse)&quot;, 2)">
+                            🏆🥈 Stop Breathing
+                            <div class="song-description">Partial snippet posted by Yuno Miles on his alt account, with a cover for an album called "Yuno Miles VS The Multiverse". Interpolates "Shirt Off" by Gucci Mane, although he was likely more inspired by Playboi Carti's "Stop Breathing." Was likely considered for Yunotopia.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-3">
+                <div class="era-header" onclick="toggleEra(3)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhZOtXxeVYYnQdoMM97xQ01rsLQ_RgKk3eds8zWClSy6LsiaCJRpRX2xW1KNPpZR4p7mlGVfWFkuyFFcACJSwqX96WJOGdCV2uWgil5UiIR49_QogXdVFfuLkWHSqWTTFsX5MLfLhGjP4Qo4r8c=w102-h113" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title"><JadeGreen>(Green Clover 🍀, StoneGreen❇️, Ultra)</span>
+                    <span class="chevron" id="chevron-3">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-3">
+                    
+                        <div class="song" 
+                             id="song-<JadeGreen>(Green_Clover_🍀,_StoneGreen❇️,_Ultra)-0" 
+                             data-description="Snippet uploaded by Yuno on two seperate occasions. Seemingly the same as the released version, but with a significantly more tolerable mix."
+                             onclick="playSong(&quot;<JadeGreen>(Green Clover 🍀, StoneGreen❇️, Ultra)&quot;, 0)">
+                            Are You S-T-U-P-I-D [V1]
+                            <div class="song-description">Snippet uploaded by Yuno on two seperate occasions. Seemingly the same as the released version, but with a significantly more tolerable mix.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-4">
+                <div class="era-header" onclick="toggleEra(4)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYHNgl30Dm7gpwGTuer_5gzllD1WKZ7Qa0sqzcthSpJE254XqzSe139KDl-UTt4PK_xwJJpIoJfko7umIMdX9tyHp0VWUFjMRQrC0VWV-skB7UtOMrkYHvxqHYYbQICes2A9-NtzwH01NHd2k8=w102-h118" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">ForeverMusic(FOREVERMUSIC)</span>
+                    <span class="chevron" id="chevron-4">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-4">
+                    
+                        <div class="song" 
+                             id="song-ForeverMusic(FOREVERMUSIC)-0" 
+                             data-description="Version with a more finished vocal take and at least one alternate line. A snippet was posted by Yuno, captioned &#34;Album sounding so good yall hearing this ?&#34; Confirmed to be for ForeverMusic . The choir is the same choir on tracks like &#34;Hop Step&#34; and &#34;Break Something&#34;."
+                             onclick="playSong(&quot;ForeverMusic(FOREVERMUSIC)&quot;, 0)">
+                            🏆🥇 What Eye Want [V2](feat. ???)
+                            <div class="song-description">Version with a more finished vocal take and at least one alternate line. A snippet was posted by Yuno, captioned "Album sounding so good yall hearing this ?" Confirmed to be for ForeverMusic . The choir is the same choir on tracks like "Hop Step" and "Break Something".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-ForeverMusic(FOREVERMUSIC)-1" 
+                             data-description="Leaked by some random on YouTube saying he would leak &#34;all of his songs&#34; if Yuno didn&#39;t come back from music. Probably from 2020 or even earlier, given the way his voice sounds and his mic quality."
+                             onclick="playSong(&quot;ForeverMusic(FOREVERMUSIC)&quot;, 1)">
+                            ✨ Turtle
+                            <div class="song-description">Leaked by some random on YouTube saying he would leak "all of his songs" if Yuno didn't come back from music. Probably from 2020 or even earlier, given the way his voice sounds and his mic quality.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+    </div>
+    <!-- Spotify-style player with skip buttons -->
+    <div class="player">
+        <img id="player-cover" src=cover alt="cover" class="player-cover">
+        <div class="player-info">
+            <div id="player-title" class="player-title">Select a song</div>
+            <div class="player-controls">
+                <button id="prev-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="15,4 7,11 15,18"></polygon></svg>
+                </button>
+                <button id="play-btn" class="player-btn">
+                    <svg id="play-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff"><polygon points="6,4 24,14 6,24"></polygon></svg>
+                    <svg id="pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff" style="display:none;"><rect x="6" y="4" width="5" height="20"></rect><rect x="17" y="4" width="5" height="20"></rect></svg>
+                </button>
+                <button id="next-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="7,4 15,11 7,18"></polygon></svg>
+                </button>
+                <span id="current-time" class="player-time">0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" value="0" min="0" max="100" step="1">
+                <span id="duration" class="player-time">0:00</span>
+            </div>
+        </div>
+        <audio id="player" preload="metadata"></audio>
+    </div>
+    <script>
+    // All eras and songs as a JS object
+    const eras = {"2 Piece No Fries": [{"era": "2 Piece No Fries", "name": "\u2b50 MARY JANE", "description": "Snippet posted by Yuno on February 3, 2023. Was confirmed by Yuno to have been meant for \"2 Piece No Fries\". Leaked randomly on leaked.cx on May 27, 2024.", "file_id": "3fbc517412b92ab96925fbaf55e0e13c", "stream_url": "https://api.pillows.su/api/download/3fbc517412b92ab96925fbaf55e0e13c", "download_url": "https://api.pillows.su/api/download/3fbc517412b92ab96925fbaf55e0e13c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbm29_CabZKe-5lVcPPwnazTT-9B9CJkZ8Mmqe5ctkjV5KIlJ9uHC-2TndcQMQJDj0ESOiX4VAPLIAHtQcbIXaAGqXZQxzEbC89wP17yut-0LF6ejCeSRggE7_edMNRZvavjAMm-5dwC_Ka=w102-h117"}], "Yuno Certified Trash": [{"era": "Yuno Certified Trash", "name": "Trick Or Treat [V1]", "description": "Main verse extended at the end and random autotune changes in the middle. Leaked on June 5, 2024.", "file_id": "eca3dc5c8ba66e615ce5d53f0bd38ef7", "stream_url": "https://api.pillows.su/api/download/eca3dc5c8ba66e615ce5d53f0bd38ef7", "download_url": "https://api.pillows.su/api/download/eca3dc5c8ba66e615ce5d53f0bd38ef7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYOIeDyVlknvkKxuA43i67ggK_j4wYgjmkk4ShbGj8Hoj_jgTxXbopeatFdFRLqXyVdpgIKcMdQBea1_Uxq1jxHwTlE7ZiU_1wGOMNo4WS5Oi6MQLdQ4s-s2IDyVIbQQyStFK5XR9gOiDFaUJo=w102-h101"}], "Yunotopia(Yuno Miles VS The Multiverse)": [{"era": "Yunotopia(Yuno Miles VS The Multiverse)", "name": "\u2b50 Snapchat", "description": "Snippet posted on a random YouTube account. The snippet is captioned \"this is back when i was trash \ud83d\udc80\" and has a supposedly finished music video made for it. Leaked in full randomly on leaked.cx about half a year later, but the link was soon taken down. This was considered to be a holy grail for a while until it was found that the song had been uploaded to YouTube in full by someone who downloaded it before the link died. Footage in the music video seems to have been reused for the \"Solar Eclipse\" music video, meaning it is probably from around the same time. Yuno's vocals were used on a song of the same name by $ponge, but this is probably unofficial and just a stem edit. The last chorus is placed offgrid for some reason.", "file_id": "c12e6e0bf6a7d282b6d4bd7d1836a372", "stream_url": "https://api.pillows.su/api/download/c12e6e0bf6a7d282b6d4bd7d1836a372", "download_url": "https://api.pillows.su/api/download/c12e6e0bf6a7d282b6d4bd7d1836a372", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb37W0ORpbes56OsTszUc9-2VB8uMu40-Pua9GLbZGfuY2M6hX0SiUZ6rtksqfib5aw0J0hhm8sOS6gIzz-MG28AG84TLKOyLkylpwW3Jm6V_YYXhHxiyvjleMI_uQ5IitndqsjSywiK1tWpS8=w102-h101"}, {"era": "Yunotopia(Yuno Miles VS The Multiverse)", "name": "\ud83c\udfc6\ud83e\udd47 Skechers(prod. ??? & ???)(Sketchers, Skechers On My Feet)", "description": "Contains a beatswitch (described by the leaker as \"immediate\") which is just the released song, \"Skechers On My Feet\", which places this song as being from January 2024 at the latest (if Skechers On My Feet was ever actually part of this song). It seems that the music video was shot the same day as the music video for \"Light Up Shoes\", as it looks to be the same outfit (other than the shoes) and the same location. A good chunk of the song was posted to YouTube in low quality by a random youtube channel called \"Wrld Of Leaks\" on May 27, 2024, which could be the full song, but it cuts very strangely, loops towards the start, and is five seconds shorter than the real song supposedly is, so it probably isn't. A lossless snippet is also leaked, although it is tagged. Was seemingly leaked in full on leaked.cx, but much like Snapchat, it has since been taken down.", "file_id": "acd10f21ea1fdb56c0c3e7aef18bba6c", "stream_url": "https://api.pillows.su/api/download/acd10f21ea1fdb56c0c3e7aef18bba6c", "download_url": "https://api.pillows.su/api/download/acd10f21ea1fdb56c0c3e7aef18bba6c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb37W0ORpbes56OsTszUc9-2VB8uMu40-Pua9GLbZGfuY2M6hX0SiUZ6rtksqfib5aw0J0hhm8sOS6gIzz-MG28AG84TLKOyLkylpwW3Jm6V_YYXhHxiyvjleMI_uQ5IitndqsjSywiK1tWpS8=w102-h101"}, {"era": "Yunotopia(Yuno Miles VS The Multiverse)", "name": "\ud83c\udfc6\ud83e\udd48 Stop Breathing", "description": "Partial snippet posted by Yuno Miles on his alt account, with a cover for an album called \"Yuno Miles VS The Multiverse\". Interpolates \"Shirt Off\" by Gucci Mane, although he was likely more inspired by Playboi Carti's \"Stop Breathing.\" Was likely considered for Yunotopia.", "file_id": "2687daabaf1cbf70efcce5cefcd64fef", "stream_url": "https://api.pillows.su/api/download/2687daabaf1cbf70efcce5cefcd64fef", "download_url": "https://api.pillows.su/api/download/2687daabaf1cbf70efcce5cefcd64fef", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhb37W0ORpbes56OsTszUc9-2VB8uMu40-Pua9GLbZGfuY2M6hX0SiUZ6rtksqfib5aw0J0hhm8sOS6gIzz-MG28AG84TLKOyLkylpwW3Jm6V_YYXhHxiyvjleMI_uQ5IitndqsjSywiK1tWpS8=w102-h101"}], "<JadeGreen>(Green Clover \ud83c\udf40, StoneGreen\u2747\ufe0f, Ultra)": [{"era": "<JadeGreen>(Green Clover \ud83c\udf40, StoneGreen\u2747\ufe0f, Ultra)", "name": "Are You S-T-U-P-I-D [V1]", "description": "Snippet uploaded by Yuno on two seperate occasions. Seemingly the same as the released version, but with a significantly more tolerable mix.", "file_id": "992fb6d7620c5a190ce6a1420d0e9b67", "stream_url": "https://api.pillows.su/api/download/992fb6d7620c5a190ce6a1420d0e9b67", "download_url": "https://api.pillows.su/api/download/992fb6d7620c5a190ce6a1420d0e9b67", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZOtXxeVYYnQdoMM97xQ01rsLQ_RgKk3eds8zWClSy6LsiaCJRpRX2xW1KNPpZR4p7mlGVfWFkuyFFcACJSwqX96WJOGdCV2uWgil5UiIR49_QogXdVFfuLkWHSqWTTFsX5MLfLhGjP4Qo4r8c=w102-h113"}], "ForeverMusic(FOREVERMUSIC)": [{"era": "ForeverMusic(FOREVERMUSIC)", "name": "\ud83c\udfc6\ud83e\udd47 What Eye Want [V2](feat. ???)", "description": "Version with a more finished vocal take and at least one alternate line. A snippet was posted by Yuno, captioned \"Album sounding so good yall hearing this ?\" Confirmed to be for ForeverMusic . The choir is the same choir on tracks like \"Hop Step\" and \"Break Something\".", "file_id": "29b927d49328f98ffb8857ef5ac30f8c", "stream_url": "https://api.pillows.su/api/download/29b927d49328f98ffb8857ef5ac30f8c", "download_url": "https://api.pillows.su/api/download/29b927d49328f98ffb8857ef5ac30f8c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYHNgl30Dm7gpwGTuer_5gzllD1WKZ7Qa0sqzcthSpJE254XqzSe139KDl-UTt4PK_xwJJpIoJfko7umIMdX9tyHp0VWUFjMRQrC0VWV-skB7UtOMrkYHvxqHYYbQICes2A9-NtzwH01NHd2k8=w102-h118"}, {"era": "ForeverMusic(FOREVERMUSIC)", "name": "\u2728 Turtle", "description": "Leaked by some random on YouTube saying he would leak \"all of his songs\" if Yuno didn't come back from music. Probably from 2020 or even earlier, given the way his voice sounds and his mic quality.", "file_id": "7e983b656b38192dc62373b59f487cee", "stream_url": "https://api.pillows.su/api/download/7e983b656b38192dc62373b59f487cee", "download_url": "https://api.pillows.su/api/download/7e983b656b38192dc62373b59f487cee", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYHNgl30Dm7gpwGTuer_5gzllD1WKZ7Qa0sqzcthSpJE254XqzSe139KDl-UTt4PK_xwJJpIoJfko7umIMdX9tyHp0VWUFjMRQrC0VWV-skB7UtOMrkYHvxqHYYbQICes2A9-NtzwH01NHd2k8=w102-h118"}]};
+    let currentEra = null;
+    let currentIndex = null;
+    let currentSong = null;
+    let playlist = [];
+
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const seekBar = document.getElementById('seek-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const playerTitle = document.getElementById('player-title');
+    const playerCover = document.getElementById('player-cover');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    function playSong(era, index) {
+        playlist = eras[era];
+        currentEra = era;
+        currentIndex = index;
+        loadAndPlayCurrent();
+    }
+
+    function highlightCurrentSong() {
+        document.querySelectorAll('.song.playing').forEach(el => el.classList.remove('playing'));
+        if (currentEra !== null && currentIndex !== null) {
+            const songId = `song-${currentEra.replace(/ /g, '_')}-${currentIndex}`;
+            const songEl = document.getElementById(songId);
+            if (songEl) songEl.classList.add('playing');
+        }
+    }
+
+    function loadAndPlayCurrent() {
+        if (!playlist || currentIndex === null || !playlist[currentIndex]) return;
+        const song = playlist[currentIndex];
+        player.src = song.stream_url;
+        playerTitle.textContent = song.name;
+        playerCover.src = song.cover || 'https://via.placeholder.com/60x60?text=No+Cover';
+        currentSong = song.stream_url;
+        player.play();
+        updateSkipButtons();
+        updateMediaSession(song);
+        highlightCurrentSong();
+    }
+
+    function updateSkipButtons() {
+        prevBtn.disabled = (currentIndex <= 0);
+        nextBtn.disabled = (currentIndex >= playlist.length - 1);
+    }
+
+    playBtn.onclick = function() {
+        if (player.src) {
+            if (player.paused) player.play();
+            else player.pause();
+        }
+    };
+
+    prevBtn.onclick = function() {
+        if (playlist && currentIndex > 0) {
+            currentIndex -= 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    nextBtn.onclick = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    player.onplay = function() {
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "";
+    };
+    player.onpause = function() {
+        playIcon.style.display = "";
+        pauseIcon.style.display = "none";
+    };
+
+    player.ontimeupdate = function() {
+        seekBar.value = player.currentTime || 0;
+        currentTimeEl.textContent = formatTime(player.currentTime);
+    };
+    player.onloadedmetadata = function() {
+        seekBar.max = player.duration || 0;
+        durationEl.textContent = formatTime(player.duration);
+    };
+    seekBar.oninput = function() {
+        player.currentTime = seekBar.value;
+    };
+
+    player.onended = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    function formatTime(sec) {
+        sec = Math.floor(sec);
+        return Math.floor(sec/60) + ":" + String(sec%60).padStart(2, '0');
+    }
+    function updateMediaSession(song) {
+        if ('mediaSession' in navigator && song) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.name,
+                artist: song.era,
+                album: "Unreleased",
+                artwork: [
+                    { src: song.cover || 'https://via.placeholder.com/90x90?text=No+Cover', sizes: '90x90', type: 'image/png' }
+                ]
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (playlist && currentIndex > 0) {
+                    currentIndex -= 1;
+                    loadAndPlayCurrent();
+                }
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                if (playlist && currentIndex < playlist.length - 1) {
+                    currentIndex += 1;
+                    loadAndPlayCurrent();
+                }
+            });
+        }
+    }
+
+    // --- Collapsible Eras ---
+    function toggleEra(idx) {
+        const songList = document.getElementById('song-list-' + idx);
+        const chevron = document.getElementById('chevron-' + idx);
+        const isOpen = songList.classList.contains('open');
+        if (isOpen) {
+            songList.classList.remove('open');
+            chevron.classList.remove('open');
+        } else {
+            songList.classList.add('open');
+            chevron.classList.add('open');
+        }
+    }
+    // Collapse all on load
+    window.addEventListener('DOMContentLoaded', function() {
+        
+            document.getElementById('song-list-0').classList.remove('open');
+            document.getElementById('chevron-0').classList.remove('open');
+        
+            document.getElementById('song-list-1').classList.remove('open');
+            document.getElementById('chevron-1').classList.remove('open');
+        
+            document.getElementById('song-list-2').classList.remove('open');
+            document.getElementById('chevron-2').classList.remove('open');
+        
+            document.getElementById('song-list-3').classList.remove('open');
+            document.getElementById('chevron-3').classList.remove('open');
+        
+            document.getElementById('song-list-4').classList.remove('open');
+            document.getElementById('chevron-4').classList.remove('open');
+        
+
+        // Tooltip logic
+        let tooltip = null;
+        let tooltipTimeout = null;
+
+        document.querySelectorAll('.song').forEach(song => {
+            song.addEventListener('mouseenter', function(e) {
+                const desc = song.getAttribute('data-description');
+                if (!desc) return;
+                if (tooltip) tooltip.remove();
+                tooltip = document.createElement('div');
+                tooltip.className = 'floating-song-description';
+                tooltip.innerHTML = desc;
+                document.body.appendChild(tooltip);
+
+                // Position tooltip
+                const rect = song.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 6) + 'px';
+                tooltip.style.minWidth = rect.width + 'px';
+
+                // Fade in
+                setTimeout(() => {
+                    if (tooltip) tooltip.classList.add('visible');
+                }, 10);
+            });
+            song.addEventListener('mouseleave', function(e) {
+                if (tooltip) {
+                    tooltip.classList.remove('visible');
+                    setTimeout(() => {
+                        if (tooltip) tooltip.remove();
+                        tooltip = null;
+                    }, 120);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

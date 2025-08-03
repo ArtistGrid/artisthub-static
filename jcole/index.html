@@ -1,0 +1,1147 @@
+<!doctype html>
+<html>
+<head>
+    <title>ArtistHub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #121212;
+            color: #fff;
+        }
+.container {
+    padding: 2rem;
+    padding-bottom: 120px; /* Add space for the player */
+}
+        .era {
+            margin-bottom: 2.2rem;
+            background: #181818;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px #0003;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .era-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2.1rem 2rem 2.1rem 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.18s;
+            border-bottom: 1px solid #232323;
+        }
+        .era-header:hover {
+            background: #232323;
+        }
+        .era-cover {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .era-title {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #1db954;
+            flex: 1;
+            letter-spacing: 0.01em;
+        }
+        .chevron {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(.4,2,.6,1), color 0.2s;
+            color: #aaa;
+        }
+        .chevron.open {
+            transform: rotate(90deg);
+            color: #1db954;
+        }
+        .song-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(.4,2,.6,1);
+            background: #181818;
+            padding: 0 2rem;
+        }
+        .song-list.open {
+            padding-bottom: 1.2rem;
+            max-height: 1000px;
+            transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
+        }
+        .song {
+            background: #222;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.18s, color 0.18s;
+            box-shadow: 0 1px 4px #0002;
+            margin-top: 0.7rem;
+        }
+        .song:first-child { margin-top: 1.2rem; }
+        .song:hover {
+            background: #1db95433;
+            color: #1db954;
+        }
+        /* Hide the inline description, we use JS tooltip instead */
+        .song .song-description {
+            display: none !important;
+        }
+        .song.playing {
+            background: #1db954 !important;
+            color: #181818 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 12px #1db95455;
+        }
+        .player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #181818;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #222;
+            box-shadow: 0 -2px 8px #0003;
+            z-index: 100;
+            gap: 1.5rem;
+        }
+        .player-cover {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .player-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .player-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.2rem;
+            text-shadow: 0 1px 2px #0008;
+        }
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .player-btn, .player-skip-btn {
+            background: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px #0003;
+            margin-right: 0.5rem;
+        }
+        .player-btn:hover, .player-skip-btn:hover {
+            background: #1ed760;
+        }
+        .player-skip-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        .player-time {
+            font-size: 0.98rem;
+            color: #ccc;
+            min-width: 40px;
+            text-align: right;
+        }
+        .seek-bar {
+            flex: 1;
+            accent-color: #1db954;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            margin: 0 0.5rem;
+        }
+        .seek-bar::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-ms-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar:focus {
+            outline: none;
+        }
+        /* Tooltip style */
+        .floating-song-description {
+            position: fixed;
+            background: #222;
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px #000b;
+            z-index: 99999;
+            min-width: 250px;
+            max-width: 400px;
+            font-size: 0.97rem;
+            white-space: pre-line;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+        .floating-song-description.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #1db954;">ArtistHub</h1>
+        
+            <div class="era" id="era-0">
+                <div class="era-header" onclick="toggleEra(0)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYO0VZcjhlcZGcQC6we6ZU4Mp-9c3cAPW0KZV6HiDpIW_5CZ4uaWYhYmEpD60dOzYNvUoOZR6ic75ntV2BP3jgc_Xms7Z3g03GU7Kl-HRYXm5P47ZUrTMLenLHzXqhHi8ArOnkJBekamHAr5s4qVvOIj5qMCzwLtlEozZGX=w386-h143" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">The Warm Up(The Warm Up To The Warm Up)</span>
+                    <span class="chevron" id="chevron-0">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-0">
+                    
+                        <div class="song" 
+                             id="song-The_Warm_Up(The_Warm_Up_To_The_Warm_Up)-0" 
+                             data-description="Single released sometime in 2009, didn&#39;t end up on the mixtape but was released on the sampler The Warm Up To The Warm Up as track 11."
+                             onclick="playSong(&quot;The Warm Up(The Warm Up To The Warm Up)&quot;, 0)">
+                            Show Me Something
+                            <div class="song-description">Single released sometime in 2009, didn't end up on the mixtape but was released on the sampler The Warm Up To The Warm Up as track 11.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-The_Warm_Up(The_Warm_Up_To_The_Warm_Up)-1" 
+                             data-description="Warm Up-era song, was going to be on the mixtape but was cut. Released on the sampler The Warm Up To The Warm Up as track 8."
+                             onclick="playSong(&quot;The Warm Up(The Warm Up To The Warm Up)&quot;, 1)">
+                            Song for the Ville
+                            <div class="song-description">Warm Up-era song, was going to be on the mixtape but was cut. Released on the sampler The Warm Up To The Warm Up as track 8.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-1">
+                <div class="era-header" onclick="toggleEra(1)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYCMX_7xQb1ZBuOr5Prz2_Iz8OcGB-IFo5RgO3kdTJeu3hzIKKpOJXX-fJwaRfYUtbMM9t4C3d3u4wiedCN75hQX7VcdEXvKiqknBCNORvPN2z7YJ-lQR78yoSbVwWxmyVxjOFWiWz4rO5fLS-5HSAURlWBO62lhxfSWSDI=w386-h143" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Friday Night Lights</span>
+                    <span class="chevron" id="chevron-1">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-1">
+                    
+                        <div class="song" 
+                             id="song-Friday_Night_Lights-0" 
+                             data-description="Cole talked about this on the &#34;Inevitable&#34; podcast and it originally only had one verse and cole doing the hook instead of trey songz on the hook, snippet doesn&#39;t preview Cole doing the hook part but that snippet is still part of that version/segment."
+                             onclick="playSong(&quot;Friday Night Lights&quot;, 0)">
+                            Can't Get Enough [V1]
+                            <div class="song-description">Cole talked about this on the "Inevitable" podcast and it originally only had one verse and cole doing the hook instead of trey songz on the hook, snippet doesn't preview Cole doing the hook part but that snippet is still part of that version/segment.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Friday_Night_Lights-1" 
+                             data-description="Song made during the &#34;Friday Night Lights&#34; session and was supposed to make the final cut for &#34;The Sideline Story&#34; but got omitted."
+                             onclick="playSong(&quot;Friday Night Lights&quot;, 1)">
+                            ⭐ Return of Simba
+                            <div class="song-description">Song made during the "Friday Night Lights" session and was supposed to make the final cut for "The Sideline Story" but got omitted.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Friday_Night_Lights-2" 
+                             data-description="Song from &#34;Friday Night Lights&#34; sessions that was supposed to make the final cut for &#34;The Sideline Story&#34; but got omitted."
+                             onclick="playSong(&quot;Friday Night Lights&quot;, 2)">
+                            See It To Believe It
+                            <div class="song-description">Song from "Friday Night Lights" sessions that was supposed to make the final cut for "The Sideline Story" but got omitted.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-2">
+                <div class="era-header" onclick="toggleEra(2)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhadRfdXCgD8h3VSQM_F35kpU91aKN0tJyQujeeKs3ZpGK-zvXP8kwxl14-Z4l4FbiglmsAjnyzzTNnF1cBnLuHYEzXhiwYmT-pEmvkD08TdjSAKINki8Ji8oqoig9DQIOyzFItwdZ9kVMvd0NmpxoUCiw6Svp3KmBbVE1Md=w386-h143" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Cole World: The Sideline Story</span>
+                    <span class="chevron" id="chevron-2">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-2">
+                    
+                        <div class="song" 
+                             id="song-Cole_World:_The_Sideline_Story-0" 
+                             data-description="In a 2011 interview, J. Cole spoke about a song called 100 Grand which was produced by No I.D. saying &#34;It was crazy but in the same lane as the hip-hop bangers.&#34; Was previewed on the &#34;Inevitable&#34; Podcast."
+                             onclick="playSong(&quot;Cole World: The Sideline Story&quot;, 0)">
+                            🏆 100 Grand(prod. No I.D.)
+                            <div class="song-description">In a 2011 interview, J. Cole spoke about a song called 100 Grand which was produced by No I.D. saying "It was crazy but in the same lane as the hip-hop bangers." Was previewed on the "Inevitable" Podcast.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Cole_World:_The_Sideline_Story-1" 
+                             data-description="Song was considered for &#34;The Sideline Story&#34;."
+                             onclick="playSong(&quot;Cole World: The Sideline Story&quot;, 1)">
+                            ⭐ Cheer Up
+                            <div class="song-description">Song was considered for "The Sideline Story".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Cole_World:_The_Sideline_Story-2" 
+                             data-description="Previewed on the &#34;Inevitable&#34; Podcast."
+                             onclick="playSong(&quot;Cole World: The Sideline Story&quot;, 2)">
+                            First Taste Of Money(feat. Pharrell) (prod. Pharrell)
+                            <div class="song-description">Previewed on the "Inevitable" Podcast.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Cole_World:_The_Sideline_Story-3" 
+                             data-description="Previewed on the &#34;Inevitable&#34; Podcast, this is Cole&#39;s first attempt at doing a single, cole cuts it earlier then the other songs because its trash, to which I agree."
+                             onclick="playSong(&quot;Cole World: The Sideline Story&quot;, 3)">
+                            🗑️ Not Too Late(feat. K. Fox) (prod. No I.D.)
+                            <div class="song-description">Previewed on the "Inevitable" Podcast, this is Cole's first attempt at doing a single, cole cuts it earlier then the other songs because its trash, to which I agree.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Cole_World:_The_Sideline_Story-4" 
+                             data-description="Song was listed for sale on the YouKilledThis Discord server in December 2019, but was never sold as the server was taken down. Previewed on the &#34;Inevitable&#34; Podcast, was originally thought to be from &#34;2014 Forest Hills Drive&#34; sessions but it actually came from the &#34;Cole World: The Sideline Story&#34; sessions. Originally meant to be the album&#39;s single since Jay-Z preferred it over &#34;Work Out&#34;. Song even got mixed &amp; mastered, but Cole asked Jay to pull it at the very last second to which Jay obliged. Much to Memphis Bleek&#39;s surprise. If you know, you know. That aka shit, but she work for delta !!"
+                             onclick="playSong(&quot;Cole World: The Sideline Story&quot;, 4)">
+                            ✨ Wait a Minute(prod. Shea Taylor)(Party Poppin')
+                            <div class="song-description">Song was listed for sale on the YouKilledThis Discord server in December 2019, but was never sold as the server was taken down. Previewed on the "Inevitable" Podcast, was originally thought to be from "2014 Forest Hills Drive" sessions but it actually came from the "Cole World: The Sideline Story" sessions. Originally meant to be the album's single since Jay-Z preferred it over "Work Out". Song even got mixed & mastered, but Cole asked Jay to pull it at the very last second to which Jay obliged. Much to Memphis Bleek's surprise. If you know, you know. That aka shit, but she work for delta !!</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Cole_World:_The_Sideline_Story-5" 
+                             data-description="Previewed on the &#34;Inevitable&#34; Podcast."
+                             onclick="playSong(&quot;Cole World: The Sideline Story&quot;, 5)">
+                            ???(prod. Pharrell Williams)(Squeeze)
+                            <div class="song-description">Previewed on the "Inevitable" Podcast.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Cole_World:_The_Sideline_Story-6" 
+                             data-description="Beat that was previewed by Cole on UStream during a follow up for his debut album, unknown if he recorded on the beat but most likely."
+                             onclick="playSong(&quot;Cole World: The Sideline Story&quot;, 6)">
+                            ???
+                            <div class="song-description">Beat that was previewed by Cole on UStream during a follow up for his debut album, unknown if he recorded on the beat but most likely.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-3">
+                <div class="era-header" onclick="toggleEra(3)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYXSx1TasiHYOeTcs68W3LzvS7EcMkAqZl07MJHEI8w1z43M69rLOgFc9UQyfPNwyPXPpi0hUY0HsRa25U4mMUy_R2ZQ_qsXKbr4d7sFyQ-HZmhaFTka8FmQXWmcE-dzoph_iPgRqTsJShPIb4=w386-h142" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Truly Yours</span>
+                    <span class="chevron" id="chevron-3">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-3">
+                    
+                        <div class="song" 
+                             id="song-Truly_Yours-0" 
+                             data-description="Previewed by Cole on a UStream on April 21st, 2012, seemingly a remix to Busta Rhymes track &#34;Enjoy da Ride&#34; (which released in 2000), as like he did with &#34;Dead Presidents&#34; and such."
+                             onclick="playSong(&quot;Truly Yours&quot;, 0)">
+                            🏆 Enjoy da Ride (Remix)
+                            <div class="song-description">Previewed by Cole on a UStream on April 21st, 2012, seemingly a remix to Busta Rhymes track "Enjoy da Ride" (which released in 2000), as like he did with "Dead Presidents" and such.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Truly_Yours-1" 
+                             data-description="This was released on 9/27/12 to give the fans a little something in honor of the one year anniversary of J. Cole’s debut album, Cole World The Sideline Story."
+                             onclick="playSong(&quot;Truly Yours&quot;, 1)">
+                            Get Free ColeWorld
+                            <div class="song-description">This was released on 9/27/12 to give the fans a little something in honor of the one year anniversary of J. Cole’s debut album, Cole World The Sideline Story.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Truly_Yours-2" 
+                             data-description="After reaching 2 million twitter followers, Cole decided to release this song for his dedicated fans. Using a Canei Finch-produced beat that samples David Ruffin’s “The Double Cross” , J. Cole “brought back the soul&#34;."
+                             onclick="playSong(&quot;Truly Yours&quot;, 2)">
+                            ⭐ Grew Up Fast(prod. Canei Finch)
+                            <div class="song-description">After reaching 2 million twitter followers, Cole decided to release this song for his dedicated fans. Using a Canei Finch-produced beat that samples David Ruffin’s “The Double Cross” , J. Cole “brought back the soul".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Truly_Yours-3" 
+                             data-description="This song was made for the first Truly Yours tape but never got officially released, it was previewed on UStream with a very low quality snippet, the intro, first verse, and a early part of the chorus are previewed."
+                             onclick="playSong(&quot;Truly Yours&quot;, 3)">
+                            🏆 Now And Forever
+                            <div class="song-description">This song was made for the first Truly Yours tape but never got officially released, it was previewed on UStream with a very low quality snippet, the intro, first verse, and a early part of the chorus are previewed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Truly_Yours-4" 
+                             data-description="This song was released directly by J. Cole on Friday, March 2nd, 2012, to commemorate Dreamville Weekend , where J. Cole spent a few days back home in Fayetteville, NC. With the song release, he commented, “Thanks to the city, Love yall.”"
+                             onclick="playSong(&quot;Truly Yours&quot;, 4)">
+                            Visionz Of Home(prod. Elite)
+                            <div class="song-description">This song was released directly by J. Cole on Friday, March 2nd, 2012, to commemorate Dreamville Weekend , where J. Cole spent a few days back home in Fayetteville, NC. With the song release, he commented, “Thanks to the city, Love yall.”</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-4">
+                <div class="era-header" onclick="toggleEra(4)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYcyq7SmRgGoxHQL0hRPTImHV0kt-bfGGyNTNR6rnMaYOMnT-wH2Ym4Zrxn6b3WdA0IbL_O_ubuTyrHUI8RSx0oAI0ea2wKcsY_cVRDcv_Smj81FfEdzodqJNMS2tx0kCYIvpxGPs-l1awLldZ9vBn1S7s9pKTnQcCrYA=w386-h143" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Born Sinner(Truly Yours 3)</span>
+                    <span class="chevron" id="chevron-4">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-4">
+                    
+                        <div class="song" 
+                             id="song-Born_Sinner(Truly_Yours_3)-0" 
+                             data-description="Original Version of &#34;Power Trip&#34;, has Cole singing the hook instead of Miguel, different mixing, slight different chorus lyrics, and doesn&#39;t have the added extra affects, high quality version played on the podcast &#34;Inevitable&#34;, and cole explicitly states it as a demo."
+                             onclick="playSong(&quot;Born Sinner(Truly Yours 3)&quot;, 0)">
+                            ✨ Power Trip [V1]
+                            <div class="song-description">Original Version of "Power Trip", has Cole singing the hook instead of Miguel, different mixing, slight different chorus lyrics, and doesn't have the added extra affects, high quality version played on the podcast "Inevitable", and cole explicitly states it as a demo.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-5">
+                <div class="era-header" onclick="toggleEra(5)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYD96qEjWncXiCzFoEu-Dv0dhR0DMxwshWPYKFrmniGeNhPJBiSAf6pJFvHXXwsPPM7tgrrYXZah_x0PT7XxdcC22LnRaFN7N9UBQXRECQhRp9yFOHfI0iHaXP_Xfs59CP-VgoPUDm_fU-X21NNNZB0cYB9OJG4rTiz1HYd=w386-h143" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">J. Cole x Kendrick Project(Out the Sky)</span>
+                    <span class="chevron" id="chevron-5">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-5">
+                    
+                        <div class="song" 
+                             id="song-J._Cole_x_Kendrick_Project(Out_the_Sky)-0" 
+                             data-description="A track teased live on MagicDisc Music Store, as preview to the project release. At certain point the track stops to being played and Kendrick starts to rap the rest of his verse from the song to continue it. A partial high quality verison was officially played on the audio series &#34;Inevitable&#34;."
+                             onclick="playSong(&quot;J. Cole x Kendrick Project(Out the Sky)&quot;, 0)">
+                            ⭐🏆 Shock The World(feat. BJ The Chicago Kid)
+                            <div class="song-description">A track teased live on MagicDisc Music Store, as preview to the project release. At certain point the track stops to being played and Kendrick starts to rap the rest of his verse from the song to continue it. A partial high quality verison was officially played on the audio series "Inevitable".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-J._Cole_x_Kendrick_Project(Out_the_Sky)-1" 
+                             data-description="A track teased live on MagicDisc Music Store, as preview to the project release. At certain point the track stops to being played and Kendrick starts to rap the rest of his verse from the song to continue it. A partial high quality verison was officially played on the audio series &#34;Inevitable&#34;."
+                             onclick="playSong(&quot;J. Cole x Kendrick Project(Out the Sky)&quot;, 1)">
+                            ⭐🏆 Shock The World(feat. BJ The Chicago Kid)
+                            <div class="song-description">A track teased live on MagicDisc Music Store, as preview to the project release. At certain point the track stops to being played and Kendrick starts to rap the rest of his verse from the song to continue it. A partial high quality verison was officially played on the audio series "Inevitable".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-J._Cole_x_Kendrick_Project(Out_the_Sky)-2" 
+                             data-description="A track that was played twice unintentionally by Kendrick in an interview to Hard Knock TV. Kendrick would later preview live the song almost entirely on MagicDisc Music Store. A full-partial high quality version was officially played on the audio series &#34;Inevitable&#34;. Interpolates J. Cole&#39;s &#34;Blow Up&#34;, we have 95% of the track, just missing the outro."
+                             onclick="playSong(&quot;J. Cole x Kendrick Project(Out the Sky)&quot;, 2)">
+                            ⭐🏆 Temptation(feat. JaVonté)
+                            <div class="song-description">A track that was played twice unintentionally by Kendrick in an interview to Hard Knock TV. Kendrick would later preview live the song almost entirely on MagicDisc Music Store. A full-partial high quality version was officially played on the audio series "Inevitable". Interpolates J. Cole's "Blow Up", we have 95% of the track, just missing the outro.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-J._Cole_x_Kendrick_Project(Out_the_Sky)-3" 
+                             data-description="A track that was played twice unintentionally by Kendrick in an interview to Hard Knock TV. Kendrick would later preview live the song almost entirely on MagicDisc Music Store. A full-partial high quality version was officially played on the audio series &#34;Inevitable&#34;. Interpolates J. Cole&#39;s &#34;Blow Up&#34;, we have 95% of the track, just missing the outro."
+                             onclick="playSong(&quot;J. Cole x Kendrick Project(Out the Sky)&quot;, 3)">
+                            ⭐🏆 Temptation(feat. JaVonté)
+                            <div class="song-description">A track that was played twice unintentionally by Kendrick in an interview to Hard Knock TV. Kendrick would later preview live the song almost entirely on MagicDisc Music Store. A full-partial high quality version was officially played on the audio series "Inevitable". Interpolates J. Cole's "Blow Up", we have 95% of the track, just missing the outro.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-J._Cole_x_Kendrick_Project(Out_the_Sky)-4" 
+                             data-description="Leaked following a successful groupbuy. Could&#39;ve been recorded in the May 2012 session. Most likely made for the collab project, contains mumble and unfinished lyrics."
+                             onclick="playSong(&quot;J. Cole x Kendrick Project(Out the Sky)&quot;, 4)">
+                            Wait For Tomorrow [V1](with Kendrick Lamar)
+                            <div class="song-description">Leaked following a successful groupbuy. Could've been recorded in the May 2012 session. Most likely made for the collab project, contains mumble and unfinished lyrics.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-J._Cole_x_Kendrick_Project(Out_the_Sky)-5" 
+                             data-description="Partially officially played on the audio series &#34;Inevitable&#34;, and unmixed, recorded in the may 2012 sessions."
+                             onclick="playSong(&quot;J. Cole x Kendrick Project(Out the Sky)&quot;, 5)">
+                            Who Hot, Who Not?*(prod. Oddisee)
+                            <div class="song-description">Partially officially played on the audio series "Inevitable", and unmixed, recorded in the may 2012 sessions.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-J._Cole_x_Kendrick_Project(Out_the_Sky)-6" 
+                             data-description="Played during an interview to Hard Knock TV. No lyrics besides the beat is played throught the preview, but Kendrick says he still was going to finish his third verse for the song as J. Cole also had a finished verse on it."
+                             onclick="playSong(&quot;J. Cole x Kendrick Project(Out the Sky)&quot;, 6)">
+                            ???
+                            <div class="song-description">Played during an interview to Hard Knock TV. No lyrics besides the beat is played throught the preview, but Kendrick says he still was going to finish his third verse for the song as J. Cole also had a finished verse on it.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-J._Cole_x_Kendrick_Project(Out_the_Sky)-7" 
+                             data-description="Full-partial because they end the song abruptly, indicating an outro, officially played on the audio series &#34;Inevitable&#34;, and unmixed, recorded in the May 2012 session."
+                             onclick="playSong(&quot;J. Cole x Kendrick Project(Out the Sky)&quot;, 7)">
+                            ???(Certified, I'm Good)
+                            <div class="song-description">Full-partial because they end the song abruptly, indicating an outro, officially played on the audio series "Inevitable", and unmixed, recorded in the May 2012 session.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-6">
+                <div class="era-header" onclick="toggleEra(6)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYTJoBOHLIYKd_SBm94D9PxvFU5SwdaV3CJ2rMiN5oneDbsr8NBQX3Nu8fjaftaPtR1TU_6T4Id9I_oGgfFQMfOfnXw7QDX2yfUhh4fh2GVdMJAJujQDIMqM_SHQz5cJsEB485QS6EhsWchyhM=w386-h143" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">J. Cole x Chance Project(a cole chance...)</span>
+                    <span class="chevron" id="chevron-6">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-6">
+                    
+                        <div class="song" 
+                             id="song-J._Cole_x_Chance_Project(a_cole_chance...)-0" 
+                             data-description="Was first previewed on the Toca Tuesday Radio Show in March 2014. Was later performed at the Spark In The Park concert in 2014. Leaked after a successful groupbuy for $500. Track 3 on the J. Cole x Chance tracklist for the project."
+                             onclick="playSong(&quot;J. Cole x Chance Project(a cole chance...)&quot;, 0)">
+                            Incredible(with Chance The Rapper)(Thotty)
+                            <div class="song-description">Was first previewed on the Toca Tuesday Radio Show in March 2014. Was later performed at the Spark In The Park concert in 2014. Leaked after a successful groupbuy for $500. Track 3 on the J. Cole x Chance tracklist for the project.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-7">
+                <div class="era-header" onclick="toggleEra(7)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhZG_yRJZOtF7RI23wZOXj4D0X1iwk_gvkrVW5Dh6q5j80FrkCHnLD_P7Bwj4m_9VfI8he3ktRMsIe9qe6FuNDgCLfLbhMFJ6fg5kPBpwonOcDM0crJBlA9x03PMHSGl3V4iCqCEzFR_wk7CovAVjFi5Wqev5CiVqTggLvFm=w386-h143" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">2014 Forest Hills Drive</span>
+                    <span class="chevron" id="chevron-7">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-7">
+                    
+                        <div class="song" 
+                             id="song-2014_Forest_Hills_Drive-0" 
+                             data-description="Remix of &#34;Ambitionz az a Ridah&#34; by 2Pac. Snippet of this freestyle was released on the first Revenge Of The Dreamers tape."
+                             onclick="playSong(&quot;2014 Forest Hills Drive&quot;, 0)">
+                            🏆 Lil Niggaz
+                            <div class="song-description">Remix of "Ambitionz az a Ridah" by 2Pac. Snippet of this freestyle was released on the first Revenge Of The Dreamers tape.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-2014_Forest_Hills_Drive-1" 
+                             data-description="Shows Cole making a beat in the back of a tour bus doing the 2nd episode of his mini documentary &#34;J. Cole: Road to Homecoming&#34;, made during the &#34;2014 Forest Hills Drive&#34; sessions but later during the session so late 2014 due to coles hair, the likely hood that Cole recorded on this beat is high. Also shows Ron helping with the beat by adding bass and some piano keys."
+                             onclick="playSong(&quot;2014 Forest Hills Drive&quot;, 1)">
+                            ???(prod. J. Cole, Ron Gilmore)
+                            <div class="song-description">Shows Cole making a beat in the back of a tour bus doing the 2nd episode of his mini documentary "J. Cole: Road to Homecoming", made during the "2014 Forest Hills Drive" sessions but later during the session so late 2014 due to coles hair, the likely hood that Cole recorded on this beat is high. Also shows Ron helping with the beat by adding bass and some piano keys.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-2014_Forest_Hills_Drive-2" 
+                             data-description="This song was listed for sale on bizzlow.dx.am in 2020 but was never sold due to the site being taken down. Recorded in 2013 and is 3:03 in length."
+                             onclick="playSong(&quot;2014 Forest Hills Drive&quot;, 2)">
+                            ???(feat. Big Sean)
+                            <div class="song-description">This song was listed for sale on bizzlow.dx.am in 2020 but was never sold due to the site being taken down. Recorded in 2013 and is 3:03 in length.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-8">
+                <div class="era-header" onclick="toggleEra(8)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbsKjGl_SalAvDuTnVyxp_7-ksV-NyY-6LfCLCCKq1NSBdgx2rs37xnADxrKm-i0fvPsBGPAb_zSXY2R7QflsE5jgHsnWIiHcADxEr1wkRf1D9XHfkfoxw-kbpxHxMd0liy7-bodIoX6YpCpD0=w386-h143" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">4 Your Eyez Only [V1](2015 Version)</span>
+                    <span class="chevron" id="chevron-8">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-8">
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V1](2015_Version)-0" 
+                             data-description="1st Snippet leaked in 2018 without the music mafia tag in an attempt to scam buyers, then a 2nd snippet leaked by private (music mafia 2nd alias) that is full, low quality and has no music mafia tag, 3rd and final snippet leaked by music mafia themselves, assume to be from 2015."
+                             onclick="playSong(&quot;4 Your Eyez Only [V1](2015 Version)&quot;, 0)">
+                            🏆 Do Better
+                            <div class="song-description">1st Snippet leaked in 2018 without the music mafia tag in an attempt to scam buyers, then a 2nd snippet leaked by private (music mafia 2nd alias) that is full, low quality and has no music mafia tag, 3rd and final snippet leaked by music mafia themselves, assume to be from 2015.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V1](2015_Version)-1" 
+                             data-description="1st Snippet leaked in 2018 without the music mafia tag in an attempt to scam buyers, then a 2nd snippet leaked by private (music mafia 2nd alias) that is full, low quality and has no music mafia tag, 3rd and final snippet leaked by music mafia themselves, assume to be from 2015."
+                             onclick="playSong(&quot;4 Your Eyez Only [V1](2015 Version)&quot;, 1)">
+                            🏆 Do Better
+                            <div class="song-description">1st Snippet leaked in 2018 without the music mafia tag in an attempt to scam buyers, then a 2nd snippet leaked by private (music mafia 2nd alias) that is full, low quality and has no music mafia tag, 3rd and final snippet leaked by music mafia themselves, assume to be from 2015.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V1](2015_Version)-2" 
+                             data-description="1st Snippet leaked in 2018 without the music mafia tag in an attempt to scam buyers, then a 2nd snippet leaked by private (music mafia 2nd alias) that is full, low quality and has no music mafia tag, 3rd and final snippet leaked by music mafia themselves, assume to be from 2015."
+                             onclick="playSong(&quot;4 Your Eyez Only [V1](2015 Version)&quot;, 2)">
+                            🏆 Do Better
+                            <div class="song-description">1st Snippet leaked in 2018 without the music mafia tag in an attempt to scam buyers, then a 2nd snippet leaked by private (music mafia 2nd alias) that is full, low quality and has no music mafia tag, 3rd and final snippet leaked by music mafia themselves, assume to be from 2015.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V1](2015_Version)-3" 
+                             data-description="the only difference is that it has as slight instrumental break where the drums only play at the 2nd end of the chorus &#34;I got my mama&#39;s eyes, I got my mama&#39;s eyes, &#39;I&#39;m looking out for myself&#39;.&#34; Unknown if it was made before or after the &#34;Mama&#39;s Eyes&#34; version that leaked. Different mix aswell."
+                             onclick="playSong(&quot;4 Your Eyez Only [V1](2015 Version)&quot;, 3)">
+                            Mama's Eyes [V1](Color Of Your Eyes)
+                            <div class="song-description">the only difference is that it has as slight instrumental break where the drums only play at the 2nd end of the chorus "I got my mama's eyes, I got my mama's eyes, 'I'm looking out for myself'." Unknown if it was made before or after the "Mama's Eyes" version that leaked. Different mix aswell.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V1](2015_Version)-4" 
+                             data-description="Early 4YEO-era song likely made for this version of the album, no further information is known other then it being made in 2015."
+                             onclick="playSong(&quot;4 Your Eyez Only [V1](2015 Version)&quot;, 4)">
+                            ⭐ Mama's Eyes [V2](Color Of Your Eyes)
+                            <div class="song-description">Early 4YEO-era song likely made for this version of the album, no further information is known other then it being made in 2015.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-9">
+                <div class="era-header" onclick="toggleEra(9)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">4 Your Eyez Only [V2]</span>
+                    <span class="chevron" id="chevron-9">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-9">
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-0" 
+                             data-description="Recorded for &#34;4 Your Eyez Only&#34;, this song was previewed in the &#34;Eyez&#34; documentary but never released. Leaked in mid-2020."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 0)">
+                            ⭐ Javari
+                            <div class="song-description">Recorded for "4 Your Eyez Only", this song was previewed in the "Eyez" documentary but never released. Leaked in mid-2020.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-1" 
+                             data-description="Song was first shared or caught by leakers in 2019 via looking at the metadata of the file (or could possibly be from 2019 but we aren&#39;t sure), snippet surfaced on leaked.cx on October 18th 2023 after being listed for sale by @waterfalls, later leaked in full on January 1st, 2024. This version was later given to Noname for &#34;Shadow Man&#34; which features Smino, Phoelix &amp; Saba."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 1)">
+                            ⭐ Popular [V2](feat. Smino & Cam O'bi) (prod. Cam O'bi)(Shadow Man)
+                            <div class="song-description">Song was first shared or caught by leakers in 2019 via looking at the metadata of the file (or could possibly be from 2019 but we aren't sure), snippet surfaced on leaked.cx on October 18th 2023 after being listed for sale by @waterfalls, later leaked in full on January 1st, 2024. This version was later given to Noname for "Shadow Man" which features Smino, Phoelix & Saba.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-2" 
+                             data-description="Beat that was previewed in the &#34;Eyez&#34; Documentary, unknown if Cole every recorded on it but most likely did, made during the &#34;4 Your Eyez Only&#34; sessions."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 2)">
+                            ???
+                            <div class="song-description">Beat that was previewed in the "Eyez" Documentary, unknown if Cole every recorded on it but most likely did, made during the "4 Your Eyez Only" sessions.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-3" 
+                             data-description="Beat was that previewed in the &#34;Eyez&#34; Documentary, has cole adding bass onto the track, not much is known about it other then it being made during the &#34;4 Your Eyez Only&#34; sessions, not having any vocals on it and if Cole recorded on the track but most likely did."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 3)">
+                            ???
+                            <div class="song-description">Beat was that previewed in the "Eyez" Documentary, has cole adding bass onto the track, not much is known about it other then it being made during the "4 Your Eyez Only" sessions, not having any vocals on it and if Cole recorded on the track but most likely did.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-4" 
+                             data-description="Beat was that previewed in the &#34;Eyez&#34; Documentary, not much is known about it other then it being made during the &#34;4 Your Eyez Only&#34; sessions, has seems to be an clarinet or oboe being added onto the track, unknown if Cole recorded on the track but most likely did."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 4)">
+                            ???
+                            <div class="song-description">Beat was that previewed in the "Eyez" Documentary, not much is known about it other then it being made during the "4 Your Eyez Only" sessions, has seems to be an clarinet or oboe being added onto the track, unknown if Cole recorded on the track but most likely did.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-5" 
+                             data-description="Track that was previewed in the &#34;Eyez&#34; Documentary, has very short brief vocals from Cole yelling &#34;HA-&#34; in the amidst of the track being played, other then that, it&#39;s mostly violin melodies being added onto the track, made during the &#34;4 Your Eyez Only&#34; sessions."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 5)">
+                            ???
+                            <div class="song-description">Track that was previewed in the "Eyez" Documentary, has very short brief vocals from Cole yelling "HA-" in the amidst of the track being played, other then that, it's mostly violin melodies being added onto the track, made during the "4 Your Eyez Only" sessions.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-6" 
+                             data-description="Track that was previewed in the &#34;Eyez&#34; Documentary, has very short brief vocals from Cole at the beginning then after that seems organ production added onto the track by BIGYUKI, made during the &#34;4 Your Eyez Only&#34; sessions."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 6)">
+                            ???
+                            <div class="song-description">Track that was previewed in the "Eyez" Documentary, has very short brief vocals from Cole at the beginning then after that seems organ production added onto the track by BIGYUKI, made during the "4 Your Eyez Only" sessions.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-7" 
+                             data-description="Beat that was previewed in the &#34;Eyez&#34; Documentary, unknown if Cole every recorded on it but most likely did, made during the &#34;4 Your Eyez Only&#34; sessions."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 7)">
+                            ???
+                            <div class="song-description">Beat that was previewed in the "Eyez" Documentary, unknown if Cole every recorded on it but most likely did, made during the "4 Your Eyez Only" sessions.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-8" 
+                             data-description="Track that was previewed in the &#34;Eyez&#34; Documentary, not much is known about it other then it being made during the &#34;4 Your Eyez Only&#34; sessions and Cole adding vocals."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 8)">
+                            🏆 ???(Slave To Your Pride)
+                            <div class="song-description">Track that was previewed in the "Eyez" Documentary, not much is known about it other then it being made during the "4 Your Eyez Only" sessions and Cole adding vocals.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-9" 
+                             data-description="Track that was previewed in the &#34;Eyez&#34; Documentary, not much is known about it other then it being made during the &#34;4 Your Eyez Only&#34; sessions."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 9)">
+                            🏆 ???(Got You're Number, How I Feel)
+                            <div class="song-description">Track that was previewed in the "Eyez" Documentary, not much is known about it other then it being made during the "4 Your Eyez Only" sessions.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-10" 
+                             data-description="Track that was previewed in the &#34;Eyez&#34; Documentary, not much is known about it other then it being made during the &#34;4 Your Eyez Only&#34; sessions."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 10)">
+                            🏆 ???(Got You're Number, How I Feel)
+                            <div class="song-description">Track that was previewed in the "Eyez" Documentary, not much is known about it other then it being made during the "4 Your Eyez Only" sessions.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-11" 
+                             data-description="Track that was previewed in &#34;Applying Pressure: The Off-Season Documentary&#34;, this particular scene that was shown in the Documentary was taken place in 2016 and shows Cole working on a track for &#34;4 Your Eyez Only&#34;, shows Cole adding vocals and completeing/adding production to the beat hes working on, doesn&#39;t sound like any released track from &#34;4 Your Eyez Only&#34; or from that era so presumably unreleased, audio is heavily inaudible due to Cole talking over the clip and being extremely short, faint vocals and a faint beat can be heard through the headphone bleed, sounds like hes flowing."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 11)">
+                            🏆 ???
+                            <div class="song-description">Track that was previewed in "Applying Pressure: The Off-Season Documentary", this particular scene that was shown in the Documentary was taken place in 2016 and shows Cole working on a track for "4 Your Eyez Only", shows Cole adding vocals and completeing/adding production to the beat hes working on, doesn't sound like any released track from "4 Your Eyez Only" or from that era so presumably unreleased, audio is heavily inaudible due to Cole talking over the clip and being extremely short, faint vocals and a faint beat can be heard through the headphone bleed, sounds like hes flowing.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-12" 
+                             data-description="Original beat loop for &#34;Well&#34; by Mac Miller, made in 2016 before KAYTRANADA &amp; Mac Miller hopped on the song, also potentially made for Earl as a Doris-type beat. Later used as a sample on &#34;Immortal&#34; by Cole."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 12)">
+                            Frank Dukes - Doris(Well, Madula, Immortal)
+                            <div class="song-description">Original beat loop for "Well" by Mac Miller, made in 2016 before KAYTRANADA & Mac Miller hopped on the song, also potentially made for Earl as a Doris-type beat. Later used as a sample on "Immortal" by Cole.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-4_Your_Eyez_Only_[V2]-13" 
+                             data-description="J. Cole version of &#34;Mitus Touch&#34;. J. Cole&#39;s vocals could be partially reference work, but based on his lyrics including &#34;Cole World&#34; and other lines referring to himself it&#39;s seemingly at least mostly recorded as a potential feature."
+                             onclick="playSong(&quot;4 Your Eyez Only [V2]&quot;, 13)">
+                            Rihanna - Mitus Touch [V5](feat. J. Cole) (prod. Keyon Christ)(2 Rihannas)
+                            <div class="song-description">J. Cole version of "Mitus Touch". J. Cole's vocals could be partially reference work, but based on his lyrics including "Cole World" and other lines referring to himself it's seemingly at least mostly recorded as a potential feature.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-10">
+                <div class="era-header" onclick="toggleEra(10)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhYumhhau8hNLC7RcCHWZsVtb2XkAZhqtGaLwhuo9CIYlRTWvVVnLC_irw7VwtJ67FvWYonkae_mcapRTSXTFycyJQ3CFXppBYPZfyeGuVoeLDd8iu0cSIwiM2O9G_RWZIsKD3lFfZF8HCGLWd-kElgZThHtQdS9RPZx4Q=w386-h143" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">KOD(Kids On Drugs, King Overdosed, Kill Our Demons)</span>
+                    <span class="chevron" id="chevron-10">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-10">
+                    
+                        <div class="song" 
+                             id="song-KOD(Kids_On_Drugs,_King_Overdosed,_Kill_Our_Demons)-0" 
+                             data-description="Snippet surfaced in 2019 but didn&#39;t ever leak. Song was recorded in 2018 sessions produced by T-Minus. Cole&#39;s verse was later added and released on Young Thug&#39;s PUNK."
+                             onclick="playSong(&quot;KOD(Kids On Drugs, King Overdosed, Kill Our Demons)&quot;, 0)">
+                            Enemies(feat. Young Thug & T-Shyne)(Stressed)
+                            <div class="song-description">Snippet surfaced in 2019 but didn't ever leak. Song was recorded in 2018 sessions produced by T-Minus. Cole's verse was later added and released on Young Thug's PUNK.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-11">
+                <div class="era-header" onclick="toggleEra(11)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhbDeavSw-VtBxnBVYAE_mBiMfzASKgxlpFiRehRIvTtmnePj9x8W7p_fqkHJuvp41NksRcolDBnNrkomixQkmik-KlCyEAvm9uZ2ecgNoPeJO8iGSiVIPMksThtsvah0kbzpOrRhzdcNRPzoD5nmafsI0lnsX2a8Mf2lk0K=w386-h143" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">The Off-Season</span>
+                    <span class="chevron" id="chevron-11">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-11">
+                    
+                        <div class="song" 
+                             id="song-The_Off-Season-0" 
+                             data-description="Lil Duke posted a low quality snippet of this song to his instagram, however the song never got an official release. On March 25, 2021, Lil Duke leaked it himself on YouTube."
+                             onclick="playSong(&quot;The Off-Season&quot;, 0)">
+                            Loyal(feat. Lil Duke & Quavo)
+                            <div class="song-description">Lil Duke posted a low quality snippet of this song to his instagram, however the song never got an official release. On March 25, 2021, Lil Duke leaked it himself on YouTube.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-The_Off-Season-1" 
+                             data-description="Solo version of &#34;Caesar&#39;s Demise&#34; leaked on April 5, 2022. This song is prior to J. Cole being added."
+                             onclick="playSong(&quot;The Off-Season&quot;, 1)">
+                            A$AP Ferg - Caesar's Demise [V1](prod. Pharrell Williams)(Demise)
+                            <div class="song-description">Solo version of "Caesar's Demise" leaked on April 5, 2022. This song is prior to J. Cole being added.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-The_Off-Season-2" 
+                             data-description="Listed for sale on leakth.is in October 2020 before being taken down by seller. Listed again by a new seller on TheSource on February 3, 2021. Produced by Pharrell. Leaked in full on September 30, 2023."
+                             onclick="playSong(&quot;The Off-Season&quot;, 2)">
+                            A$AP Ferg - Caesar's Demise [V2](feat. J. Cole) (prod. Pharrell Williams)(Demise)
+                            <div class="song-description">Listed for sale on leakth.is in October 2020 before being taken down by seller. Listed again by a new seller on TheSource on February 3, 2021. Produced by Pharrell. Leaked in full on September 30, 2023.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-The_Off-Season-3" 
+                             data-description="Leaked in 2020 following a successful groupbuy. Possibly for Mez&#39;s album because Mez has two verses."
+                             onclick="playSong(&quot;The Off-Season&quot;, 3)">
+                            ⭐ Mez - Hell Nah(feat. J. Cole & Anderson .Paak)
+                            <div class="song-description">Leaked in 2020 following a successful groupbuy. Possibly for Mez's album because Mez has two verses.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+            <div class="era" id="era-12">
+                <div class="era-header" onclick="toggleEra(12)">
+                    <img class="era-cover" src="https://lh7-rt.googleusercontent.com/sheets/APBGjhZvLiRp3TA1tHKR9Krh9hfeAntJwxNHejrQZKZhhd28T52UcXHPRHyBacsyKa4OD6do5oa8aVEunIrTA6W8jCD4LQIi8Q_BoLbVjk2PDXZtU8lSrrIePPoigwK_z7RpDlDdtsa6cWN51tDB1rKR7owbUY8vQLQTcygEWg=w386-h143" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Might Delete Later(The Fall Off, It's A Boy)</span>
+                    <span class="chevron" id="chevron-12">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-12">
+                    
+                        <div class="song" 
+                             id="song-Might_Delete_Later(The_Fall_Off,_It's_A_Boy)-0" 
+                             data-description="Original version with original production. a CDQ snippet dropped on leaked.cx but the link to it is unfortnately dead."
+                             onclick="playSong(&quot;Might Delete Later(The Fall Off, It's A Boy)&quot;, 0)">
+                            Stick N Stonez [V1](prod. The Alchemist)
+                            <div class="song-description">Original version with original production. a CDQ snippet dropped on leaked.cx but the link to it is unfortnately dead.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Might_Delete_Later(The_Fall_Off,_It's_A_Boy)-1" 
+                             data-description="previewed in one of the videos following up for the release of &#34;Might Delete Later&#34;, might be considered for &#34;The Fall Off&#34; as he mentions it on the snippet."
+                             onclick="playSong(&quot;Might Delete Later(The Fall Off, It's A Boy)&quot;, 1)">
+                            🏆 ???
+                            <div class="song-description">previewed in one of the videos following up for the release of "Might Delete Later", might be considered for "The Fall Off" as he mentions it on the snippet.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Might_Delete_Later(The_Fall_Off,_It's_A_Boy)-2" 
+                             data-description="Beat that was previewed in the &#34;Might Delete Later&#34; vlogs, unknown if it was made for Cole but if so, most likely either made for &#34;The Fall Off&#34; or &#34;It&#39;s A Boy&#34;."
+                             onclick="playSong(&quot;Might Delete Later(The Fall Off, It's A Boy)&quot;, 2)">
+                            ???(prod. Tay Keith)
+                            <div class="song-description">Beat that was previewed in the "Might Delete Later" vlogs, unknown if it was made for Cole but if so, most likely either made for "The Fall Off" or "It's A Boy".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Might_Delete_Later(The_Fall_Off,_It's_A_Boy)-3" 
+                             data-description="Shows Cole making a beat during the &#34;Might Delete Later&#34; vlogs, Cole states that this is one of the beats that he only recently made as because he was too busy going crazy with the pen."
+                             onclick="playSong(&quot;Might Delete Later(The Fall Off, It's A Boy)&quot;, 3)">
+                            ???(prod. J. Cole)
+                            <div class="song-description">Shows Cole making a beat during the "Might Delete Later" vlogs, Cole states that this is one of the beats that he only recently made as because he was too busy going crazy with the pen.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Might_Delete_Later(The_Fall_Off,_It's_A_Boy)-4" 
+                             data-description="Shows Cole making a beat during the &#34;Might Delete Later&#34; vlogs."
+                             onclick="playSong(&quot;Might Delete Later(The Fall Off, It's A Boy)&quot;, 4)">
+                            ???(prod. J. Cole)
+                            <div class="song-description">Shows Cole making a beat during the "Might Delete Later" vlogs.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Might_Delete_Later(The_Fall_Off,_It's_A_Boy)-5" 
+                             data-description="Song that was previewed in the &#34;Might Delete Later&#34; vlogs."
+                             onclick="playSong(&quot;Might Delete Later(The Fall Off, It's A Boy)&quot;, 5)">
+                            ???
+                            <div class="song-description">Song that was previewed in the "Might Delete Later" vlogs.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Might_Delete_Later(The_Fall_Off,_It's_A_Boy)-6" 
+                             data-description="Original version of &#34;Stick&#34; with a rougher beat &amp; mixing, no DJ Drama vocals, nor J Cole, or Sheck Wes verses. Has a beat switch into &#34;Ambassel&#34; but has a Kenny Mason feature instead of a 2nd JID verse."
+                             onclick="playSong(&quot;Might Delete Later(The Fall Off, It's A Boy)&quot;, 6)">
+                            ⭐ JID - New Stick(feat. Kenny Mason) (prod. Christo)(Ambassel, Stick)
+                            <div class="song-description">Original version of "Stick" with a rougher beat & mixing, no DJ Drama vocals, nor J Cole, or Sheck Wes verses. Has a beat switch into "Ambassel" but has a Kenny Mason feature instead of a 2nd JID verse.</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+    </div>
+    <!-- Spotify-style player with skip buttons -->
+    <div class="player">
+        <img id="player-cover" src=cover alt="cover" class="player-cover">
+        <div class="player-info">
+            <div id="player-title" class="player-title">Select a song</div>
+            <div class="player-controls">
+                <button id="prev-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="15,4 7,11 15,18"></polygon></svg>
+                </button>
+                <button id="play-btn" class="player-btn">
+                    <svg id="play-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff"><polygon points="6,4 24,14 6,24"></polygon></svg>
+                    <svg id="pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff" style="display:none;"><rect x="6" y="4" width="5" height="20"></rect><rect x="17" y="4" width="5" height="20"></rect></svg>
+                </button>
+                <button id="next-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="7,4 15,11 7,18"></polygon></svg>
+                </button>
+                <span id="current-time" class="player-time">0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" value="0" min="0" max="100" step="1">
+                <span id="duration" class="player-time">0:00</span>
+            </div>
+        </div>
+        <audio id="player" preload="metadata"></audio>
+    </div>
+    <script>
+    // All eras and songs as a JS object
+    const eras = {"The Warm Up(The Warm Up To The Warm Up)": [{"era": "The Warm Up(The Warm Up To The Warm Up)", "name": "Show Me Something", "description": "Single released sometime in 2009, didn't end up on the mixtape but was released on the sampler The Warm Up To The Warm Up as track 11.", "file_id": "a2b35d8d14263e89bd31ead15e657f72", "stream_url": "https://api.pillows.su/api/download/a2b35d8d14263e89bd31ead15e657f72", "download_url": "https://api.pillows.su/api/download/a2b35d8d14263e89bd31ead15e657f72", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYO0VZcjhlcZGcQC6we6ZU4Mp-9c3cAPW0KZV6HiDpIW_5CZ4uaWYhYmEpD60dOzYNvUoOZR6ic75ntV2BP3jgc_Xms7Z3g03GU7Kl-HRYXm5P47ZUrTMLenLHzXqhHi8ArOnkJBekamHAr5s4qVvOIj5qMCzwLtlEozZGX=w386-h143"}, {"era": "The Warm Up(The Warm Up To The Warm Up)", "name": "Song for the Ville", "description": "Warm Up-era song, was going to be on the mixtape but was cut. Released on the sampler The Warm Up To The Warm Up as track 8.", "file_id": "a2b35d8d14263e89bd31ead15e657f72", "stream_url": "https://api.pillows.su/api/download/a2b35d8d14263e89bd31ead15e657f72", "download_url": "https://api.pillows.su/api/download/a2b35d8d14263e89bd31ead15e657f72", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYO0VZcjhlcZGcQC6we6ZU4Mp-9c3cAPW0KZV6HiDpIW_5CZ4uaWYhYmEpD60dOzYNvUoOZR6ic75ntV2BP3jgc_Xms7Z3g03GU7Kl-HRYXm5P47ZUrTMLenLHzXqhHi8ArOnkJBekamHAr5s4qVvOIj5qMCzwLtlEozZGX=w386-h143"}], "Friday Night Lights": [{"era": "Friday Night Lights", "name": "Can't Get Enough [V1]", "description": "Cole talked about this on the \"Inevitable\" podcast and it originally only had one verse and cole doing the hook instead of trey songz on the hook, snippet doesn't preview Cole doing the hook part but that snippet is still part of that version/segment.", "file_id": "a7b36454099b31aeff69c706516eb888", "stream_url": "https://api.pillows.su/api/download/a7b36454099b31aeff69c706516eb888", "download_url": "https://api.pillows.su/api/download/a7b36454099b31aeff69c706516eb888", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYCMX_7xQb1ZBuOr5Prz2_Iz8OcGB-IFo5RgO3kdTJeu3hzIKKpOJXX-fJwaRfYUtbMM9t4C3d3u4wiedCN75hQX7VcdEXvKiqknBCNORvPN2z7YJ-lQR78yoSbVwWxmyVxjOFWiWz4rO5fLS-5HSAURlWBO62lhxfSWSDI=w386-h143"}, {"era": "Friday Night Lights", "name": "\u2b50 Return of Simba", "description": "Song made during the \"Friday Night Lights\" session and was supposed to make the final cut for \"The Sideline Story\" but got omitted.", "file_id": "b299863a7305c6fc01f2d6d0c93a915a", "stream_url": "https://api.pillows.su/api/download/b299863a7305c6fc01f2d6d0c93a915a", "download_url": "https://api.pillows.su/api/download/b299863a7305c6fc01f2d6d0c93a915a", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYCMX_7xQb1ZBuOr5Prz2_Iz8OcGB-IFo5RgO3kdTJeu3hzIKKpOJXX-fJwaRfYUtbMM9t4C3d3u4wiedCN75hQX7VcdEXvKiqknBCNORvPN2z7YJ-lQR78yoSbVwWxmyVxjOFWiWz4rO5fLS-5HSAURlWBO62lhxfSWSDI=w386-h143"}, {"era": "Friday Night Lights", "name": "See It To Believe It", "description": "Song from \"Friday Night Lights\" sessions that was supposed to make the final cut for \"The Sideline Story\" but got omitted.", "file_id": "1c314f9cda3d53885f923d57842f0325", "stream_url": "https://api.pillows.su/api/download/1c314f9cda3d53885f923d57842f0325", "download_url": "https://api.pillows.su/api/download/1c314f9cda3d53885f923d57842f0325", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYCMX_7xQb1ZBuOr5Prz2_Iz8OcGB-IFo5RgO3kdTJeu3hzIKKpOJXX-fJwaRfYUtbMM9t4C3d3u4wiedCN75hQX7VcdEXvKiqknBCNORvPN2z7YJ-lQR78yoSbVwWxmyVxjOFWiWz4rO5fLS-5HSAURlWBO62lhxfSWSDI=w386-h143"}], "Cole World: The Sideline Story": [{"era": "Cole World: The Sideline Story", "name": "\ud83c\udfc6 100 Grand(prod. No I.D.)", "description": "In a 2011 interview, J. Cole spoke about a song called 100 Grand which was produced by No I.D. saying \"It was crazy but in the same lane as the hip-hop bangers.\" Was previewed on the \"Inevitable\" Podcast.", "file_id": "a2b4c3410824540c52242961792b85a0", "stream_url": "https://api.pillows.su/api/download/a2b4c3410824540c52242961792b85a0", "download_url": "https://api.pillows.su/api/download/a2b4c3410824540c52242961792b85a0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhadRfdXCgD8h3VSQM_F35kpU91aKN0tJyQujeeKs3ZpGK-zvXP8kwxl14-Z4l4FbiglmsAjnyzzTNnF1cBnLuHYEzXhiwYmT-pEmvkD08TdjSAKINki8Ji8oqoig9DQIOyzFItwdZ9kVMvd0NmpxoUCiw6Svp3KmBbVE1Md=w386-h143"}, {"era": "Cole World: The Sideline Story", "name": "\u2b50 Cheer Up", "description": "Song was considered for \"The Sideline Story\".", "file_id": "11467098d8088b4bc201519a0359eea7", "stream_url": "https://api.pillows.su/api/download/11467098d8088b4bc201519a0359eea7", "download_url": "https://api.pillows.su/api/download/11467098d8088b4bc201519a0359eea7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhadRfdXCgD8h3VSQM_F35kpU91aKN0tJyQujeeKs3ZpGK-zvXP8kwxl14-Z4l4FbiglmsAjnyzzTNnF1cBnLuHYEzXhiwYmT-pEmvkD08TdjSAKINki8Ji8oqoig9DQIOyzFItwdZ9kVMvd0NmpxoUCiw6Svp3KmBbVE1Md=w386-h143"}, {"era": "Cole World: The Sideline Story", "name": "First Taste Of Money(feat. Pharrell) (prod. Pharrell)", "description": "Previewed on the \"Inevitable\" Podcast.", "file_id": "bfe5f930f936ee07d151b0964c7fb93d", "stream_url": "https://api.pillows.su/api/download/bfe5f930f936ee07d151b0964c7fb93d", "download_url": "https://api.pillows.su/api/download/bfe5f930f936ee07d151b0964c7fb93d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhadRfdXCgD8h3VSQM_F35kpU91aKN0tJyQujeeKs3ZpGK-zvXP8kwxl14-Z4l4FbiglmsAjnyzzTNnF1cBnLuHYEzXhiwYmT-pEmvkD08TdjSAKINki8Ji8oqoig9DQIOyzFItwdZ9kVMvd0NmpxoUCiw6Svp3KmBbVE1Md=w386-h143"}, {"era": "Cole World: The Sideline Story", "name": "\ud83d\uddd1\ufe0f Not Too Late(feat. K. Fox) (prod. No I.D.)", "description": "Previewed on the \"Inevitable\" Podcast, this is Cole's first attempt at doing a single, cole cuts it earlier then the other songs because its trash, to which I agree.", "file_id": "7208e1f6f4105cba74a5c5fcf91d879c", "stream_url": "https://api.pillows.su/api/download/7208e1f6f4105cba74a5c5fcf91d879c", "download_url": "https://api.pillows.su/api/download/7208e1f6f4105cba74a5c5fcf91d879c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhadRfdXCgD8h3VSQM_F35kpU91aKN0tJyQujeeKs3ZpGK-zvXP8kwxl14-Z4l4FbiglmsAjnyzzTNnF1cBnLuHYEzXhiwYmT-pEmvkD08TdjSAKINki8Ji8oqoig9DQIOyzFItwdZ9kVMvd0NmpxoUCiw6Svp3KmBbVE1Md=w386-h143"}, {"era": "Cole World: The Sideline Story", "name": "\u2728 Wait a Minute(prod. Shea Taylor)(Party Poppin')", "description": "Song was listed for sale on the YouKilledThis Discord server in December 2019, but was never sold as the server was taken down. Previewed on the \"Inevitable\" Podcast, was originally thought to be from \"2014 Forest Hills Drive\" sessions but it actually came from the \"Cole World: The Sideline Story\" sessions. Originally meant to be the album's single since Jay-Z preferred it over \"Work Out\". Song even got mixed & mastered, but Cole asked Jay to pull it at the very last second to which Jay obliged. Much to Memphis Bleek's surprise. If you know, you know. That aka shit, but she work for delta !!", "file_id": "a0461dbd153f63da22ab01165eb901bf", "stream_url": "https://api.pillows.su/api/download/a0461dbd153f63da22ab01165eb901bf", "download_url": "https://api.pillows.su/api/download/a0461dbd153f63da22ab01165eb901bf", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhadRfdXCgD8h3VSQM_F35kpU91aKN0tJyQujeeKs3ZpGK-zvXP8kwxl14-Z4l4FbiglmsAjnyzzTNnF1cBnLuHYEzXhiwYmT-pEmvkD08TdjSAKINki8Ji8oqoig9DQIOyzFItwdZ9kVMvd0NmpxoUCiw6Svp3KmBbVE1Md=w386-h143"}, {"era": "Cole World: The Sideline Story", "name": "???(prod. Pharrell Williams)(Squeeze)", "description": "Previewed on the \"Inevitable\" Podcast.", "file_id": "e7eb472cb27ebd9757826bb9d79d3ed7", "stream_url": "https://api.pillows.su/api/download/e7eb472cb27ebd9757826bb9d79d3ed7", "download_url": "https://api.pillows.su/api/download/e7eb472cb27ebd9757826bb9d79d3ed7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhadRfdXCgD8h3VSQM_F35kpU91aKN0tJyQujeeKs3ZpGK-zvXP8kwxl14-Z4l4FbiglmsAjnyzzTNnF1cBnLuHYEzXhiwYmT-pEmvkD08TdjSAKINki8Ji8oqoig9DQIOyzFItwdZ9kVMvd0NmpxoUCiw6Svp3KmBbVE1Md=w386-h143"}, {"era": "Cole World: The Sideline Story", "name": "???", "description": "Beat that was previewed by Cole on UStream during a follow up for his debut album, unknown if he recorded on the beat but most likely.", "file_id": "f77cec1872848b5b439dce70938ed032", "stream_url": "https://api.pillows.su/api/download/f77cec1872848b5b439dce70938ed032", "download_url": "https://api.pillows.su/api/download/f77cec1872848b5b439dce70938ed032", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhadRfdXCgD8h3VSQM_F35kpU91aKN0tJyQujeeKs3ZpGK-zvXP8kwxl14-Z4l4FbiglmsAjnyzzTNnF1cBnLuHYEzXhiwYmT-pEmvkD08TdjSAKINki8Ji8oqoig9DQIOyzFItwdZ9kVMvd0NmpxoUCiw6Svp3KmBbVE1Md=w386-h143"}], "Truly Yours": [{"era": "Truly Yours", "name": "\ud83c\udfc6 Enjoy da Ride (Remix)", "description": "Previewed by Cole on a UStream on April 21st, 2012, seemingly a remix to Busta Rhymes track \"Enjoy da Ride\" (which released in 2000), as like he did with \"Dead Presidents\" and such.", "file_id": "8e4cf3d3d37858a9612d3d42a2af7d81", "stream_url": "https://api.pillows.su/api/download/8e4cf3d3d37858a9612d3d42a2af7d81", "download_url": "https://api.pillows.su/api/download/8e4cf3d3d37858a9612d3d42a2af7d81", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYXSx1TasiHYOeTcs68W3LzvS7EcMkAqZl07MJHEI8w1z43M69rLOgFc9UQyfPNwyPXPpi0hUY0HsRa25U4mMUy_R2ZQ_qsXKbr4d7sFyQ-HZmhaFTka8FmQXWmcE-dzoph_iPgRqTsJShPIb4=w386-h142"}, {"era": "Truly Yours", "name": "Get Free ColeWorld", "description": "This was released on 9/27/12 to give the fans a little something in honor of the one year anniversary of J. Cole\u2019s debut album, Cole World The Sideline Story.", "file_id": "c4467a29c0a8ad59d3046db9daa132ae", "stream_url": "https://api.pillows.su/api/download/c4467a29c0a8ad59d3046db9daa132ae", "download_url": "https://api.pillows.su/api/download/c4467a29c0a8ad59d3046db9daa132ae", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYXSx1TasiHYOeTcs68W3LzvS7EcMkAqZl07MJHEI8w1z43M69rLOgFc9UQyfPNwyPXPpi0hUY0HsRa25U4mMUy_R2ZQ_qsXKbr4d7sFyQ-HZmhaFTka8FmQXWmcE-dzoph_iPgRqTsJShPIb4=w386-h142"}, {"era": "Truly Yours", "name": "\u2b50 Grew Up Fast(prod. Canei Finch)", "description": "After reaching 2 million twitter followers, Cole decided to release this song for his dedicated fans. Using a Canei Finch-produced beat that samples David Ruffin\u2019s \u201cThe Double Cross\u201d , J. Cole \u201cbrought back the soul\".", "file_id": "1ec01b9b6308f9a8dbaa9dfde2025ffd", "stream_url": "https://api.pillows.su/api/download/1ec01b9b6308f9a8dbaa9dfde2025ffd", "download_url": "https://api.pillows.su/api/download/1ec01b9b6308f9a8dbaa9dfde2025ffd", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYXSx1TasiHYOeTcs68W3LzvS7EcMkAqZl07MJHEI8w1z43M69rLOgFc9UQyfPNwyPXPpi0hUY0HsRa25U4mMUy_R2ZQ_qsXKbr4d7sFyQ-HZmhaFTka8FmQXWmcE-dzoph_iPgRqTsJShPIb4=w386-h142"}, {"era": "Truly Yours", "name": "\ud83c\udfc6 Now And Forever", "description": "This song was made for the first Truly Yours tape but never got officially released, it was previewed on UStream with a very low quality snippet, the intro, first verse, and a early part of the chorus are previewed.", "file_id": "ac27b3b507fe26154f963153da050bfb", "stream_url": "https://api.pillows.su/api/download/ac27b3b507fe26154f963153da050bfb", "download_url": "https://api.pillows.su/api/download/ac27b3b507fe26154f963153da050bfb", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYXSx1TasiHYOeTcs68W3LzvS7EcMkAqZl07MJHEI8w1z43M69rLOgFc9UQyfPNwyPXPpi0hUY0HsRa25U4mMUy_R2ZQ_qsXKbr4d7sFyQ-HZmhaFTka8FmQXWmcE-dzoph_iPgRqTsJShPIb4=w386-h142"}, {"era": "Truly Yours", "name": "Visionz Of Home(prod. Elite)", "description": "This song was released directly by J. Cole on Friday, March 2nd, 2012, to commemorate Dreamville Weekend , where J. Cole spent a few days back home in Fayetteville, NC. With the song release, he commented, \u201cThanks to the city, Love yall.\u201d", "file_id": "5c8fd099f8d45450e6ce3c6b8c428e33", "stream_url": "https://api.pillows.su/api/download/5c8fd099f8d45450e6ce3c6b8c428e33", "download_url": "https://api.pillows.su/api/download/5c8fd099f8d45450e6ce3c6b8c428e33", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYXSx1TasiHYOeTcs68W3LzvS7EcMkAqZl07MJHEI8w1z43M69rLOgFc9UQyfPNwyPXPpi0hUY0HsRa25U4mMUy_R2ZQ_qsXKbr4d7sFyQ-HZmhaFTka8FmQXWmcE-dzoph_iPgRqTsJShPIb4=w386-h142"}], "Born Sinner(Truly Yours 3)": [{"era": "Born Sinner(Truly Yours 3)", "name": "\u2728 Power Trip [V1]", "description": "Original Version of \"Power Trip\", has Cole singing the hook instead of Miguel, different mixing, slight different chorus lyrics, and doesn't have the added extra affects, high quality version played on the podcast \"Inevitable\", and cole explicitly states it as a demo.", "file_id": "e5bc3769a488c8b9831cfad77032e206", "stream_url": "https://api.pillows.su/api/download/e5bc3769a488c8b9831cfad77032e206", "download_url": "https://api.pillows.su/api/download/e5bc3769a488c8b9831cfad77032e206", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYcyq7SmRgGoxHQL0hRPTImHV0kt-bfGGyNTNR6rnMaYOMnT-wH2Ym4Zrxn6b3WdA0IbL_O_ubuTyrHUI8RSx0oAI0ea2wKcsY_cVRDcv_Smj81FfEdzodqJNMS2tx0kCYIvpxGPs-l1awLldZ9vBn1S7s9pKTnQcCrYA=w386-h143"}], "J. Cole x Kendrick Project(Out the Sky)": [{"era": "J. Cole x Kendrick Project(Out the Sky)", "name": "\u2b50\ud83c\udfc6 Shock The World(feat. BJ The Chicago Kid)", "description": "A track teased live on MagicDisc Music Store, as preview to the project release. At certain point the track stops to being played and Kendrick starts to rap the rest of his verse from the song to continue it. A partial high quality verison was officially played on the audio series \"Inevitable\".", "file_id": "a6bb8890c849c45cfd81b3ff5ab81928", "stream_url": "https://api.pillows.su/api/download/a6bb8890c849c45cfd81b3ff5ab81928", "download_url": "https://api.pillows.su/api/download/a6bb8890c849c45cfd81b3ff5ab81928", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYD96qEjWncXiCzFoEu-Dv0dhR0DMxwshWPYKFrmniGeNhPJBiSAf6pJFvHXXwsPPM7tgrrYXZah_x0PT7XxdcC22LnRaFN7N9UBQXRECQhRp9yFOHfI0iHaXP_Xfs59CP-VgoPUDm_fU-X21NNNZB0cYB9OJG4rTiz1HYd=w386-h143"}, {"era": "J. Cole x Kendrick Project(Out the Sky)", "name": "\u2b50\ud83c\udfc6 Shock The World(feat. BJ The Chicago Kid)", "description": "A track teased live on MagicDisc Music Store, as preview to the project release. At certain point the track stops to being played and Kendrick starts to rap the rest of his verse from the song to continue it. A partial high quality verison was officially played on the audio series \"Inevitable\".", "file_id": "8c9fe8470abc6e8e07b8e77b937d1444", "stream_url": "https://api.pillows.su/api/download/8c9fe8470abc6e8e07b8e77b937d1444", "download_url": "https://api.pillows.su/api/download/8c9fe8470abc6e8e07b8e77b937d1444", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYD96qEjWncXiCzFoEu-Dv0dhR0DMxwshWPYKFrmniGeNhPJBiSAf6pJFvHXXwsPPM7tgrrYXZah_x0PT7XxdcC22LnRaFN7N9UBQXRECQhRp9yFOHfI0iHaXP_Xfs59CP-VgoPUDm_fU-X21NNNZB0cYB9OJG4rTiz1HYd=w386-h143"}, {"era": "J. Cole x Kendrick Project(Out the Sky)", "name": "\u2b50\ud83c\udfc6 Temptation(feat. JaVont\u00e9)", "description": "A track that was played twice unintentionally by Kendrick in an interview to Hard Knock TV. Kendrick would later preview live the song almost entirely on MagicDisc Music Store. A full-partial high quality version was officially played on the audio series \"Inevitable\". Interpolates J. Cole's \"Blow Up\", we have 95% of the track, just missing the outro.", "file_id": "4251d62c87aac6b39350aa7fb8746d73", "stream_url": "https://api.pillows.su/api/download/4251d62c87aac6b39350aa7fb8746d73", "download_url": "https://api.pillows.su/api/download/4251d62c87aac6b39350aa7fb8746d73", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYD96qEjWncXiCzFoEu-Dv0dhR0DMxwshWPYKFrmniGeNhPJBiSAf6pJFvHXXwsPPM7tgrrYXZah_x0PT7XxdcC22LnRaFN7N9UBQXRECQhRp9yFOHfI0iHaXP_Xfs59CP-VgoPUDm_fU-X21NNNZB0cYB9OJG4rTiz1HYd=w386-h143"}, {"era": "J. Cole x Kendrick Project(Out the Sky)", "name": "\u2b50\ud83c\udfc6 Temptation(feat. JaVont\u00e9)", "description": "A track that was played twice unintentionally by Kendrick in an interview to Hard Knock TV. Kendrick would later preview live the song almost entirely on MagicDisc Music Store. A full-partial high quality version was officially played on the audio series \"Inevitable\". Interpolates J. Cole's \"Blow Up\", we have 95% of the track, just missing the outro.", "file_id": "786347b22bcc0be731b7c4f67e8ba6eb", "stream_url": "https://api.pillows.su/api/download/786347b22bcc0be731b7c4f67e8ba6eb", "download_url": "https://api.pillows.su/api/download/786347b22bcc0be731b7c4f67e8ba6eb", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYD96qEjWncXiCzFoEu-Dv0dhR0DMxwshWPYKFrmniGeNhPJBiSAf6pJFvHXXwsPPM7tgrrYXZah_x0PT7XxdcC22LnRaFN7N9UBQXRECQhRp9yFOHfI0iHaXP_Xfs59CP-VgoPUDm_fU-X21NNNZB0cYB9OJG4rTiz1HYd=w386-h143"}, {"era": "J. Cole x Kendrick Project(Out the Sky)", "name": "Wait For Tomorrow [V1](with Kendrick Lamar)", "description": "Leaked following a successful groupbuy. Could've been recorded in the May 2012 session. Most likely made for the collab project, contains mumble and unfinished lyrics.", "file_id": "25137bbe39e9e87260afe05bb3b05241", "stream_url": "https://api.pillows.su/api/download/25137bbe39e9e87260afe05bb3b05241", "download_url": "https://api.pillows.su/api/download/25137bbe39e9e87260afe05bb3b05241", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYD96qEjWncXiCzFoEu-Dv0dhR0DMxwshWPYKFrmniGeNhPJBiSAf6pJFvHXXwsPPM7tgrrYXZah_x0PT7XxdcC22LnRaFN7N9UBQXRECQhRp9yFOHfI0iHaXP_Xfs59CP-VgoPUDm_fU-X21NNNZB0cYB9OJG4rTiz1HYd=w386-h143"}, {"era": "J. Cole x Kendrick Project(Out the Sky)", "name": "Who Hot, Who Not?*(prod. Oddisee)", "description": "Partially officially played on the audio series \"Inevitable\", and unmixed, recorded in the may 2012 sessions.", "file_id": "c21ffcc4b798789a677593e5e94f2a0c", "stream_url": "https://api.pillows.su/api/download/c21ffcc4b798789a677593e5e94f2a0c", "download_url": "https://api.pillows.su/api/download/c21ffcc4b798789a677593e5e94f2a0c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYD96qEjWncXiCzFoEu-Dv0dhR0DMxwshWPYKFrmniGeNhPJBiSAf6pJFvHXXwsPPM7tgrrYXZah_x0PT7XxdcC22LnRaFN7N9UBQXRECQhRp9yFOHfI0iHaXP_Xfs59CP-VgoPUDm_fU-X21NNNZB0cYB9OJG4rTiz1HYd=w386-h143"}, {"era": "J. Cole x Kendrick Project(Out the Sky)", "name": "???", "description": "Played during an interview to Hard Knock TV. No lyrics besides the beat is played throught the preview, but Kendrick says he still was going to finish his third verse for the song as J. Cole also had a finished verse on it.", "file_id": "0674a284df2fd7d29922912d2b81acd0", "stream_url": "https://api.pillows.su/api/download/0674a284df2fd7d29922912d2b81acd0", "download_url": "https://api.pillows.su/api/download/0674a284df2fd7d29922912d2b81acd0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYD96qEjWncXiCzFoEu-Dv0dhR0DMxwshWPYKFrmniGeNhPJBiSAf6pJFvHXXwsPPM7tgrrYXZah_x0PT7XxdcC22LnRaFN7N9UBQXRECQhRp9yFOHfI0iHaXP_Xfs59CP-VgoPUDm_fU-X21NNNZB0cYB9OJG4rTiz1HYd=w386-h143"}, {"era": "J. Cole x Kendrick Project(Out the Sky)", "name": "???(Certified, I'm Good)", "description": "Full-partial because they end the song abruptly, indicating an outro, officially played on the audio series \"Inevitable\", and unmixed, recorded in the May 2012 session.", "file_id": "894ec4ca936c24f2ff3ad6b04ecb25cc", "stream_url": "https://api.pillows.su/api/download/894ec4ca936c24f2ff3ad6b04ecb25cc", "download_url": "https://api.pillows.su/api/download/894ec4ca936c24f2ff3ad6b04ecb25cc", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYD96qEjWncXiCzFoEu-Dv0dhR0DMxwshWPYKFrmniGeNhPJBiSAf6pJFvHXXwsPPM7tgrrYXZah_x0PT7XxdcC22LnRaFN7N9UBQXRECQhRp9yFOHfI0iHaXP_Xfs59CP-VgoPUDm_fU-X21NNNZB0cYB9OJG4rTiz1HYd=w386-h143"}], "J. Cole x Chance Project(a cole chance...)": [{"era": "J. Cole x Chance Project(a cole chance...)", "name": "Incredible(with Chance The Rapper)(Thotty)", "description": "Was first previewed on the Toca Tuesday Radio Show in March 2014. Was later performed at the Spark In The Park concert in 2014. Leaked after a successful groupbuy for $500. Track 3 on the J. Cole x Chance tracklist for the project.", "file_id": "6da7c20f7825293fd5d1d385360f30b0", "stream_url": "https://api.pillows.su/api/download/6da7c20f7825293fd5d1d385360f30b0", "download_url": "https://api.pillows.su/api/download/6da7c20f7825293fd5d1d385360f30b0", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYTJoBOHLIYKd_SBm94D9PxvFU5SwdaV3CJ2rMiN5oneDbsr8NBQX3Nu8fjaftaPtR1TU_6T4Id9I_oGgfFQMfOfnXw7QDX2yfUhh4fh2GVdMJAJujQDIMqM_SHQz5cJsEB485QS6EhsWchyhM=w386-h143"}], "2014 Forest Hills Drive": [{"era": "2014 Forest Hills Drive", "name": "\ud83c\udfc6 Lil Niggaz", "description": "Remix of \"Ambitionz az a Ridah\" by 2Pac. Snippet of this freestyle was released on the first Revenge Of The Dreamers tape.", "file_id": "045772ad6bb2aaf48accdd882275cc00", "stream_url": "https://api.pillows.su/api/download/045772ad6bb2aaf48accdd882275cc00", "download_url": "https://api.pillows.su/api/download/045772ad6bb2aaf48accdd882275cc00", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZG_yRJZOtF7RI23wZOXj4D0X1iwk_gvkrVW5Dh6q5j80FrkCHnLD_P7Bwj4m_9VfI8he3ktRMsIe9qe6FuNDgCLfLbhMFJ6fg5kPBpwonOcDM0crJBlA9x03PMHSGl3V4iCqCEzFR_wk7CovAVjFi5Wqev5CiVqTggLvFm=w386-h143"}, {"era": "2014 Forest Hills Drive", "name": "???(prod. J. Cole, Ron Gilmore)", "description": "Shows Cole making a beat in the back of a tour bus doing the 2nd episode of his mini documentary \"J. Cole: Road to Homecoming\", made during the \"2014 Forest Hills Drive\" sessions but later during the session so late 2014 due to coles hair, the likely hood that Cole recorded on this beat is high. Also shows Ron helping with the beat by adding bass and some piano keys.", "file_id": "997fbf1e68cad1876e5d6f9b6f04d187", "stream_url": "https://api.pillows.su/api/download/997fbf1e68cad1876e5d6f9b6f04d187", "download_url": "https://api.pillows.su/api/download/997fbf1e68cad1876e5d6f9b6f04d187", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZG_yRJZOtF7RI23wZOXj4D0X1iwk_gvkrVW5Dh6q5j80FrkCHnLD_P7Bwj4m_9VfI8he3ktRMsIe9qe6FuNDgCLfLbhMFJ6fg5kPBpwonOcDM0crJBlA9x03PMHSGl3V4iCqCEzFR_wk7CovAVjFi5Wqev5CiVqTggLvFm=w386-h143"}, {"era": "2014 Forest Hills Drive", "name": "???(feat. Big Sean)", "description": "This song was listed for sale on bizzlow.dx.am in 2020 but was never sold due to the site being taken down. Recorded in 2013 and is 3:03 in length.", "file_id": "227e03ef833ca32b1e1da8edd7f535e5", "stream_url": "https://api.pillows.su/api/download/227e03ef833ca32b1e1da8edd7f535e5", "download_url": "https://api.pillows.su/api/download/227e03ef833ca32b1e1da8edd7f535e5", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZG_yRJZOtF7RI23wZOXj4D0X1iwk_gvkrVW5Dh6q5j80FrkCHnLD_P7Bwj4m_9VfI8he3ktRMsIe9qe6FuNDgCLfLbhMFJ6fg5kPBpwonOcDM0crJBlA9x03PMHSGl3V4iCqCEzFR_wk7CovAVjFi5Wqev5CiVqTggLvFm=w386-h143"}], "4 Your Eyez Only [V1](2015 Version)": [{"era": "4 Your Eyez Only [V1](2015 Version)", "name": "\ud83c\udfc6 Do Better", "description": "1st Snippet leaked in 2018 without the music mafia tag in an attempt to scam buyers, then a 2nd snippet leaked by private (music mafia 2nd alias) that is full, low quality and has no music mafia tag, 3rd and final snippet leaked by music mafia themselves, assume to be from 2015.", "file_id": "a1a66c1262bec71da07aaaca4a715969", "stream_url": "https://api.pillows.su/api/download/a1a66c1262bec71da07aaaca4a715969", "download_url": "https://api.pillows.su/api/download/a1a66c1262bec71da07aaaca4a715969", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbsKjGl_SalAvDuTnVyxp_7-ksV-NyY-6LfCLCCKq1NSBdgx2rs37xnADxrKm-i0fvPsBGPAb_zSXY2R7QflsE5jgHsnWIiHcADxEr1wkRf1D9XHfkfoxw-kbpxHxMd0liy7-bodIoX6YpCpD0=w386-h143"}, {"era": "4 Your Eyez Only [V1](2015 Version)", "name": "\ud83c\udfc6 Do Better", "description": "1st Snippet leaked in 2018 without the music mafia tag in an attempt to scam buyers, then a 2nd snippet leaked by private (music mafia 2nd alias) that is full, low quality and has no music mafia tag, 3rd and final snippet leaked by music mafia themselves, assume to be from 2015.", "file_id": "6d77b5bb7dde36fa167912490cf447e9", "stream_url": "https://api.pillows.su/api/download/6d77b5bb7dde36fa167912490cf447e9", "download_url": "https://api.pillows.su/api/download/6d77b5bb7dde36fa167912490cf447e9", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbsKjGl_SalAvDuTnVyxp_7-ksV-NyY-6LfCLCCKq1NSBdgx2rs37xnADxrKm-i0fvPsBGPAb_zSXY2R7QflsE5jgHsnWIiHcADxEr1wkRf1D9XHfkfoxw-kbpxHxMd0liy7-bodIoX6YpCpD0=w386-h143"}, {"era": "4 Your Eyez Only [V1](2015 Version)", "name": "\ud83c\udfc6 Do Better", "description": "1st Snippet leaked in 2018 without the music mafia tag in an attempt to scam buyers, then a 2nd snippet leaked by private (music mafia 2nd alias) that is full, low quality and has no music mafia tag, 3rd and final snippet leaked by music mafia themselves, assume to be from 2015.", "file_id": "48f9962500937da08f8c70ffc2806d51", "stream_url": "https://api.pillows.su/api/download/48f9962500937da08f8c70ffc2806d51", "download_url": "https://api.pillows.su/api/download/48f9962500937da08f8c70ffc2806d51", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbsKjGl_SalAvDuTnVyxp_7-ksV-NyY-6LfCLCCKq1NSBdgx2rs37xnADxrKm-i0fvPsBGPAb_zSXY2R7QflsE5jgHsnWIiHcADxEr1wkRf1D9XHfkfoxw-kbpxHxMd0liy7-bodIoX6YpCpD0=w386-h143"}, {"era": "4 Your Eyez Only [V1](2015 Version)", "name": "Mama's Eyes [V1](Color Of Your Eyes)", "description": "the only difference is that it has as slight instrumental break where the drums only play at the 2nd end of the chorus \"I got my mama's eyes, I got my mama's eyes, 'I'm looking out for myself'.\" Unknown if it was made before or after the \"Mama's Eyes\" version that leaked. Different mix aswell.", "file_id": "9b83282ae949d5af4e6bb0d3e5282092", "stream_url": "https://api.pillows.su/api/download/9b83282ae949d5af4e6bb0d3e5282092", "download_url": "https://api.pillows.su/api/download/9b83282ae949d5af4e6bb0d3e5282092", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbsKjGl_SalAvDuTnVyxp_7-ksV-NyY-6LfCLCCKq1NSBdgx2rs37xnADxrKm-i0fvPsBGPAb_zSXY2R7QflsE5jgHsnWIiHcADxEr1wkRf1D9XHfkfoxw-kbpxHxMd0liy7-bodIoX6YpCpD0=w386-h143"}, {"era": "4 Your Eyez Only [V1](2015 Version)", "name": "\u2b50 Mama's Eyes [V2](Color Of Your Eyes)", "description": "Early 4YEO-era song likely made for this version of the album, no further information is known other then it being made in 2015.", "file_id": "cbd902efd46fff679a906024bc079df2", "stream_url": "https://api.pillows.su/api/download/cbd902efd46fff679a906024bc079df2", "download_url": "https://api.pillows.su/api/download/cbd902efd46fff679a906024bc079df2", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbsKjGl_SalAvDuTnVyxp_7-ksV-NyY-6LfCLCCKq1NSBdgx2rs37xnADxrKm-i0fvPsBGPAb_zSXY2R7QflsE5jgHsnWIiHcADxEr1wkRf1D9XHfkfoxw-kbpxHxMd0liy7-bodIoX6YpCpD0=w386-h143"}], "4 Your Eyez Only [V2]": [{"era": "4 Your Eyez Only [V2]", "name": "\u2b50 Javari", "description": "Recorded for \"4 Your Eyez Only\", this song was previewed in the \"Eyez\" documentary but never released. Leaked in mid-2020.", "file_id": "fde293ea9fc9fe85ada6b5176f2f469b", "stream_url": "https://api.pillows.su/api/download/fde293ea9fc9fe85ada6b5176f2f469b", "download_url": "https://api.pillows.su/api/download/fde293ea9fc9fe85ada6b5176f2f469b", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "\u2b50 Popular [V2](feat. Smino & Cam O'bi) (prod. Cam O'bi)(Shadow Man)", "description": "Song was first shared or caught by leakers in 2019 via looking at the metadata of the file (or could possibly be from 2019 but we aren't sure), snippet surfaced on leaked.cx on October 18th 2023 after being listed for sale by @waterfalls, later leaked in full on January 1st, 2024. This version was later given to Noname for \"Shadow Man\" which features Smino, Phoelix & Saba.", "file_id": "bf0dd00e0b8b0a7dc64fd6bce3a9b47d", "stream_url": "https://api.pillows.su/api/download/bf0dd00e0b8b0a7dc64fd6bce3a9b47d", "download_url": "https://api.pillows.su/api/download/bf0dd00e0b8b0a7dc64fd6bce3a9b47d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "???", "description": "Beat that was previewed in the \"Eyez\" Documentary, unknown if Cole every recorded on it but most likely did, made during the \"4 Your Eyez Only\" sessions.", "file_id": "d148f9c29e87795af4ccd2a292105cc8", "stream_url": "https://api.pillows.su/api/download/d148f9c29e87795af4ccd2a292105cc8", "download_url": "https://api.pillows.su/api/download/d148f9c29e87795af4ccd2a292105cc8", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "???", "description": "Beat was that previewed in the \"Eyez\" Documentary, has cole adding bass onto the track, not much is known about it other then it being made during the \"4 Your Eyez Only\" sessions, not having any vocals on it and if Cole recorded on the track but most likely did.", "file_id": "0f1baff5b43e6846f9ee7aa0b6255c5d", "stream_url": "https://api.pillows.su/api/download/0f1baff5b43e6846f9ee7aa0b6255c5d", "download_url": "https://api.pillows.su/api/download/0f1baff5b43e6846f9ee7aa0b6255c5d", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "???", "description": "Beat was that previewed in the \"Eyez\" Documentary, not much is known about it other then it being made during the \"4 Your Eyez Only\" sessions, has seems to be an clarinet or oboe being added onto the track, unknown if Cole recorded on the track but most likely did.", "file_id": "d746198864a0f8831da45bf33f9ab15f", "stream_url": "https://api.pillows.su/api/download/d746198864a0f8831da45bf33f9ab15f", "download_url": "https://api.pillows.su/api/download/d746198864a0f8831da45bf33f9ab15f", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "???", "description": "Track that was previewed in the \"Eyez\" Documentary, has very short brief vocals from Cole yelling \"HA-\" in the amidst of the track being played, other then that, it's mostly violin melodies being added onto the track, made during the \"4 Your Eyez Only\" sessions.", "file_id": "06f2958b7c4d0156d6922bf5d6ddf764", "stream_url": "https://api.pillows.su/api/download/06f2958b7c4d0156d6922bf5d6ddf764", "download_url": "https://api.pillows.su/api/download/06f2958b7c4d0156d6922bf5d6ddf764", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "???", "description": "Track that was previewed in the \"Eyez\" Documentary, has very short brief vocals from Cole at the beginning then after that seems organ production added onto the track by BIGYUKI, made during the \"4 Your Eyez Only\" sessions.", "file_id": "7a43e9fede9cee65dec5be94afd6da75", "stream_url": "https://api.pillows.su/api/download/7a43e9fede9cee65dec5be94afd6da75", "download_url": "https://api.pillows.su/api/download/7a43e9fede9cee65dec5be94afd6da75", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "???", "description": "Beat that was previewed in the \"Eyez\" Documentary, unknown if Cole every recorded on it but most likely did, made during the \"4 Your Eyez Only\" sessions.", "file_id": "71446a0180afa65fb4a6c55c9db61458", "stream_url": "https://api.pillows.su/api/download/71446a0180afa65fb4a6c55c9db61458", "download_url": "https://api.pillows.su/api/download/71446a0180afa65fb4a6c55c9db61458", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "\ud83c\udfc6 ???(Slave To Your Pride)", "description": "Track that was previewed in the \"Eyez\" Documentary, not much is known about it other then it being made during the \"4 Your Eyez Only\" sessions and Cole adding vocals.", "file_id": "71446a0180afa65fb4a6c55c9db61458", "stream_url": "https://api.pillows.su/api/download/71446a0180afa65fb4a6c55c9db61458", "download_url": "https://api.pillows.su/api/download/71446a0180afa65fb4a6c55c9db61458", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "\ud83c\udfc6 ???(Got You're Number, How I Feel)", "description": "Track that was previewed in the \"Eyez\" Documentary, not much is known about it other then it being made during the \"4 Your Eyez Only\" sessions.", "file_id": "ea79bd1c9a98d513232ef7f63e653532", "stream_url": "https://api.pillows.su/api/download/ea79bd1c9a98d513232ef7f63e653532", "download_url": "https://api.pillows.su/api/download/ea79bd1c9a98d513232ef7f63e653532", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "\ud83c\udfc6 ???(Got You're Number, How I Feel)", "description": "Track that was previewed in the \"Eyez\" Documentary, not much is known about it other then it being made during the \"4 Your Eyez Only\" sessions.", "file_id": "da49f7c71d7da34bd95b3c9467a0b6bb", "stream_url": "https://api.pillows.su/api/download/da49f7c71d7da34bd95b3c9467a0b6bb", "download_url": "https://api.pillows.su/api/download/da49f7c71d7da34bd95b3c9467a0b6bb", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "\ud83c\udfc6 ???", "description": "Track that was previewed in \"Applying Pressure: The Off-Season Documentary\", this particular scene that was shown in the Documentary was taken place in 2016 and shows Cole working on a track for \"4 Your Eyez Only\", shows Cole adding vocals and completeing/adding production to the beat hes working on, doesn't sound like any released track from \"4 Your Eyez Only\" or from that era so presumably unreleased, audio is heavily inaudible due to Cole talking over the clip and being extremely short, faint vocals and a faint beat can be heard through the headphone bleed, sounds like hes flowing.", "file_id": "5d00e7dc6271bfd7d762438b26776edf", "stream_url": "https://api.pillows.su/api/download/5d00e7dc6271bfd7d762438b26776edf", "download_url": "https://api.pillows.su/api/download/5d00e7dc6271bfd7d762438b26776edf", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "Frank Dukes - Doris(Well, Madula, Immortal)", "description": "Original beat loop for \"Well\" by Mac Miller, made in 2016 before KAYTRANADA & Mac Miller hopped on the song, also potentially made for Earl as a Doris-type beat. Later used as a sample on \"Immortal\" by Cole.", "file_id": "8ef7784f8c17af159ab1e54426d85f23", "stream_url": "https://api.pillows.su/api/download/8ef7784f8c17af159ab1e54426d85f23", "download_url": "https://api.pillows.su/api/download/8ef7784f8c17af159ab1e54426d85f23", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}, {"era": "4 Your Eyez Only [V2]", "name": "Rihanna - Mitus Touch [V5](feat. J. Cole) (prod. Keyon Christ)(2 Rihannas)", "description": "J. Cole version of \"Mitus Touch\". J. Cole's vocals could be partially reference work, but based on his lyrics including \"Cole World\" and other lines referring to himself it's seemingly at least mostly recorded as a potential feature.", "file_id": "95079242ca8b262d094baa01a2782696", "stream_url": "https://api.pillows.su/api/download/95079242ca8b262d094baa01a2782696", "download_url": "https://api.pillows.su/api/download/95079242ca8b262d094baa01a2782696", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbJe8bbsNintUuKf5XAxz97NA2ZLczPCvigVVKOvJzeSd8KBRqadpgv18Saz3g8fgnGM3dbQec2hqry_ilieS8sDtp0nUYCSSSDVZgnMiUTqW20-NmVn7gYv-_FFDwvhn6gjQxSmKeOamZ54vE_FYkTjhgtxYKNuLCtuAJw=w386-h143"}], "KOD(Kids On Drugs, King Overdosed, Kill Our Demons)": [{"era": "KOD(Kids On Drugs, King Overdosed, Kill Our Demons)", "name": "Enemies(feat. Young Thug & T-Shyne)(Stressed)", "description": "Snippet surfaced in 2019 but didn't ever leak. Song was recorded in 2018 sessions produced by T-Minus. Cole's verse was later added and released on Young Thug's PUNK.", "file_id": "7cd93c8ff425415bab958cba9a046eb1", "stream_url": "https://api.pillows.su/api/download/7cd93c8ff425415bab958cba9a046eb1", "download_url": "https://api.pillows.su/api/download/7cd93c8ff425415bab958cba9a046eb1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhYumhhau8hNLC7RcCHWZsVtb2XkAZhqtGaLwhuo9CIYlRTWvVVnLC_irw7VwtJ67FvWYonkae_mcapRTSXTFycyJQ3CFXppBYPZfyeGuVoeLDd8iu0cSIwiM2O9G_RWZIsKD3lFfZF8HCGLWd-kElgZThHtQdS9RPZx4Q=w386-h143"}], "The Off-Season": [{"era": "The Off-Season", "name": "Loyal(feat. Lil Duke & Quavo)", "description": "Lil Duke posted a low quality snippet of this song to his instagram, however the song never got an official release. On March 25, 2021, Lil Duke leaked it himself on YouTube.", "file_id": "0ab705bca266b737059780f7f318273e", "stream_url": "https://api.pillows.su/api/download/0ab705bca266b737059780f7f318273e", "download_url": "https://api.pillows.su/api/download/0ab705bca266b737059780f7f318273e", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbDeavSw-VtBxnBVYAE_mBiMfzASKgxlpFiRehRIvTtmnePj9x8W7p_fqkHJuvp41NksRcolDBnNrkomixQkmik-KlCyEAvm9uZ2ecgNoPeJO8iGSiVIPMksThtsvah0kbzpOrRhzdcNRPzoD5nmafsI0lnsX2a8Mf2lk0K=w386-h143"}, {"era": "The Off-Season", "name": "A$AP Ferg - Caesar's Demise [V1](prod. Pharrell Williams)(Demise)", "description": "Solo version of \"Caesar's Demise\" leaked on April 5, 2022. This song is prior to J. Cole being added.", "file_id": "c17a033e6a43929380aaeeedd075e945", "stream_url": "https://api.pillows.su/api/download/c17a033e6a43929380aaeeedd075e945", "download_url": "https://api.pillows.su/api/download/c17a033e6a43929380aaeeedd075e945", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbDeavSw-VtBxnBVYAE_mBiMfzASKgxlpFiRehRIvTtmnePj9x8W7p_fqkHJuvp41NksRcolDBnNrkomixQkmik-KlCyEAvm9uZ2ecgNoPeJO8iGSiVIPMksThtsvah0kbzpOrRhzdcNRPzoD5nmafsI0lnsX2a8Mf2lk0K=w386-h143"}, {"era": "The Off-Season", "name": "A$AP Ferg - Caesar's Demise [V2](feat. J. Cole) (prod. Pharrell Williams)(Demise)", "description": "Listed for sale on leakth.is in October 2020 before being taken down by seller. Listed again by a new seller on TheSource on February 3, 2021. Produced by Pharrell. Leaked in full on September 30, 2023.", "file_id": "e8d998a74fe2488d68ce89aaebc1f7ba", "stream_url": "https://api.pillows.su/api/download/e8d998a74fe2488d68ce89aaebc1f7ba", "download_url": "https://api.pillows.su/api/download/e8d998a74fe2488d68ce89aaebc1f7ba", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbDeavSw-VtBxnBVYAE_mBiMfzASKgxlpFiRehRIvTtmnePj9x8W7p_fqkHJuvp41NksRcolDBnNrkomixQkmik-KlCyEAvm9uZ2ecgNoPeJO8iGSiVIPMksThtsvah0kbzpOrRhzdcNRPzoD5nmafsI0lnsX2a8Mf2lk0K=w386-h143"}, {"era": "The Off-Season", "name": "\u2b50 Mez - Hell Nah(feat. J. Cole & Anderson .Paak)", "description": "Leaked in 2020 following a successful groupbuy. Possibly for Mez's album because Mez has two verses.", "file_id": "556a338d8b84b8c611387289c6dec3f3", "stream_url": "https://api.pillows.su/api/download/556a338d8b84b8c611387289c6dec3f3", "download_url": "https://api.pillows.su/api/download/556a338d8b84b8c611387289c6dec3f3", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhbDeavSw-VtBxnBVYAE_mBiMfzASKgxlpFiRehRIvTtmnePj9x8W7p_fqkHJuvp41NksRcolDBnNrkomixQkmik-KlCyEAvm9uZ2ecgNoPeJO8iGSiVIPMksThtsvah0kbzpOrRhzdcNRPzoD5nmafsI0lnsX2a8Mf2lk0K=w386-h143"}], "Might Delete Later(The Fall Off, It's A Boy)": [{"era": "Might Delete Later(The Fall Off, It's A Boy)", "name": "Stick N Stonez [V1](prod. The Alchemist)", "description": "Original version with original production. a CDQ snippet dropped on leaked.cx but the link to it is unfortnately dead.", "file_id": "ecbd7e53261bb757e738e991934c1ea7", "stream_url": "https://api.pillows.su/api/download/ecbd7e53261bb757e738e991934c1ea7", "download_url": "https://api.pillows.su/api/download/ecbd7e53261bb757e738e991934c1ea7", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZvLiRp3TA1tHKR9Krh9hfeAntJwxNHejrQZKZhhd28T52UcXHPRHyBacsyKa4OD6do5oa8aVEunIrTA6W8jCD4LQIi8Q_BoLbVjk2PDXZtU8lSrrIePPoigwK_z7RpDlDdtsa6cWN51tDB1rKR7owbUY8vQLQTcygEWg=w386-h143"}, {"era": "Might Delete Later(The Fall Off, It's A Boy)", "name": "\ud83c\udfc6 ???", "description": "previewed in one of the videos following up for the release of \"Might Delete Later\", might be considered for \"The Fall Off\" as he mentions it on the snippet.", "file_id": "4199cb265dd3ca95c474482536b433b1", "stream_url": "https://api.pillows.su/api/download/4199cb265dd3ca95c474482536b433b1", "download_url": "https://api.pillows.su/api/download/4199cb265dd3ca95c474482536b433b1", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZvLiRp3TA1tHKR9Krh9hfeAntJwxNHejrQZKZhhd28T52UcXHPRHyBacsyKa4OD6do5oa8aVEunIrTA6W8jCD4LQIi8Q_BoLbVjk2PDXZtU8lSrrIePPoigwK_z7RpDlDdtsa6cWN51tDB1rKR7owbUY8vQLQTcygEWg=w386-h143"}, {"era": "Might Delete Later(The Fall Off, It's A Boy)", "name": "???(prod. Tay Keith)", "description": "Beat that was previewed in the \"Might Delete Later\" vlogs, unknown if it was made for Cole but if so, most likely either made for \"The Fall Off\" or \"It's A Boy\".", "file_id": "4c6cf89e26ac0283e948e755504923bc", "stream_url": "https://api.pillows.su/api/download/4c6cf89e26ac0283e948e755504923bc", "download_url": "https://api.pillows.su/api/download/4c6cf89e26ac0283e948e755504923bc", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZvLiRp3TA1tHKR9Krh9hfeAntJwxNHejrQZKZhhd28T52UcXHPRHyBacsyKa4OD6do5oa8aVEunIrTA6W8jCD4LQIi8Q_BoLbVjk2PDXZtU8lSrrIePPoigwK_z7RpDlDdtsa6cWN51tDB1rKR7owbUY8vQLQTcygEWg=w386-h143"}, {"era": "Might Delete Later(The Fall Off, It's A Boy)", "name": "???(prod. J. Cole)", "description": "Shows Cole making a beat during the \"Might Delete Later\" vlogs, Cole states that this is one of the beats that he only recently made as because he was too busy going crazy with the pen.", "file_id": "d1205cf4ad68d267c0d446bc3c8ae541", "stream_url": "https://api.pillows.su/api/download/d1205cf4ad68d267c0d446bc3c8ae541", "download_url": "https://api.pillows.su/api/download/d1205cf4ad68d267c0d446bc3c8ae541", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZvLiRp3TA1tHKR9Krh9hfeAntJwxNHejrQZKZhhd28T52UcXHPRHyBacsyKa4OD6do5oa8aVEunIrTA6W8jCD4LQIi8Q_BoLbVjk2PDXZtU8lSrrIePPoigwK_z7RpDlDdtsa6cWN51tDB1rKR7owbUY8vQLQTcygEWg=w386-h143"}, {"era": "Might Delete Later(The Fall Off, It's A Boy)", "name": "???(prod. J. Cole)", "description": "Shows Cole making a beat during the \"Might Delete Later\" vlogs.", "file_id": "c27a27f685c026a83fe9748bd72e6244", "stream_url": "https://api.pillows.su/api/download/c27a27f685c026a83fe9748bd72e6244", "download_url": "https://api.pillows.su/api/download/c27a27f685c026a83fe9748bd72e6244", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZvLiRp3TA1tHKR9Krh9hfeAntJwxNHejrQZKZhhd28T52UcXHPRHyBacsyKa4OD6do5oa8aVEunIrTA6W8jCD4LQIi8Q_BoLbVjk2PDXZtU8lSrrIePPoigwK_z7RpDlDdtsa6cWN51tDB1rKR7owbUY8vQLQTcygEWg=w386-h143"}, {"era": "Might Delete Later(The Fall Off, It's A Boy)", "name": "???", "description": "Song that was previewed in the \"Might Delete Later\" vlogs.", "file_id": "ab68795ab25771d4e83edd13c6ac70ac", "stream_url": "https://api.pillows.su/api/download/ab68795ab25771d4e83edd13c6ac70ac", "download_url": "https://api.pillows.su/api/download/ab68795ab25771d4e83edd13c6ac70ac", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZvLiRp3TA1tHKR9Krh9hfeAntJwxNHejrQZKZhhd28T52UcXHPRHyBacsyKa4OD6do5oa8aVEunIrTA6W8jCD4LQIi8Q_BoLbVjk2PDXZtU8lSrrIePPoigwK_z7RpDlDdtsa6cWN51tDB1rKR7owbUY8vQLQTcygEWg=w386-h143"}, {"era": "Might Delete Later(The Fall Off, It's A Boy)", "name": "\u2b50 JID - New Stick(feat. Kenny Mason) (prod. Christo)(Ambassel, Stick)", "description": "Original version of \"Stick\" with a rougher beat & mixing, no DJ Drama vocals, nor J Cole, or Sheck Wes verses. Has a beat switch into \"Ambassel\" but has a Kenny Mason feature instead of a 2nd JID verse.", "file_id": "09e2f5cbd54bce3138c25d24ef9b1d6c", "stream_url": "https://api.pillows.su/api/download/09e2f5cbd54bce3138c25d24ef9b1d6c", "download_url": "https://api.pillows.su/api/download/09e2f5cbd54bce3138c25d24ef9b1d6c", "cover": "https://lh7-rt.googleusercontent.com/sheets/APBGjhZvLiRp3TA1tHKR9Krh9hfeAntJwxNHejrQZKZhhd28T52UcXHPRHyBacsyKa4OD6do5oa8aVEunIrTA6W8jCD4LQIi8Q_BoLbVjk2PDXZtU8lSrrIePPoigwK_z7RpDlDdtsa6cWN51tDB1rKR7owbUY8vQLQTcygEWg=w386-h143"}]};
+    let currentEra = null;
+    let currentIndex = null;
+    let currentSong = null;
+    let playlist = [];
+
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const seekBar = document.getElementById('seek-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const playerTitle = document.getElementById('player-title');
+    const playerCover = document.getElementById('player-cover');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    function playSong(era, index) {
+        playlist = eras[era];
+        currentEra = era;
+        currentIndex = index;
+        loadAndPlayCurrent();
+    }
+
+    function highlightCurrentSong() {
+        document.querySelectorAll('.song.playing').forEach(el => el.classList.remove('playing'));
+        if (currentEra !== null && currentIndex !== null) {
+            const songId = `song-${currentEra.replace(/ /g, '_')}-${currentIndex}`;
+            const songEl = document.getElementById(songId);
+            if (songEl) songEl.classList.add('playing');
+        }
+    }
+
+    function loadAndPlayCurrent() {
+        if (!playlist || currentIndex === null || !playlist[currentIndex]) return;
+        const song = playlist[currentIndex];
+        player.src = song.stream_url;
+        playerTitle.textContent = song.name;
+        playerCover.src = song.cover || 'https://via.placeholder.com/60x60?text=No+Cover';
+        currentSong = song.stream_url;
+        player.play();
+        updateSkipButtons();
+        updateMediaSession(song);
+        highlightCurrentSong();
+    }
+
+    function updateSkipButtons() {
+        prevBtn.disabled = (currentIndex <= 0);
+        nextBtn.disabled = (currentIndex >= playlist.length - 1);
+    }
+
+    playBtn.onclick = function() {
+        if (player.src) {
+            if (player.paused) player.play();
+            else player.pause();
+        }
+    };
+
+    prevBtn.onclick = function() {
+        if (playlist && currentIndex > 0) {
+            currentIndex -= 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    nextBtn.onclick = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    player.onplay = function() {
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "";
+    };
+    player.onpause = function() {
+        playIcon.style.display = "";
+        pauseIcon.style.display = "none";
+    };
+
+    player.ontimeupdate = function() {
+        seekBar.value = player.currentTime || 0;
+        currentTimeEl.textContent = formatTime(player.currentTime);
+    };
+    player.onloadedmetadata = function() {
+        seekBar.max = player.duration || 0;
+        durationEl.textContent = formatTime(player.duration);
+    };
+    seekBar.oninput = function() {
+        player.currentTime = seekBar.value;
+    };
+
+    player.onended = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    function formatTime(sec) {
+        sec = Math.floor(sec);
+        return Math.floor(sec/60) + ":" + String(sec%60).padStart(2, '0');
+    }
+    function updateMediaSession(song) {
+        if ('mediaSession' in navigator && song) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.name,
+                artist: song.era,
+                album: "Unreleased",
+                artwork: [
+                    { src: song.cover || 'https://via.placeholder.com/90x90?text=No+Cover', sizes: '90x90', type: 'image/png' }
+                ]
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (playlist && currentIndex > 0) {
+                    currentIndex -= 1;
+                    loadAndPlayCurrent();
+                }
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                if (playlist && currentIndex < playlist.length - 1) {
+                    currentIndex += 1;
+                    loadAndPlayCurrent();
+                }
+            });
+        }
+    }
+
+    // --- Collapsible Eras ---
+    function toggleEra(idx) {
+        const songList = document.getElementById('song-list-' + idx);
+        const chevron = document.getElementById('chevron-' + idx);
+        const isOpen = songList.classList.contains('open');
+        if (isOpen) {
+            songList.classList.remove('open');
+            chevron.classList.remove('open');
+        } else {
+            songList.classList.add('open');
+            chevron.classList.add('open');
+        }
+    }
+    // Collapse all on load
+    window.addEventListener('DOMContentLoaded', function() {
+        
+            document.getElementById('song-list-0').classList.remove('open');
+            document.getElementById('chevron-0').classList.remove('open');
+        
+            document.getElementById('song-list-1').classList.remove('open');
+            document.getElementById('chevron-1').classList.remove('open');
+        
+            document.getElementById('song-list-2').classList.remove('open');
+            document.getElementById('chevron-2').classList.remove('open');
+        
+            document.getElementById('song-list-3').classList.remove('open');
+            document.getElementById('chevron-3').classList.remove('open');
+        
+            document.getElementById('song-list-4').classList.remove('open');
+            document.getElementById('chevron-4').classList.remove('open');
+        
+            document.getElementById('song-list-5').classList.remove('open');
+            document.getElementById('chevron-5').classList.remove('open');
+        
+            document.getElementById('song-list-6').classList.remove('open');
+            document.getElementById('chevron-6').classList.remove('open');
+        
+            document.getElementById('song-list-7').classList.remove('open');
+            document.getElementById('chevron-7').classList.remove('open');
+        
+            document.getElementById('song-list-8').classList.remove('open');
+            document.getElementById('chevron-8').classList.remove('open');
+        
+            document.getElementById('song-list-9').classList.remove('open');
+            document.getElementById('chevron-9').classList.remove('open');
+        
+            document.getElementById('song-list-10').classList.remove('open');
+            document.getElementById('chevron-10').classList.remove('open');
+        
+            document.getElementById('song-list-11').classList.remove('open');
+            document.getElementById('chevron-11').classList.remove('open');
+        
+            document.getElementById('song-list-12').classList.remove('open');
+            document.getElementById('chevron-12').classList.remove('open');
+        
+
+        // Tooltip logic
+        let tooltip = null;
+        let tooltipTimeout = null;
+
+        document.querySelectorAll('.song').forEach(song => {
+            song.addEventListener('mouseenter', function(e) {
+                const desc = song.getAttribute('data-description');
+                if (!desc) return;
+                if (tooltip) tooltip.remove();
+                tooltip = document.createElement('div');
+                tooltip.className = 'floating-song-description';
+                tooltip.innerHTML = desc;
+                document.body.appendChild(tooltip);
+
+                // Position tooltip
+                const rect = song.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 6) + 'px';
+                tooltip.style.minWidth = rect.width + 'px';
+
+                // Fade in
+                setTimeout(() => {
+                    if (tooltip) tooltip.classList.add('visible');
+                }, 10);
+            });
+            song.addEventListener('mouseleave', function(e) {
+                if (tooltip) {
+                    tooltip.classList.remove('visible');
+                    setTimeout(() => {
+                        if (tooltip) tooltip.remove();
+                        tooltip = null;
+                    }, 120);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1099 @@
+<!doctype html>
+<html>
+<head>
+    <title>ArtistHub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #121212;
+            color: #fff;
+        }
+.container {
+    padding: 2rem;
+    padding-bottom: 120px; /* Add space for the player */
+}
+        .era {
+            margin-bottom: 2.2rem;
+            background: #181818;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px #0003;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .era-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2.1rem 2rem 2.1rem 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.18s;
+            border-bottom: 1px solid #232323;
+        }
+        .era-header:hover {
+            background: #232323;
+        }
+        .era-cover {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .era-title {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #1db954;
+            flex: 1;
+            letter-spacing: 0.01em;
+        }
+        .chevron {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(.4,2,.6,1), color 0.2s;
+            color: #aaa;
+        }
+        .chevron.open {
+            transform: rotate(90deg);
+            color: #1db954;
+        }
+        .song-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(.4,2,.6,1);
+            background: #181818;
+            padding: 0 2rem;
+        }
+        .song-list.open {
+            padding-bottom: 1.2rem;
+            max-height: 1000px;
+            transition: max-height 0.5s cubic-bezier(.4,2,.6,1);
+        }
+        .song {
+            background: #222;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.18s, color 0.18s;
+            box-shadow: 0 1px 4px #0002;
+            margin-top: 0.7rem;
+        }
+        .song:first-child { margin-top: 1.2rem; }
+        .song:hover {
+            background: #1db95433;
+            color: #1db954;
+        }
+        /* Hide the inline description, we use JS tooltip instead */
+        .song .song-description {
+            display: none !important;
+        }
+        .song.playing {
+            background: #1db954 !important;
+            color: #181818 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 12px #1db95455;
+        }
+        .player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #181818;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #222;
+            box-shadow: 0 -2px 8px #0003;
+            z-index: 100;
+            gap: 1.5rem;
+        }
+        .player-cover {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+            box-shadow: 0 2px 8px #0005;
+        }
+        .player-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .player-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.2rem;
+            text-shadow: 0 1px 2px #0008;
+        }
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .player-btn, .player-skip-btn {
+            background: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px #0003;
+            margin-right: 0.5rem;
+        }
+        .player-btn:hover, .player-skip-btn:hover {
+            background: #1ed760;
+        }
+        .player-skip-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        .player-time {
+            font-size: 0.98rem;
+            color: #ccc;
+            min-width: 40px;
+            text-align: right;
+        }
+        .seek-bar {
+            flex: 1;
+            accent-color: #1db954;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            margin: 0 0.5rem;
+        }
+        .seek-bar::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar::-ms-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954;
+            border: none;
+            box-shadow: 0 2px 8px #0005;
+            cursor: pointer;
+        }
+        .seek-bar:focus {
+            outline: none;
+        }
+        /* Tooltip style */
+        .floating-song-description {
+            position: fixed;
+            background: #222;
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px #000b;
+            z-index: 99999;
+            min-width: 250px;
+            max-width: 400px;
+            font-size: 0.97rem;
+            white-space: pre-line;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+        .floating-song-description.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #1db954;">ArtistHub</h1>
+        
+            <div class="era" id="era-0">
+                <div class="era-header" onclick="toggleEra(0)">
+                    <img class="era-cover" src="" onerror="this.src='https://via.placeholder.com/90x90?text=No+Cover'" alt="cover">
+                    <span class="era-title">Unknown</span>
+                    <span class="chevron" id="chevron-0">
+                        <svg width="28" height="28" viewBox="0 0 22 22"><polyline points="7,8 11,14 15,8" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                <div class="song-list" id="song-list-0">
+                    
+                        <div class="song" 
+                             id="song-Unknown-0" 
+                             data-description="First ever release of Billie. Released on Soundcloud back in August 1, 2015, which is now deleted for unknown reasons."
+                             onclick="playSong(&quot;Unknown&quot;, 0)">
+                            sHE'S brOKen(prod. FINNEAS)
+                            <div class="song-description">First ever release of Billie. Released on Soundcloud back in August 1, 2015, which is now deleted for unknown reasons.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-1" 
+                             data-description="Sang this at Full Songwritters Roundtable by The Hollywood Reports, she made this song when she was 8."
+                             onclick="playSong(&quot;Unknown&quot;, 1)">
+                            Unknown Song 1
+                            <div class="song-description">Sang this at Full Songwritters Roundtable by The Hollywood Reports, she made this song when she was 8.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-2" 
+                             data-description="First song written by Billie. She wrote this with her friend at the age of 6/7. She first acknowledged this song at a carpool with James Corden, then at the Full songwritters Roundtable by The Hollywood Reports."
+                             onclick="playSong(&quot;Unknown&quot;, 2)">
+                            What a Wonderful Life(prod. Billie Eilish)
+                            <div class="song-description">First song written by Billie. She wrote this with her friend at the age of 6/7. She first acknowledged this song at a carpool with James Corden, then at the Full songwritters Roundtable by The Hollywood Reports.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-3" 
+                             data-description="The song is listed on ASCAP. On a conversation with a fan on Instagram, Billie stated that the song was made when she was 14, and “trash &amp; never was on the table to come out.” The full song leaked on March 18, 2024."
+                             onclick="playSong(&quot;Unknown&quot;, 3)">
+                            Winner
+                            <div class="song-description">The song is listed on ASCAP. On a conversation with a fan on Instagram, Billie stated that the song was made when she was 14, and “trash & never was on the table to come out.” The full song leaked on March 18, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-4" 
+                             data-description="The only known live performance was on September 14th, 2016 at the Tenants Of The Trees in Los Angeles, California."
+                             onclick="playSong(&quot;Unknown&quot;, 4)">
+                            another stupid song(prod. FINNEAS, Justin Raisen)
+                            <div class="song-description">The only known live performance was on September 14th, 2016 at the Tenants Of The Trees in Los Angeles, California.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-5" 
+                             data-description="Could be an edit since the person who shared this file had previously been unreliable and known for spreading fake songs/snippets."
+                             onclick="playSong(&quot;Unknown&quot;, 5)">
+                            bellyache (Demo)(prod. FINNEAS)
+                            <div class="song-description">Could be an edit since the person who shared this file had previously been unreliable and known for spreading fake songs/snippets.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-6" 
+                             data-description="Voice Memo of bellyache, snippet posted on Billie&#39;s Instagram story. 5/8/16."
+                             onclick="playSong(&quot;Unknown&quot;, 6)">
+                            bellyache (Voice Memo)
+                            <div class="song-description">Voice Memo of bellyache, snippet posted on Billie's Instagram story. 5/8/16.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-7" 
+                             data-description="Acoustic demo of &#34;my boy&#34;, features backing vocals from FINNEAS. Leaked on March 22nd, 2024."
+                             onclick="playSong(&quot;Unknown&quot;, 7)">
+                            Boy (Demo)(prod. FINNEAS)(my boy)
+                            <div class="song-description">Acoustic demo of "my boy", features backing vocals from FINNEAS. Leaked on March 22nd, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-8" 
+                             data-description="Teased on instagram with slightly different lyrics, &#34;Watch your back when you can’t have mine&#34; as &#34;Fuck all that, Bitch you can’t have mine&#34;. 4/12/17"
+                             onclick="playSong(&quot;Unknown&quot;, 8)">
+                            COPYCAT (Original Version)(prod. FINNEAS, Justin Raisen)
+                            <div class="song-description">Teased on instagram with slightly different lyrics, "Watch your back when you can’t have mine" as "Fuck all that, Bitch you can’t have mine". 4/12/17</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-9" 
+                             data-description="Leaked under the title &#34;x files&#34;, alongside &#34;another stupid song&#34; and &#34;you&#39;re stoned&#34;. All titles mentioned were recorded in the same session."
+                             onclick="playSong(&quot;Unknown&quot;, 9)">
+                            ex files(prod. FINNEAS, Justin Raisen)(x files)
+                            <div class="song-description">Leaked under the title "x files", alongside "another stupid song" and "you're stoned". All titles mentioned were recorded in the same session.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-10" 
+                             data-description="Unconfirmed if this belongs in dont smile at me. Leaked under the title &#34;Freaks (Scratch of all Scratches)&#34;, which suggests that it&#39;s an alternate title for the song. Leaked on March 22nd alongside Boy (Demo), Listen (Demo) &amp; Theme Song."
+                             onclick="playSong(&quot;Unknown&quot;, 10)">
+                            Freaks(Scratch of all Scratches)
+                            <div class="song-description">Unconfirmed if this belongs in dont smile at me. Leaked under the title "Freaks (Scratch of all Scratches)", which suggests that it's an alternate title for the song. Leaked on March 22nd alongside Boy (Demo), Listen (Demo) & Theme Song.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-11" 
+                             data-description="Leaked alongside &#34;Silly Little Girl&#34; and &#34;Sometimes They Do&#34;."
+                             onclick="playSong(&quot;Unknown&quot;, 11)">
+                            Friends(prod. FINNEAS)
+                            <div class="song-description">Leaked alongside "Silly Little Girl" and "Sometimes They Do".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-12" 
+                             data-description="The studio version was first teased by Emmit on Instagram. Emmit Fenn has background vocals on the song. The full studio version leaked on March 17, 2024."
+                             onclick="playSong(&quot;Unknown&quot;, 12)">
+                            Limbo(prod. Emmit Fenn)
+                            <div class="song-description">The studio version was first teased by Emmit on Instagram. Emmit Fenn has background vocals on the song. The full studio version leaked on March 17, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-13" 
+                             data-description="For those who prefer the piano over the studio."
+                             onclick="playSong(&quot;Unknown&quot;, 13)">
+                            Limbo (Piano Demo)
+                            <div class="song-description">For those who prefer the piano over the studio.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-14" 
+                             data-description="Khalid has more verse than Billie. Rough and has slightly different lyrics. The full leaked on March 17, 2024."
+                             onclick="playSong(&quot;Unknown&quot;, 14)">
+                            lovely (Demo)(prod. FINNEAS)
+                            <div class="song-description">Khalid has more verse than Billie. Rough and has slightly different lyrics. The full leaked on March 17, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-15" 
+                             data-description="Previously known as &#34;i hate myself&#34;, the full studio version leaked on March 17, 2024."
+                             onclick="playSong(&quot;Unknown&quot;, 15)">
+                            Make Up Your Mind(feat. MELVV) (prod. FINNEAS)
+                            <div class="song-description">Previously known as "i hate myself", the full studio version leaked on March 17, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-16" 
+                             data-description="Leaked on Soundcloud after someone tried to sell it."
+                             onclick="playSong(&quot;Unknown&quot;, 16)">
+                            Maybe Don’t Leave Me(feat. Brandon Colbein) (prod. FINNEAS)
+                            <div class="song-description">Leaked on Soundcloud after someone tried to sell it.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-17" 
+                             data-description="Performed live at Tenats of the Trees."
+                             onclick="playSong(&quot;Unknown&quot;, 17)">
+                            my boy (Demo)(Boy)
+                            <div class="song-description">Performed live at Tenats of the Trees.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-18" 
+                             data-description="Features an unknown artist - possibly Nick Dungo. Also considered for her debut album."
+                             onclick="playSong(&quot;Unknown&quot;, 18)">
+                            Ride(feat. Nick Dungo?) (prod. FINNEAS)
+                            <div class="song-description">Features an unknown artist - possibly Nick Dungo. Also considered for her debut album.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-19" 
+                             data-description="OG Filename: 01 SillyLittleGirl Mix1 Gain.mp3 Leaked alongside &#34;Sometimes They Do&#34; and &#34;Friends&#34;. Possibly has more than one mix."
+                             onclick="playSong(&quot;Unknown&quot;, 19)">
+                            Silly Little Girl (Mix 1)(prod. FINNEAS, Eric Palmquist)
+                            <div class="song-description">OG Filename: 01 SillyLittleGirl Mix1 Gain.mp3 Leaked alongside "Sometimes They Do" and "Friends". Possibly has more than one mix.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-20" 
+                             data-description="Leaked alongside &#34;Silly Little Girl&#34; and &#34;Friends&#34;."
+                             onclick="playSong(&quot;Unknown&quot;, 20)">
+                            Sometimes They Do(prod. FINNEAS)
+                            <div class="song-description">Leaked alongside "Silly Little Girl" and "Friends".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-21" 
+                             data-description="OG Filename: TearMySelfApart Mix2 Gain.mp3 Demo for Tate Mcrae, which was later released in 2019."
+                             onclick="playSong(&quot;Unknown&quot;, 21)">
+                            Tear Myself Apart (Mix 2)
+                            <div class="song-description">OG Filename: TearMySelfApart Mix2 Gain.mp3 Demo for Tate Mcrae, which was later released in 2019.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-22" 
+                             data-description="OG Filename: TRUE BLUE V1.mp3 Leaked on February 1, 2022, other versions of the songs also exists."
+                             onclick="playSong(&quot;Unknown&quot;, 22)">
+                            True Blue (Version 1)(prod. FINNEAS)(Blue)
+                            <div class="song-description">OG Filename: TRUE BLUE V1.mp3 Leaked on February 1, 2022, other versions of the songs also exists.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-23" 
+                             data-description="Also known as V12, final version of Vertigo, recorded on January 12, 2016. Same sessions as &#34;Welcome&#34; &amp; also registered on BMI. Snippet of the song first circulated back in February 22, 2020 and the full leaked years after on March 17, 2024."
+                             onclick="playSong(&quot;Unknown&quot;, 23)">
+                            Vertigo(prod. Cheat Codes)
+                            <div class="song-description">Also known as V12, final version of Vertigo, recorded on January 12, 2016. Same sessions as "Welcome" & also registered on BMI. Snippet of the song first circulated back in February 22, 2020 and the full leaked years after on March 17, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-24" 
+                             data-description=""
+                             onclick="playSong(&quot;Unknown&quot;, 24)">
+                            Vertigo (Alternate Mix 1)(prod. Cheat Codes)
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-25" 
+                             data-description=""
+                             onclick="playSong(&quot;Unknown&quot;, 25)">
+                            Vertigo (Alternate Mix 2)(prod. Cheat Codes)
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-26" 
+                             data-description=""
+                             onclick="playSong(&quot;Unknown&quot;, 26)">
+                            Vertigo (Alternate Mix 3)(prod. Cheat Codes)
+                            <div class="song-description"></div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-27" 
+                             data-description="Was up for sale on a selling thread on l.cx by biracial, shared 2 snippets and this version of Vertigo possibly got sold since it&#39;s off the selling thread."
+                             onclick="playSong(&quot;Unknown&quot;, 27)">
+                            Vertigo (Alternate Mix [?])(prod. Cheat Codes)
+                            <div class="song-description">Was up for sale on a selling thread on l.cx by biracial, shared 2 snippets and this version of Vertigo possibly got sold since it's off the selling thread.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-28" 
+                             data-description="Was up for sale on a selling thread on l.cx by biracial, shared 2 snippets and this version of Vertigo possibly got sold since it&#39;s off the selling thread."
+                             onclick="playSong(&quot;Unknown&quot;, 28)">
+                            Vertigo (Alternate Mix [?])(prod. Cheat Codes)
+                            <div class="song-description">Was up for sale on a selling thread on l.cx by biracial, shared 2 snippets and this version of Vertigo possibly got sold since it's off the selling thread.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-29" 
+                             data-description="The version of this song was posted to a Telegram group, first file of vertigo to ever leak."
+                             onclick="playSong(&quot;Unknown&quot;, 29)">
+                            Vertigo (Version 1)(prod. Cheat Codes)
+                            <div class="song-description">The version of this song was posted to a Telegram group, first file of vertigo to ever leak.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-30" 
+                             data-description="A snippet leaked under the fake title &#34;Your Love&#34; on March 17, 2024, alongside &#34;Barbie&#34; &amp; a snippet of the final version of &#34;Daddy&#34;."
+                             onclick="playSong(&quot;Unknown&quot;, 30)">
+                            Vinyl
+                            <div class="song-description">A snippet leaked under the fake title "Your Love" on March 17, 2024, alongside "Barbie" & a snippet of the final version of "Daddy".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-31" 
+                             data-description="First snippet leaked in Febraury 28, 2020. Recorded on January 12, 2016, same sessions as &#34;Vertigo&#34; &amp; is also registered on BMI."
+                             onclick="playSong(&quot;Unknown&quot;, 31)">
+                            Welcome (Demo)(prod. Cheat Codes)
+                            <div class="song-description">First snippet leaked in Febraury 28, 2020. Recorded on January 12, 2016, same sessions as "Vertigo" & is also registered on BMI.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-32" 
+                             data-description="A snippet leaked back in May 17, 2020. Registered on ASCAP as &#34;STONED&#34;"
+                             onclick="playSong(&quot;Unknown&quot;, 32)">
+                            You're Stoned(prod. FINNEAS, Justin Raisen)(Stoned)
+                            <div class="song-description">A snippet leaked back in May 17, 2020. Registered on ASCAP as "STONED"</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-33" 
+                             data-description="Audio taken from TWALB Documentary."
+                             onclick="playSong(&quot;Unknown&quot;, 33)">
+                            !!!!!!! (Recording Session)
+                            <div class="song-description">Audio taken from TWALB Documentary.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-34" 
+                             data-description="Billie uploaded a snippet on May 17, 2018. Not much is known about the track."
+                             onclick="playSong(&quot;Unknown&quot;, 34)">
+                            1st Unknown Snippet
+                            <div class="song-description">Billie uploaded a snippet on May 17, 2018. Not much is known about the track.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-35" 
+                             data-description="Billie posted a snippet to instagram. Not much is known about it"
+                             onclick="playSong(&quot;Unknown&quot;, 35)">
+                            2nd Unknown Snippet(prod. FINNEAS)
+                            <div class="song-description">Billie posted a snippet to instagram. Not much is known about it</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-36" 
+                             data-description="First snippet was shared on an Instagram story on May 26, 2018."
+                             onclick="playSong(&quot;Unknown&quot;, 36)">
+                            3rd Unknown Snippet (with Dominic Fike)
+                            <div class="song-description">First snippet was shared on an Instagram story on May 26, 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-37" 
+                             data-description="Performed live a couple of times &amp; a snippet leaked on dbree. Was never inteded for the debut but was made during the album was still being recorded."
+                             onclick="playSong(&quot;Unknown&quot;, 37)">
+                            6.18.18
+                            <div class="song-description">Performed live a couple of times & a snippet leaked on dbree. Was never inteded for the debut but was made during the album was still being recorded.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-38" 
+                             data-description="Played on radio, also released on the promo CD for all the good girls to hell."
+                             onclick="playSong(&quot;Unknown&quot;, 38)">
+                            all the good girls go to hell (Intro Hook)
+                            <div class="song-description">Played on radio, also released on the promo CD for all the good girls to hell.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-39" 
+                             data-description="Released on the promo CD, also known as &#34;No Hook Intro&#34;."
+                             onclick="playSong(&quot;Unknown&quot;, 39)">
+                            all the good girls go to hell (Sans Intro)
+                            <div class="song-description">Released on the promo CD, also known as "No Hook Intro".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-40" 
+                             data-description="Billie teased this song multiple times on instagram, recorded sometime in July 2017. It was scrapped because it didn&#39;t flow with the album acccording to FINNEAS at a meet and greet. Billie also confirmed that bad company is an alternate title and there is a different final title."
+                             onclick="playSong(&quot;Unknown&quot;, 40)">
+                            Bad Company
+                            <div class="song-description">Billie teased this song multiple times on instagram, recorded sometime in July 2017. It was scrapped because it didn't flow with the album acccording to FINNEAS at a meet and greet. Billie also confirmed that bad company is an alternate title and there is a different final title.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-41" 
+                             data-description="Groupbought by JB Fans"
+                             onclick="playSong(&quot;Unknown&quot;, 41)">
+                            bad guy (with Justin Bieber) [Version 2](prod. FINNEAS)
+                            <div class="song-description">Groupbought by JB Fans</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-42" 
+                             data-description="Billie shared a partial snippet of the track."
+                             onclick="playSong(&quot;Unknown&quot;, 42)">
+                            because i'm in love with you
+                            <div class="song-description">Billie shared a partial snippet of the track.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-43" 
+                             data-description="The song was teased on Billie&#39;s Instagram story in May of 2018. A snippet of the recording session for the song was shown in her documentary, Billie Eilish: The World&#39;s a Little Blurry."
+                             onclick="playSong(&quot;Unknown&quot;, 43)">
+                            can you guess?*(prod. FINNEAS)
+                            <div class="song-description">The song was teased on Billie's Instagram story in May of 2018. A snippet of the recording session for the song was shown in her documentary, Billie Eilish: The World's a Little Blurry.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-44" 
+                             data-description="Final version of daddy still remains unleaked. A snippet was shared by FINNEAS on his Instagram story. The final version was leaked but it was heavily edited by some random producer. On April 4th, 2024, the full unedited file leaked."
+                             onclick="playSong(&quot;Unknown&quot;, 44)">
+                            Daddy(feat. MadeInTYO) (prod. FINNEAS)
+                            <div class="song-description">Final version of daddy still remains unleaked. A snippet was shared by FINNEAS on his Instagram story. The final version was leaked but it was heavily edited by some random producer. On April 4th, 2024, the full unedited file leaked.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-45" 
+                             data-description="Snippet posted on instagram story, The title is unconfirmed."
+                             onclick="playSong(&quot;Unknown&quot;, 45)">
+                            Good*(Baby)
+                            <div class="song-description">Snippet posted on instagram story, The title is unconfirmed.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-46" 
+                             data-description="Billie shared a snippet on her Instagram story, it has slightly different lyrics, &#34;Please, please, leave me&#34; instead of &#34;Please, please, don&#39;t  leave me."
+                             onclick="playSong(&quot;Unknown&quot;, 46)">
+                            goodbye (Demo)(prod. FINNEAS)
+                            <div class="song-description">Billie shared a snippet on her Instagram story, it has slightly different lyrics, "Please, please, leave me" instead of "Please, please, don't  leave me.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-47" 
+                             data-description="2 snippets posted on Billie&#39;s instagram story, was supposed to be placed before &#39;listen before i go&#39; but was never finished and eventually scrapped, Billie said that the song isn&#39;t fully written, only having one verse in an interview with PopBuzz"
+                             onclick="playSong(&quot;Unknown&quot;, 47)">
+                            i don't know, i just wish i wasn't breathing
+                            <div class="song-description">2 snippets posted on Billie's instagram story, was supposed to be placed before 'listen before i go' but was never finished and eventually scrapped, Billie said that the song isn't fully written, only having one verse in an interview with PopBuzz</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-48" 
+                             data-description="2 snippets posted on Billie&#39;s instagram story, was supposed to be placed before &#39;listen before i go&#39; but was never finished and eventually scrapped, Billie said that the song isn&#39;t fully written, only having one verse in an interview with PopBuzz"
+                             onclick="playSong(&quot;Unknown&quot;, 48)">
+                            i don't know, i just wish i wasn't breathing
+                            <div class="song-description">2 snippets posted on Billie's instagram story, was supposed to be placed before 'listen before i go' but was never finished and eventually scrapped, Billie said that the song isn't fully written, only having one verse in an interview with PopBuzz</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-49" 
+                             data-description="Recorded in 2017, probably after dsam was released. Open verse and was meant to have Denzel Curry, unconfirmed if Denzel recorded his parts. A snippet leaked alongside the final version of &#34;Daddy&#34; and &#34;Your Love&#34;, and the full leaked shortly after."
+                             onclick="playSong(&quot;Unknown&quot;, 49)">
+                            Ken(Barbie)
+                            <div class="song-description">Recorded in 2017, probably after dsam was released. Open verse and was meant to have Denzel Curry, unconfirmed if Denzel recorded his parts. A snippet leaked alongside the final version of "Daddy" and "Your Love", and the full leaked shortly after.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-50" 
+                             data-description="Acoustic demo of &#34;listen before i go&#34;. Has a minor lyric change. Leaked alongside Boy (Demo), Freaks, &amp; Theme Song on March 22nd."
+                             onclick="playSong(&quot;Unknown&quot;, 50)">
+                            Listen (Demo)
+                            <div class="song-description">Acoustic demo of "listen before i go". Has a minor lyric change. Leaked alongside Boy (Demo), Freaks, & Theme Song on March 22nd.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-51" 
+                             data-description="Solo and the only real version of the song, confirmed by Billie - this is possibly the final version of the song, no collaborations &amp; still remains unleaked. It has more than one verse and different lyrics."
+                             onclick="playSong(&quot;Unknown&quot;, 51)">
+                            lyin' 2 ya(lyin' to ya, lie to me)
+                            <div class="song-description">Solo and the only real version of the song, confirmed by Billie - this is possibly the final version of the song, no collaborations & still remains unleaked. It has more than one verse and different lyrics.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-52" 
+                             data-description="According to Billie that these collaboration were &#34;false&#34; and she didn&#39;t know who &#34;brought&#34; these other artists, this suggests that the &#34;collaborations&#34; were only a remix by the producer and Billie had no knowledge of this remix."
+                             onclick="playSong(&quot;Unknown&quot;, 52)">
+                            lyin' 2 ya (Remix)(feat. Valee, 10k.Caash) (prod. CHASETHEMONEY, Bobby Raps)(lyin' to ya, lie to me)
+                            <div class="song-description">According to Billie that these collaboration were "false" and she didn't know who "brought" these other artists, this suggests that the "collaborations" were only a remix by the producer and Billie had no knowledge of this remix.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-53" 
+                             data-description="Released through the &#34;No Time To Die&#34; RSD Limited Edition Vinyl as a Side B. This demo was previewed in the &#34;BILLIE EILISH: THE WORLD&#34;S A LITTLE BLURRY&#34; documentary, they showed the recording process of the demo."
+                             onclick="playSong(&quot;Unknown&quot;, 53)">
+                            No Time to Die (Demo)(prod. FINNEAS)
+                            <div class="song-description">Released through the "No Time To Die" RSD Limited Edition Vinyl as a Side B. This demo was previewed in the "BILLIE EILISH: THE WORLD"S A LITTLE BLURRY" documentary, they showed the recording process of the demo.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-54" 
+                             data-description="Second song collaboration with MadeinTYO. Not much is known about this track, though it is possible that it is recorded in the same session as &#34;Daddy&#34;. The snippet either came from Billie or MadeInTYO&#39;s Instagram story."
+                             onclick="playSong(&quot;Unknown&quot;, 54)">
+                            Rari*(feat. MadeinTYO)
+                            <div class="song-description">Second song collaboration with MadeinTYO. Not much is known about this track, though it is possible that it is recorded in the same session as "Daddy". The snippet either came from Billie or MadeInTYO's Instagram story.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-55" 
+                             data-description="The full final version leaked on March 18, 2024 alongside an unfinished demo of Strange."
+                             onclick="playSong(&quot;Unknown&quot;, 55)">
+                            Strange(prod. FINNEAS)
+                            <div class="song-description">The full final version leaked on March 18, 2024 alongside an unfinished demo of Strange.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-56" 
+                             data-description="Full demo leaked on March 16th, 2024."
+                             onclick="playSong(&quot;Unknown&quot;, 56)">
+                            Strange (Demo)(prod. FINNEAS)
+                            <div class="song-description">Full demo leaked on March 16th, 2024.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-57" 
+                             data-description="Unknown if this is real or just a stem edit, leaked alongside the final version of Strange."
+                             onclick="playSong(&quot;Unknown&quot;, 57)">
+                            Strange (Unfinished Demo)(prod. FINNEAS)
+                            <div class="song-description">Unknown if this is real or just a stem edit, leaked alongside the final version of Strange.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-58" 
+                             data-description="Unknown version of strange with a different mixing, this is the snippet Billie posted on her Instagram."
+                             onclick="playSong(&quot;Unknown&quot;, 58)">
+                            Strange (V[?])(prod. FINNEAS)
+                            <div class="song-description">Unknown version of strange with a different mixing, this is the snippet Billie posted on her Instagram.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-59" 
+                             data-description="Previously known as &#34;underneath&#34;, yet this is still yet to be confirmed — this is only a speculation since it has the exact same lyrics.. Leaked on March 22nd alongside Boy (Demo), Listen (Demo) &amp;  Freaks."
+                             onclick="playSong(&quot;Unknown&quot;, 59)">
+                            Theme Song
+                            <div class="song-description">Previously known as "underneath", yet this is still yet to be confirmed — this is only a speculation since it has the exact same lyrics.. Leaked on March 22nd alongside Boy (Demo), Listen (Demo) &  Freaks.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-60" 
+                             data-description="Recorded on May 17, 2018. Unconfirmed title. Billie shared a snippet of this song on her instagram story being produced."
+                             onclick="playSong(&quot;Unknown&quot;, 60)">
+                            use me*
+                            <div class="song-description">Recorded on May 17, 2018. Unconfirmed title. Billie shared a snippet of this song on her instagram story being produced.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-61" 
+                             data-description="Recorded on May 17, 2018. Unconfirmed title. Billie shared a snippet of this song on her instagram story being produced."
+                             onclick="playSong(&quot;Unknown&quot;, 61)">
+                            use me*
+                            <div class="song-description">Recorded on May 17, 2018. Unconfirmed title. Billie shared a snippet of this song on her instagram story being produced.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-62" 
+                             data-description="Shared by Billie on Instagram back in January 29, 2018."
+                             onclick="playSong(&quot;Unknown&quot;, 62)">
+                            when the party's over (Demo)(prod. FINNEAS)
+                            <div class="song-description">Shared by Billie on Instagram back in January 29, 2018.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-63" 
+                             data-description="Leaked from discord."
+                             onclick="playSong(&quot;Unknown&quot;, 63)">
+                            you should see me in a crown (Demo)(prod. FINNEAS)(Crown)
+                            <div class="song-description">Leaked from discord.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-64" 
+                             data-description="Unreleased Drake song, most likely made for his album &#34;Scorpion&#34;."
+                             onclick="playSong(&quot;Unknown&quot;, 64)">
+                            Drake - Blind Faith(feat. Billie Eilish) (prod. GOVI)(Come Back To Me)
+                            <div class="song-description">Unreleased Drake song, most likely made for his album "Scorpion".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-65" 
+                             data-description="Shared on her website during the first anniversary of &#34;Happier Than Ever&#34;"
+                             onclick="playSong(&quot;Unknown&quot;, 65)">
+                            Billie Bossa Nova (Voice Memo)
+                            <div class="song-description">Shared on her website during the first anniversary of "Happier Than Ever"</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-66" 
+                             data-description="Billie shared a snippet on an Instagram story."
+                             onclick="playSong(&quot;Unknown&quot;, 66)">
+                            Billie Bossa Nova (Voice Memo 2)
+                            <div class="song-description">Billie shared a snippet on an Instagram story.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-67" 
+                             data-description="Has drums in the intro and an extra adlib/lyrics at 2:31."
+                             onclick="playSong(&quot;Unknown&quot;, 67)">
+                            Halley's Comet (Early Mix)
+                            <div class="song-description">Has drums in the intro and an extra adlib/lyrics at 2:31.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-68" 
+                             data-description="Uploaded on l.cx and was &#34;not for sale&#34;."
+                             onclick="playSong(&quot;Unknown&quot;, 68)">
+                            Halley's Comet (Voice Memo)
+                            <div class="song-description">Uploaded on l.cx and was "not for sale".</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-69" 
+                             data-description="Shared on her website during the first anniversary of &#34;Happier Than Ever&#34; Possibly cut, since the screenshot Billie shared states that the voice note is 5:04 minute long. Recorded on June 15, 2020."
+                             onclick="playSong(&quot;Unknown&quot;, 69)">
+                            Happier Than Ever (Voice Memo)(Away From You)
+                            <div class="song-description">Shared on her website during the first anniversary of "Happier Than Ever" Possibly cut, since the screenshot Billie shared states that the voice note is 5:04 minute long. Recorded on June 15, 2020.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-70" 
+                             data-description="Bunch of voice memos for this song ranging from 2019-2020. Billie showed a list of her voice memos and a few of HTE&#39;s voice memos were seen. She played some parts of the voice memos."
+                             onclick="playSong(&quot;Unknown&quot;, 70)">
+                            Happier Than Ever (Voice Memos)(Away From You)
+                            <div class="song-description">Bunch of voice memos for this song ranging from 2019-2020. Billie showed a list of her voice memos and a few of HTE's voice memos were seen. She played some parts of the voice memos.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-71" 
+                             data-description="The original length of the voice memo is 2:23, the last 23 seconds were cut for unknown reasons. Recorded on January 28th, 2021. Shared on her website during the first anniversary of &#34;Happier Than Ever&#34;"
+                             onclick="playSong(&quot;Unknown&quot;, 71)">
+                            Lost Cause (Voice Memo)
+                            <div class="song-description">The original length of the voice memo is 2:23, the last 23 seconds were cut for unknown reasons. Recorded on January 28th, 2021. Shared on her website during the first anniversary of "Happier Than Ever"</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-72" 
+                             data-description="Recorded on Feburary 3rd, 2021. Shared on her website during the first anniversary of &#34;Happier Than Ever&#34;"
+                             onclick="playSong(&quot;Unknown&quot;, 72)">
+                            Male Fantasy (Voice Memo)(I Know Now)
+                            <div class="song-description">Recorded on Feburary 3rd, 2021. Shared on her website during the first anniversary of "Happier Than Ever"</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-73" 
+                             data-description="Shared on her website during the first anniversary of &#34;Happier Than Ever&#34;, it&#39;s possible that this is one of the three voice memos seen on Billie&#39;s instagram story."
+                             onclick="playSong(&quot;Unknown&quot;, 73)">
+                            Your Power (Voice Memo)
+                            <div class="song-description">Shared on her website during the first anniversary of "Happier Than Ever", it's possible that this is one of the three voice memos seen on Billie's instagram story.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-74" 
+                             data-description="Uploaded on l.cx and was &#34;not for sale&#34;"
+                             onclick="playSong(&quot;Unknown&quot;, 74)">
+                            Your Power (Studio Session Voice Memo)
+                            <div class="song-description">Uploaded on l.cx and was "not for sale"</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-75" 
+                             data-description="No strings at the end. This is the file that leaked a few days earlier before the album&#39;s release date, though the file is cut and edited and only contains the second part of &#34;BLUE&#34;"
+                             onclick="playSong(&quot;Unknown&quot;, 75)">
+                            BLUE (Unmastered)
+                            <div class="song-description">No strings at the end. This is the file that leaked a few days earlier before the album's release date, though the file is cut and edited and only contains the second part of "BLUE"</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-76" 
+                             data-description="Also no strings at the end. This is the file that leaked few days earlier before the album&#39;s release date."
+                             onclick="playSong(&quot;Unknown&quot;, 76)">
+                            SKINNY (Unmastered)(Cry)
+                            <div class="song-description">Also no strings at the end. This is the file that leaked few days earlier before the album's release date.</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-77" 
+                             data-description="Recorded on January 16th, 2023. Previewed on a Barbie event back in December 2nd, 2023 and an interview with Vanity Fair"
+                             onclick="playSong(&quot;Unknown&quot;, 77)">
+                            What I Was Made For? (Voice Memo)
+                            <div class="song-description">Recorded on January 16th, 2023. Previewed on a Barbie event back in December 2nd, 2023 and an interview with Vanity Fair</div>
+                        </div>
+                    
+                        <div class="song" 
+                             id="song-Unknown-78" 
+                             data-description="Recorded on January 16th, 2023. Previewed on a Barbie event back in December 2nd, 2023 and an interview with Vanity Fair"
+                             onclick="playSong(&quot;Unknown&quot;, 78)">
+                            What I Was Made For? (Voice Memo)
+                            <div class="song-description">Recorded on January 16th, 2023. Previewed on a Barbie event back in December 2nd, 2023 and an interview with Vanity Fair</div>
+                        </div>
+                    
+                </div>
+            </div>
+        
+    </div>
+    <!-- Spotify-style player with skip buttons -->
+    <div class="player">
+        <img id="player-cover" src=cover alt="cover" class="player-cover">
+        <div class="player-info">
+            <div id="player-title" class="player-title">Select a song</div>
+            <div class="player-controls">
+                <button id="prev-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="15,4 7,11 15,18"></polygon></svg>
+                </button>
+                <button id="play-btn" class="player-btn">
+                    <svg id="play-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff"><polygon points="6,4 24,14 6,24"></polygon></svg>
+                    <svg id="pause-icon" width="28" height="28" viewBox="0 0 28 28" fill="#fff" style="display:none;"><rect x="6" y="4" width="5" height="20"></rect><rect x="17" y="4" width="5" height="20"></rect></svg>
+                </button>
+                <button id="next-btn" class="player-skip-btn" disabled>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="#fff"><polygon points="7,4 15,11 7,18"></polygon></svg>
+                </button>
+                <span id="current-time" class="player-time">0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" value="0" min="0" max="100" step="1">
+                <span id="duration" class="player-time">0:00</span>
+            </div>
+        </div>
+        <audio id="player" preload="metadata"></audio>
+    </div>
+    <script>
+    // All eras and songs as a JS object
+    const eras = {"Unknown": [{"era": "Unknown", "name": "sHE'S brOKen(prod. FINNEAS)", "description": "First ever release of Billie. Released on Soundcloud back in August 1, 2015, which is now deleted for unknown reasons.", "file_id": "bd013db4d3e246ae0fa0707ab8f2cfd8", "stream_url": "https://api.pillows.su/api/download/bd013db4d3e246ae0fa0707ab8f2cfd8", "download_url": "https://api.pillows.su/api/download/bd013db4d3e246ae0fa0707ab8f2cfd8", "cover": ""}, {"era": "Unknown", "name": "Unknown Song 1", "description": "Sang this at Full Songwritters Roundtable by The Hollywood Reports, she made this song when she was 8.", "file_id": "5d4b63fbdc43600f6ace3a001da6d8ab", "stream_url": "https://api.pillows.su/api/download/5d4b63fbdc43600f6ace3a001da6d8ab", "download_url": "https://api.pillows.su/api/download/5d4b63fbdc43600f6ace3a001da6d8ab", "cover": ""}, {"era": "Unknown", "name": "What a Wonderful Life(prod. Billie Eilish)", "description": "First song written by Billie. She wrote this with her friend at the age of 6/7. She first acknowledged this song at a carpool with James Corden, then at the Full songwritters Roundtable by The Hollywood Reports.", "file_id": "10ea4b6f1a15ec97056a4d24563d3734", "stream_url": "https://api.pillows.su/api/download/10ea4b6f1a15ec97056a4d24563d3734", "download_url": "https://api.pillows.su/api/download/10ea4b6f1a15ec97056a4d24563d3734", "cover": ""}, {"era": "Unknown", "name": "Winner", "description": "The song is listed on ASCAP. On a conversation with a fan on Instagram, Billie stated that the song was made when she was 14, and \u201ctrash & never was on the table to come out.\u201d The full song leaked on March 18, 2024.", "file_id": "b344e19e9c8fe691305eae0db2d45c57", "stream_url": "https://api.pillows.su/api/download/b344e19e9c8fe691305eae0db2d45c57", "download_url": "https://api.pillows.su/api/download/b344e19e9c8fe691305eae0db2d45c57", "cover": ""}, {"era": "Unknown", "name": "another stupid song(prod. FINNEAS, Justin Raisen)", "description": "The only known live performance was on September 14th, 2016 at the Tenants Of The Trees in Los Angeles, California.", "file_id": "7d4c1bdf34822caa983d5547102ef064", "stream_url": "https://api.pillows.su/api/download/7d4c1bdf34822caa983d5547102ef064", "download_url": "https://api.pillows.su/api/download/7d4c1bdf34822caa983d5547102ef064", "cover": ""}, {"era": "Unknown", "name": "bellyache (Demo)(prod. FINNEAS)", "description": "Could be an edit since the person who shared this file had previously been unreliable and known for spreading fake songs/snippets.", "file_id": "1154ed4f828fb84f8fa586aca57250fa", "stream_url": "https://api.pillows.su/api/download/1154ed4f828fb84f8fa586aca57250fa", "download_url": "https://api.pillows.su/api/download/1154ed4f828fb84f8fa586aca57250fa", "cover": ""}, {"era": "Unknown", "name": "bellyache (Voice Memo)", "description": "Voice Memo of bellyache, snippet posted on Billie's Instagram story. 5/8/16.", "file_id": "71d23ff1d819c0522afaa0f4251cb0da", "stream_url": "https://api.pillows.su/api/download/71d23ff1d819c0522afaa0f4251cb0da", "download_url": "https://api.pillows.su/api/download/71d23ff1d819c0522afaa0f4251cb0da", "cover": ""}, {"era": "Unknown", "name": "Boy (Demo)(prod. FINNEAS)(my boy)", "description": "Acoustic demo of \"my boy\", features backing vocals from FINNEAS. Leaked on March 22nd, 2024.", "file_id": "347f581084c7e8282ba51479bcbc7fc8", "stream_url": "https://api.pillows.su/api/download/347f581084c7e8282ba51479bcbc7fc8", "download_url": "https://api.pillows.su/api/download/347f581084c7e8282ba51479bcbc7fc8", "cover": ""}, {"era": "Unknown", "name": "COPYCAT (Original Version)(prod. FINNEAS, Justin Raisen)", "description": "Teased on instagram with slightly different lyrics, \"Watch your back when you can\u2019t have mine\" as \"Fuck all that, Bitch you can\u2019t have mine\". 4/12/17", "file_id": "5d77bf6a13b78bbcdee9a71ea3a34a62", "stream_url": "https://api.pillows.su/api/download/5d77bf6a13b78bbcdee9a71ea3a34a62", "download_url": "https://api.pillows.su/api/download/5d77bf6a13b78bbcdee9a71ea3a34a62", "cover": ""}, {"era": "Unknown", "name": "ex files(prod. FINNEAS, Justin Raisen)(x files)", "description": "Leaked under the title \"x files\", alongside \"another stupid song\" and \"you're stoned\". All titles mentioned were recorded in the same session.", "file_id": "23f78d43ec9cf0754feca0cb4615f420", "stream_url": "https://api.pillows.su/api/download/23f78d43ec9cf0754feca0cb4615f420", "download_url": "https://api.pillows.su/api/download/23f78d43ec9cf0754feca0cb4615f420", "cover": ""}, {"era": "Unknown", "name": "Freaks(Scratch of all Scratches)", "description": "Unconfirmed if this belongs in dont smile at me. Leaked under the title \"Freaks (Scratch of all Scratches)\", which suggests that it's an alternate title for the song. Leaked on March 22nd alongside Boy (Demo), Listen (Demo) & Theme Song.", "file_id": "3923131d068ef0410615d80da388c37e", "stream_url": "https://api.pillows.su/api/download/3923131d068ef0410615d80da388c37e", "download_url": "https://api.pillows.su/api/download/3923131d068ef0410615d80da388c37e", "cover": ""}, {"era": "Unknown", "name": "Friends(prod. FINNEAS)", "description": "Leaked alongside \"Silly Little Girl\" and \"Sometimes They Do\".", "file_id": "e394b86d038ff89fa4fab1acd02474de", "stream_url": "https://api.pillows.su/api/download/e394b86d038ff89fa4fab1acd02474de", "download_url": "https://api.pillows.su/api/download/e394b86d038ff89fa4fab1acd02474de", "cover": ""}, {"era": "Unknown", "name": "Limbo(prod. Emmit Fenn)", "description": "The studio version was first teased by Emmit on Instagram. Emmit Fenn has background vocals on the song. The full studio version leaked on March 17, 2024.", "file_id": "208f07b4418814c64977caf0fc2b730c", "stream_url": "https://api.pillows.su/api/download/208f07b4418814c64977caf0fc2b730c", "download_url": "https://api.pillows.su/api/download/208f07b4418814c64977caf0fc2b730c", "cover": ""}, {"era": "Unknown", "name": "Limbo (Piano Demo)", "description": "For those who prefer the piano over the studio.", "file_id": "4fa106feca62ededa6c769322fe0980f", "stream_url": "https://api.pillows.su/api/download/4fa106feca62ededa6c769322fe0980f", "download_url": "https://api.pillows.su/api/download/4fa106feca62ededa6c769322fe0980f", "cover": ""}, {"era": "Unknown", "name": "lovely (Demo)(prod. FINNEAS)", "description": "Khalid has more verse than Billie. Rough and has slightly different lyrics. The full leaked on March 17, 2024.", "file_id": "9451fe72e424ecc7f846a70aad7ea310", "stream_url": "https://api.pillows.su/api/download/9451fe72e424ecc7f846a70aad7ea310", "download_url": "https://api.pillows.su/api/download/9451fe72e424ecc7f846a70aad7ea310", "cover": ""}, {"era": "Unknown", "name": "Make Up Your Mind(feat. MELVV) (prod. FINNEAS)", "description": "Previously known as \"i hate myself\", the full studio version leaked on March 17, 2024.", "file_id": "fdb8509796c0c48aa08731bbd4f6f60b", "stream_url": "https://api.pillows.su/api/download/fdb8509796c0c48aa08731bbd4f6f60b", "download_url": "https://api.pillows.su/api/download/fdb8509796c0c48aa08731bbd4f6f60b", "cover": ""}, {"era": "Unknown", "name": "Maybe Don\u2019t Leave Me(feat. Brandon Colbein) (prod. FINNEAS)", "description": "Leaked on Soundcloud after someone tried to sell it.", "file_id": "714f08147f63cd0f218eafc803918b58", "stream_url": "https://api.pillows.su/api/download/714f08147f63cd0f218eafc803918b58", "download_url": "https://api.pillows.su/api/download/714f08147f63cd0f218eafc803918b58", "cover": ""}, {"era": "Unknown", "name": "my boy (Demo)(Boy)", "description": "Performed live at Tenats of the Trees.", "file_id": "c44656764d008c06b4001f1354bb4710", "stream_url": "https://api.pillows.su/api/download/c44656764d008c06b4001f1354bb4710", "download_url": "https://api.pillows.su/api/download/c44656764d008c06b4001f1354bb4710", "cover": ""}, {"era": "Unknown", "name": "Ride(feat. Nick Dungo?) (prod. FINNEAS)", "description": "Features an unknown artist - possibly Nick Dungo. Also considered for her debut album.", "file_id": "5d4723e4741b3fe3002cd24f88028e4b", "stream_url": "https://api.pillows.su/api/download/5d4723e4741b3fe3002cd24f88028e4b", "download_url": "https://api.pillows.su/api/download/5d4723e4741b3fe3002cd24f88028e4b", "cover": ""}, {"era": "Unknown", "name": "Silly Little Girl (Mix 1)(prod. FINNEAS, Eric Palmquist)", "description": "OG Filename: 01 SillyLittleGirl Mix1 Gain.mp3 Leaked alongside \"Sometimes They Do\" and \"Friends\". Possibly has more than one mix.", "file_id": "c61833ceaacfd5f2e080f4b556f62d23", "stream_url": "https://api.pillows.su/api/download/c61833ceaacfd5f2e080f4b556f62d23", "download_url": "https://api.pillows.su/api/download/c61833ceaacfd5f2e080f4b556f62d23", "cover": ""}, {"era": "Unknown", "name": "Sometimes They Do(prod. FINNEAS)", "description": "Leaked alongside \"Silly Little Girl\" and \"Friends\".", "file_id": "4e90509649928cedf7b126172e26219b", "stream_url": "https://api.pillows.su/api/download/4e90509649928cedf7b126172e26219b", "download_url": "https://api.pillows.su/api/download/4e90509649928cedf7b126172e26219b", "cover": ""}, {"era": "Unknown", "name": "Tear Myself Apart (Mix 2)", "description": "OG Filename: TearMySelfApart Mix2 Gain.mp3 Demo for Tate Mcrae, which was later released in 2019.", "file_id": "bb9d63ee9e9f975444536709f15b831c", "stream_url": "https://api.pillows.su/api/download/bb9d63ee9e9f975444536709f15b831c", "download_url": "https://api.pillows.su/api/download/bb9d63ee9e9f975444536709f15b831c", "cover": ""}, {"era": "Unknown", "name": "True Blue (Version 1)(prod. FINNEAS)(Blue)", "description": "OG Filename: TRUE BLUE V1.mp3 Leaked on February 1, 2022, other versions of the songs also exists.", "file_id": "3a6567cab5f141c348ad7b30a7987d50", "stream_url": "https://api.pillows.su/api/download/3a6567cab5f141c348ad7b30a7987d50", "download_url": "https://api.pillows.su/api/download/3a6567cab5f141c348ad7b30a7987d50", "cover": ""}, {"era": "Unknown", "name": "Vertigo(prod. Cheat Codes)", "description": "Also known as V12, final version of Vertigo, recorded on January 12, 2016. Same sessions as \"Welcome\" & also registered on BMI. Snippet of the song first circulated back in February 22, 2020 and the full leaked years after on March 17, 2024.", "file_id": "43cbb9f4ace102001d3899eb7bed4a7f", "stream_url": "https://api.pillows.su/api/download/43cbb9f4ace102001d3899eb7bed4a7f", "download_url": "https://api.pillows.su/api/download/43cbb9f4ace102001d3899eb7bed4a7f", "cover": ""}, {"era": "Unknown", "name": "Vertigo (Alternate Mix 1)(prod. Cheat Codes)", "description": "", "file_id": "ef249b92c2e27bdd1876a8bd4d4be03e", "stream_url": "https://api.pillows.su/api/download/ef249b92c2e27bdd1876a8bd4d4be03e", "download_url": "https://api.pillows.su/api/download/ef249b92c2e27bdd1876a8bd4d4be03e", "cover": ""}, {"era": "Unknown", "name": "Vertigo (Alternate Mix 2)(prod. Cheat Codes)", "description": "", "file_id": "5e2d0eb43b85815d4fd080ebe40fcbd3", "stream_url": "https://api.pillows.su/api/download/5e2d0eb43b85815d4fd080ebe40fcbd3", "download_url": "https://api.pillows.su/api/download/5e2d0eb43b85815d4fd080ebe40fcbd3", "cover": ""}, {"era": "Unknown", "name": "Vertigo (Alternate Mix 3)(prod. Cheat Codes)", "description": "", "file_id": "2ebd221f4f6006be714ebb1a3fe5a132", "stream_url": "https://api.pillows.su/api/download/2ebd221f4f6006be714ebb1a3fe5a132", "download_url": "https://api.pillows.su/api/download/2ebd221f4f6006be714ebb1a3fe5a132", "cover": ""}, {"era": "Unknown", "name": "Vertigo (Alternate Mix [?])(prod. Cheat Codes)", "description": "Was up for sale on a selling thread on l.cx by biracial, shared 2 snippets and this version of Vertigo possibly got sold since it's off the selling thread.", "file_id": "65714f6707e2b1d76c5d5ce8b3943845", "stream_url": "https://api.pillows.su/api/download/65714f6707e2b1d76c5d5ce8b3943845", "download_url": "https://api.pillows.su/api/download/65714f6707e2b1d76c5d5ce8b3943845", "cover": ""}, {"era": "Unknown", "name": "Vertigo (Alternate Mix [?])(prod. Cheat Codes)", "description": "Was up for sale on a selling thread on l.cx by biracial, shared 2 snippets and this version of Vertigo possibly got sold since it's off the selling thread.", "file_id": "95c629b0a43363dc221045ba8992bf95", "stream_url": "https://api.pillows.su/api/download/95c629b0a43363dc221045ba8992bf95", "download_url": "https://api.pillows.su/api/download/95c629b0a43363dc221045ba8992bf95", "cover": ""}, {"era": "Unknown", "name": "Vertigo (Version 1)(prod. Cheat Codes)", "description": "The version of this song was posted to a Telegram group, first file of vertigo to ever leak.", "file_id": "94857b7baab4465462efc790aa414b0f", "stream_url": "https://api.pillows.su/api/download/94857b7baab4465462efc790aa414b0f", "download_url": "https://api.pillows.su/api/download/94857b7baab4465462efc790aa414b0f", "cover": ""}, {"era": "Unknown", "name": "Vinyl", "description": "A snippet leaked under the fake title \"Your Love\" on March 17, 2024, alongside \"Barbie\" & a snippet of the final version of \"Daddy\".", "file_id": "7d73bf89230f4719545e3b105bf83553", "stream_url": "https://api.pillows.su/api/download/7d73bf89230f4719545e3b105bf83553", "download_url": "https://api.pillows.su/api/download/7d73bf89230f4719545e3b105bf83553", "cover": ""}, {"era": "Unknown", "name": "Welcome (Demo)(prod. Cheat Codes)", "description": "First snippet leaked in Febraury 28, 2020. Recorded on January 12, 2016, same sessions as \"Vertigo\" & is also registered on BMI.", "file_id": "e85703eb212bc48e5ba8ea5d1678dac1", "stream_url": "https://api.pillows.su/api/download/e85703eb212bc48e5ba8ea5d1678dac1", "download_url": "https://api.pillows.su/api/download/e85703eb212bc48e5ba8ea5d1678dac1", "cover": ""}, {"era": "Unknown", "name": "You're Stoned(prod. FINNEAS, Justin Raisen)(Stoned)", "description": "A snippet leaked back in May 17, 2020. Registered on ASCAP as \"STONED\"", "file_id": "a2de09904180d9d5a1eea2b1254157ce", "stream_url": "https://api.pillows.su/api/download/a2de09904180d9d5a1eea2b1254157ce", "download_url": "https://api.pillows.su/api/download/a2de09904180d9d5a1eea2b1254157ce", "cover": ""}, {"era": "Unknown", "name": "!!!!!!! (Recording Session)", "description": "Audio taken from TWALB Documentary.", "file_id": "5c7e76da4278689a3cbfd66857c2a055", "stream_url": "https://api.pillows.su/api/download/5c7e76da4278689a3cbfd66857c2a055", "download_url": "https://api.pillows.su/api/download/5c7e76da4278689a3cbfd66857c2a055", "cover": ""}, {"era": "Unknown", "name": "1st Unknown Snippet", "description": "Billie uploaded a snippet on May 17, 2018. Not much is known about the track.", "file_id": "7f0cfe1ce4d62b16e963ba28f105ba5e", "stream_url": "https://api.pillows.su/api/download/7f0cfe1ce4d62b16e963ba28f105ba5e", "download_url": "https://api.pillows.su/api/download/7f0cfe1ce4d62b16e963ba28f105ba5e", "cover": ""}, {"era": "Unknown", "name": "2nd Unknown Snippet(prod. FINNEAS)", "description": "Billie posted a snippet to instagram. Not much is known about it", "file_id": "624b951c6517a9f4ce507a1dfeb2313a", "stream_url": "https://api.pillows.su/api/download/624b951c6517a9f4ce507a1dfeb2313a", "download_url": "https://api.pillows.su/api/download/624b951c6517a9f4ce507a1dfeb2313a", "cover": ""}, {"era": "Unknown", "name": "3rd Unknown Snippet (with Dominic Fike)", "description": "First snippet was shared on an Instagram story on May 26, 2018.", "file_id": "a228bb89db051d630f036489a872aa7b", "stream_url": "https://api.pillows.su/api/download/a228bb89db051d630f036489a872aa7b", "download_url": "https://api.pillows.su/api/download/a228bb89db051d630f036489a872aa7b", "cover": ""}, {"era": "Unknown", "name": "6.18.18", "description": "Performed live a couple of times & a snippet leaked on dbree. Was never inteded for the debut but was made during the album was still being recorded.", "file_id": "ac8eaed6ef987c528bda0f72de0c4281", "stream_url": "https://api.pillows.su/api/download/ac8eaed6ef987c528bda0f72de0c4281", "download_url": "https://api.pillows.su/api/download/ac8eaed6ef987c528bda0f72de0c4281", "cover": ""}, {"era": "Unknown", "name": "all the good girls go to hell (Intro Hook)", "description": "Played on radio, also released on the promo CD for all the good girls to hell.", "file_id": "1d9c7173913c29b538c21832b4eb449a", "stream_url": "https://api.pillows.su/api/download/1d9c7173913c29b538c21832b4eb449a", "download_url": "https://api.pillows.su/api/download/1d9c7173913c29b538c21832b4eb449a", "cover": ""}, {"era": "Unknown", "name": "all the good girls go to hell (Sans Intro)", "description": "Released on the promo CD, also known as \"No Hook Intro\".", "file_id": "0da34198bcd3e59e4187e681d7005b3a", "stream_url": "https://api.pillows.su/api/download/0da34198bcd3e59e4187e681d7005b3a", "download_url": "https://api.pillows.su/api/download/0da34198bcd3e59e4187e681d7005b3a", "cover": ""}, {"era": "Unknown", "name": "Bad Company", "description": "Billie teased this song multiple times on instagram, recorded sometime in July 2017. It was scrapped because it didn't flow with the album acccording to FINNEAS at a meet and greet. Billie also confirmed that bad company is an alternate title and there is a different final title.", "file_id": "f6f41936d6a6279652a9a8fe1d7fe131", "stream_url": "https://api.pillows.su/api/download/f6f41936d6a6279652a9a8fe1d7fe131", "download_url": "https://api.pillows.su/api/download/f6f41936d6a6279652a9a8fe1d7fe131", "cover": ""}, {"era": "Unknown", "name": "bad guy (with Justin Bieber) [Version 2](prod. FINNEAS)", "description": "Groupbought by JB Fans", "file_id": "833909385357a0a9ffb7917cf1f20f8e", "stream_url": "https://api.pillows.su/api/download/833909385357a0a9ffb7917cf1f20f8e", "download_url": "https://api.pillows.su/api/download/833909385357a0a9ffb7917cf1f20f8e", "cover": ""}, {"era": "Unknown", "name": "because i'm in love with you", "description": "Billie shared a partial snippet of the track.", "file_id": "ea3fd0138d35589cdcb882dd01560c67", "stream_url": "https://api.pillows.su/api/download/ea3fd0138d35589cdcb882dd01560c67", "download_url": "https://api.pillows.su/api/download/ea3fd0138d35589cdcb882dd01560c67", "cover": ""}, {"era": "Unknown", "name": "can you guess?*(prod. FINNEAS)", "description": "The song was teased on Billie's Instagram story in May of 2018. A snippet of the recording session for the song was shown in her documentary, Billie Eilish: The World's a Little Blurry.", "file_id": "d90bfad19a4cda77153583c18cd07779", "stream_url": "https://api.pillows.su/api/download/d90bfad19a4cda77153583c18cd07779", "download_url": "https://api.pillows.su/api/download/d90bfad19a4cda77153583c18cd07779", "cover": ""}, {"era": "Unknown", "name": "Daddy(feat. MadeInTYO) (prod. FINNEAS)", "description": "Final version of daddy still remains unleaked. A snippet was shared by FINNEAS on his Instagram story. The final version was leaked but it was heavily edited by some random producer. On April 4th, 2024, the full unedited file leaked.", "file_id": "11d73639bd98702eb051c0775410a712", "stream_url": "https://api.pillows.su/api/download/11d73639bd98702eb051c0775410a712", "download_url": "https://api.pillows.su/api/download/11d73639bd98702eb051c0775410a712", "cover": ""}, {"era": "Unknown", "name": "Good*(Baby)", "description": "Snippet posted on instagram story, The title is unconfirmed.", "file_id": "db76e0409e6b552720436da649c8f38d", "stream_url": "https://api.pillows.su/api/download/db76e0409e6b552720436da649c8f38d", "download_url": "https://api.pillows.su/api/download/db76e0409e6b552720436da649c8f38d", "cover": ""}, {"era": "Unknown", "name": "goodbye (Demo)(prod. FINNEAS)", "description": "Billie shared a snippet on her Instagram story, it has slightly different lyrics, \"Please, please, leave me\" instead of \"Please, please, don't  leave me.", "file_id": "4cce24cb347588ea91f900a18f3f15ee", "stream_url": "https://api.pillows.su/api/download/4cce24cb347588ea91f900a18f3f15ee", "download_url": "https://api.pillows.su/api/download/4cce24cb347588ea91f900a18f3f15ee", "cover": ""}, {"era": "Unknown", "name": "i don't know, i just wish i wasn't breathing", "description": "2 snippets posted on Billie's instagram story, was supposed to be placed before 'listen before i go' but was never finished and eventually scrapped, Billie said that the song isn't fully written, only having one verse in an interview with PopBuzz", "file_id": "4123fb847d93cc92b0d975696a6a7ca7", "stream_url": "https://api.pillows.su/api/download/4123fb847d93cc92b0d975696a6a7ca7", "download_url": "https://api.pillows.su/api/download/4123fb847d93cc92b0d975696a6a7ca7", "cover": ""}, {"era": "Unknown", "name": "i don't know, i just wish i wasn't breathing", "description": "2 snippets posted on Billie's instagram story, was supposed to be placed before 'listen before i go' but was never finished and eventually scrapped, Billie said that the song isn't fully written, only having one verse in an interview with PopBuzz", "file_id": "8e36b36afebdbe7f66e788e19057520e", "stream_url": "https://api.pillows.su/api/download/8e36b36afebdbe7f66e788e19057520e", "download_url": "https://api.pillows.su/api/download/8e36b36afebdbe7f66e788e19057520e", "cover": ""}, {"era": "Unknown", "name": "Ken(Barbie)", "description": "Recorded in 2017, probably after dsam was released. Open verse and was meant to have Denzel Curry, unconfirmed if Denzel recorded his parts. A snippet leaked alongside the final version of \"Daddy\" and \"Your Love\", and the full leaked shortly after.", "file_id": "4272e46c36b625634ea437edd8ed8a22", "stream_url": "https://api.pillows.su/api/download/4272e46c36b625634ea437edd8ed8a22", "download_url": "https://api.pillows.su/api/download/4272e46c36b625634ea437edd8ed8a22", "cover": ""}, {"era": "Unknown", "name": "Listen (Demo)", "description": "Acoustic demo of \"listen before i go\". Has a minor lyric change. Leaked alongside Boy (Demo), Freaks, & Theme Song on March 22nd.", "file_id": "7770451419a8c85766f927018be95fef", "stream_url": "https://api.pillows.su/api/download/7770451419a8c85766f927018be95fef", "download_url": "https://api.pillows.su/api/download/7770451419a8c85766f927018be95fef", "cover": ""}, {"era": "Unknown", "name": "lyin' 2 ya(lyin' to ya, lie to me)", "description": "Solo and the only real version of the song, confirmed by Billie - this is possibly the final version of the song, no collaborations & still remains unleaked. It has more than one verse and different lyrics.", "file_id": "43fd4806ecac10ebeaf07a2065d31dc3", "stream_url": "https://api.pillows.su/api/download/43fd4806ecac10ebeaf07a2065d31dc3", "download_url": "https://api.pillows.su/api/download/43fd4806ecac10ebeaf07a2065d31dc3", "cover": ""}, {"era": "Unknown", "name": "lyin' 2 ya (Remix)(feat. Valee, 10k.Caash) (prod. CHASETHEMONEY, Bobby Raps)(lyin' to ya, lie to me)", "description": "According to Billie that these collaboration were \"false\" and she didn't know who \"brought\" these other artists, this suggests that the \"collaborations\" were only a remix by the producer and Billie had no knowledge of this remix.", "file_id": "6235674a7a89ba7ab51b868a56b6a58e", "stream_url": "https://api.pillows.su/api/download/6235674a7a89ba7ab51b868a56b6a58e", "download_url": "https://api.pillows.su/api/download/6235674a7a89ba7ab51b868a56b6a58e", "cover": ""}, {"era": "Unknown", "name": "No Time to Die (Demo)(prod. FINNEAS)", "description": "Released through the \"No Time To Die\" RSD Limited Edition Vinyl as a Side B. This demo was previewed in the \"BILLIE EILISH: THE WORLD\"S A LITTLE BLURRY\" documentary, they showed the recording process of the demo.", "file_id": "ccaab9b0e58b0632a367133d126090fb", "stream_url": "https://api.pillows.su/api/download/ccaab9b0e58b0632a367133d126090fb", "download_url": "https://api.pillows.su/api/download/ccaab9b0e58b0632a367133d126090fb", "cover": ""}, {"era": "Unknown", "name": "Rari*(feat. MadeinTYO)", "description": "Second song collaboration with MadeinTYO. Not much is known about this track, though it is possible that it is recorded in the same session as \"Daddy\". The snippet either came from Billie or MadeInTYO's Instagram story.", "file_id": "9894cf6d5253c09b3eaf42563556f1af", "stream_url": "https://api.pillows.su/api/download/9894cf6d5253c09b3eaf42563556f1af", "download_url": "https://api.pillows.su/api/download/9894cf6d5253c09b3eaf42563556f1af", "cover": ""}, {"era": "Unknown", "name": "Strange(prod. FINNEAS)", "description": "The full final version leaked on March 18, 2024 alongside an unfinished demo of Strange.", "file_id": "ba0ed77efcf1d6ad2bc00dfd622c2f02", "stream_url": "https://api.pillows.su/api/download/ba0ed77efcf1d6ad2bc00dfd622c2f02", "download_url": "https://api.pillows.su/api/download/ba0ed77efcf1d6ad2bc00dfd622c2f02", "cover": ""}, {"era": "Unknown", "name": "Strange (Demo)(prod. FINNEAS)", "description": "Full demo leaked on March 16th, 2024.", "file_id": "3ff2fef95d054d7b5fdb81741a8e5844", "stream_url": "https://api.pillows.su/api/download/3ff2fef95d054d7b5fdb81741a8e5844", "download_url": "https://api.pillows.su/api/download/3ff2fef95d054d7b5fdb81741a8e5844", "cover": ""}, {"era": "Unknown", "name": "Strange (Unfinished Demo)(prod. FINNEAS)", "description": "Unknown if this is real or just a stem edit, leaked alongside the final version of Strange.", "file_id": "eabb5c40b5063ced8834f624b95fef4f", "stream_url": "https://api.pillows.su/api/download/eabb5c40b5063ced8834f624b95fef4f", "download_url": "https://api.pillows.su/api/download/eabb5c40b5063ced8834f624b95fef4f", "cover": ""}, {"era": "Unknown", "name": "Strange (V[?])(prod. FINNEAS)", "description": "Unknown version of strange with a different mixing, this is the snippet Billie posted on her Instagram.", "file_id": "b77a3be997f0bf2047c3539d167c9fed", "stream_url": "https://api.pillows.su/api/download/b77a3be997f0bf2047c3539d167c9fed", "download_url": "https://api.pillows.su/api/download/b77a3be997f0bf2047c3539d167c9fed", "cover": ""}, {"era": "Unknown", "name": "Theme Song", "description": "Previously known as \"underneath\", yet this is still yet to be confirmed \u2014 this is only a speculation since it has the exact same lyrics.. Leaked on March 22nd alongside Boy (Demo), Listen (Demo) &  Freaks.", "file_id": "b449029fef0dfe7dd4fb1027b502a30a", "stream_url": "https://api.pillows.su/api/download/b449029fef0dfe7dd4fb1027b502a30a", "download_url": "https://api.pillows.su/api/download/b449029fef0dfe7dd4fb1027b502a30a", "cover": ""}, {"era": "Unknown", "name": "use me*", "description": "Recorded on May 17, 2018. Unconfirmed title. Billie shared a snippet of this song on her instagram story being produced.", "file_id": "b19d34f7776be8d7114a2860863790d1", "stream_url": "https://api.pillows.su/api/download/b19d34f7776be8d7114a2860863790d1", "download_url": "https://api.pillows.su/api/download/b19d34f7776be8d7114a2860863790d1", "cover": ""}, {"era": "Unknown", "name": "use me*", "description": "Recorded on May 17, 2018. Unconfirmed title. Billie shared a snippet of this song on her instagram story being produced.", "file_id": "b07ed0bfaf660f4dc80a309162ab4324", "stream_url": "https://api.pillows.su/api/download/b07ed0bfaf660f4dc80a309162ab4324", "download_url": "https://api.pillows.su/api/download/b07ed0bfaf660f4dc80a309162ab4324", "cover": ""}, {"era": "Unknown", "name": "when the party's over (Demo)(prod. FINNEAS)", "description": "Shared by Billie on Instagram back in January 29, 2018.", "file_id": "f385cfd23a57f2d5f2a9c46bfbdd3808", "stream_url": "https://api.pillows.su/api/download/f385cfd23a57f2d5f2a9c46bfbdd3808", "download_url": "https://api.pillows.su/api/download/f385cfd23a57f2d5f2a9c46bfbdd3808", "cover": ""}, {"era": "Unknown", "name": "you should see me in a crown (Demo)(prod. FINNEAS)(Crown)", "description": "Leaked from discord.", "file_id": "114d5ba8d8d1f5e26ffb30c2924e55dc", "stream_url": "https://api.pillows.su/api/download/114d5ba8d8d1f5e26ffb30c2924e55dc", "download_url": "https://api.pillows.su/api/download/114d5ba8d8d1f5e26ffb30c2924e55dc", "cover": ""}, {"era": "Unknown", "name": "Drake - Blind Faith(feat. Billie Eilish) (prod. GOVI)(Come Back To Me)", "description": "Unreleased Drake song, most likely made for his album \"Scorpion\".", "file_id": "ba99c70c7428a51abd8dd66582fd4238", "stream_url": "https://api.pillows.su/api/download/ba99c70c7428a51abd8dd66582fd4238", "download_url": "https://api.pillows.su/api/download/ba99c70c7428a51abd8dd66582fd4238", "cover": ""}, {"era": "Unknown", "name": "Billie Bossa Nova (Voice Memo)", "description": "Shared on her website during the first anniversary of \"Happier Than Ever\"", "file_id": "c411bedceefc5ae36ed463e0779a024c", "stream_url": "https://api.pillows.su/api/download/c411bedceefc5ae36ed463e0779a024c", "download_url": "https://api.pillows.su/api/download/c411bedceefc5ae36ed463e0779a024c", "cover": ""}, {"era": "Unknown", "name": "Billie Bossa Nova (Voice Memo 2)", "description": "Billie shared a snippet on an Instagram story.", "file_id": "90ac2c0c142fa6bf829445b40ce71e1a", "stream_url": "https://api.pillows.su/api/download/90ac2c0c142fa6bf829445b40ce71e1a", "download_url": "https://api.pillows.su/api/download/90ac2c0c142fa6bf829445b40ce71e1a", "cover": ""}, {"era": "Unknown", "name": "Halley's Comet (Early Mix)", "description": "Has drums in the intro and an extra adlib/lyrics at 2:31.", "file_id": "129c545a9e2aee9f52fdb71207c14e11", "stream_url": "https://api.pillows.su/api/download/129c545a9e2aee9f52fdb71207c14e11", "download_url": "https://api.pillows.su/api/download/129c545a9e2aee9f52fdb71207c14e11", "cover": ""}, {"era": "Unknown", "name": "Halley's Comet (Voice Memo)", "description": "Uploaded on l.cx and was \"not for sale\".", "file_id": "cfef0187fbf516becf7ba812b105640c", "stream_url": "https://api.pillows.su/api/download/cfef0187fbf516becf7ba812b105640c", "download_url": "https://api.pillows.su/api/download/cfef0187fbf516becf7ba812b105640c", "cover": ""}, {"era": "Unknown", "name": "Happier Than Ever (Voice Memo)(Away From You)", "description": "Shared on her website during the first anniversary of \"Happier Than Ever\" Possibly cut, since the screenshot Billie shared states that the voice note is 5:04 minute long. Recorded on June 15, 2020.", "file_id": "33cbd718ecc8de8b63ec18bfe9f4131a", "stream_url": "https://api.pillows.su/api/download/33cbd718ecc8de8b63ec18bfe9f4131a", "download_url": "https://api.pillows.su/api/download/33cbd718ecc8de8b63ec18bfe9f4131a", "cover": ""}, {"era": "Unknown", "name": "Happier Than Ever (Voice Memos)(Away From You)", "description": "Bunch of voice memos for this song ranging from 2019-2020. Billie showed a list of her voice memos and a few of HTE's voice memos were seen. She played some parts of the voice memos.", "file_id": "b99dcc8b7f638800b8669b34f40abbb0", "stream_url": "https://api.pillows.su/api/download/b99dcc8b7f638800b8669b34f40abbb0", "download_url": "https://api.pillows.su/api/download/b99dcc8b7f638800b8669b34f40abbb0", "cover": ""}, {"era": "Unknown", "name": "Lost Cause (Voice Memo)", "description": "The original length of the voice memo is 2:23, the last 23 seconds were cut for unknown reasons. Recorded on January 28th, 2021. Shared on her website during the first anniversary of \"Happier Than Ever\"", "file_id": "f776f1d431248d81c5c221c1f123a03d", "stream_url": "https://api.pillows.su/api/download/f776f1d431248d81c5c221c1f123a03d", "download_url": "https://api.pillows.su/api/download/f776f1d431248d81c5c221c1f123a03d", "cover": ""}, {"era": "Unknown", "name": "Male Fantasy (Voice Memo)(I Know Now)", "description": "Recorded on Feburary 3rd, 2021. Shared on her website during the first anniversary of \"Happier Than Ever\"", "file_id": "09a3bb8e38ef2f9d51cc7bc009d37849", "stream_url": "https://api.pillows.su/api/download/09a3bb8e38ef2f9d51cc7bc009d37849", "download_url": "https://api.pillows.su/api/download/09a3bb8e38ef2f9d51cc7bc009d37849", "cover": ""}, {"era": "Unknown", "name": "Your Power (Voice Memo)", "description": "Shared on her website during the first anniversary of \"Happier Than Ever\", it's possible that this is one of the three voice memos seen on Billie's instagram story.", "file_id": "80a6b204292d21ba0e8c4771ddd03ca5", "stream_url": "https://api.pillows.su/api/download/80a6b204292d21ba0e8c4771ddd03ca5", "download_url": "https://api.pillows.su/api/download/80a6b204292d21ba0e8c4771ddd03ca5", "cover": ""}, {"era": "Unknown", "name": "Your Power (Studio Session Voice Memo)", "description": "Uploaded on l.cx and was \"not for sale\"", "file_id": "94d8ddc0cda85a18afd2599d5106a719", "stream_url": "https://api.pillows.su/api/download/94d8ddc0cda85a18afd2599d5106a719", "download_url": "https://api.pillows.su/api/download/94d8ddc0cda85a18afd2599d5106a719", "cover": ""}, {"era": "Unknown", "name": "BLUE (Unmastered)", "description": "No strings at the end. This is the file that leaked a few days earlier before the album's release date, though the file is cut and edited and only contains the second part of \"BLUE\"", "file_id": "338f21ac93cdd655bc9ccadce4bf5213", "stream_url": "https://api.pillows.su/api/download/338f21ac93cdd655bc9ccadce4bf5213", "download_url": "https://api.pillows.su/api/download/338f21ac93cdd655bc9ccadce4bf5213", "cover": ""}, {"era": "Unknown", "name": "SKINNY (Unmastered)(Cry)", "description": "Also no strings at the end. This is the file that leaked few days earlier before the album's release date.", "file_id": "9f6ae270018c6496b0160d87202a2b3f", "stream_url": "https://api.pillows.su/api/download/9f6ae270018c6496b0160d87202a2b3f", "download_url": "https://api.pillows.su/api/download/9f6ae270018c6496b0160d87202a2b3f", "cover": ""}, {"era": "Unknown", "name": "What I Was Made For? (Voice Memo)", "description": "Recorded on January 16th, 2023. Previewed on a Barbie event back in December 2nd, 2023 and an interview with Vanity Fair", "file_id": "e2637b9732044cdd127ab47b8646432e", "stream_url": "https://api.pillows.su/api/download/e2637b9732044cdd127ab47b8646432e", "download_url": "https://api.pillows.su/api/download/e2637b9732044cdd127ab47b8646432e", "cover": ""}, {"era": "Unknown", "name": "What I Was Made For? (Voice Memo)", "description": "Recorded on January 16th, 2023. Previewed on a Barbie event back in December 2nd, 2023 and an interview with Vanity Fair", "file_id": "b1edc7c341142834092b2eab2fc5db3a", "stream_url": "https://api.pillows.su/api/download/b1edc7c341142834092b2eab2fc5db3a", "download_url": "https://api.pillows.su/api/download/b1edc7c341142834092b2eab2fc5db3a", "cover": ""}]};
+    let currentEra = null;
+    let currentIndex = null;
+    let currentSong = null;
+    let playlist = [];
+
+    const player = document.getElementById('player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const seekBar = document.getElementById('seek-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const playerTitle = document.getElementById('player-title');
+    const playerCover = document.getElementById('player-cover');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+
+    function playSong(era, index) {
+        playlist = eras[era];
+        currentEra = era;
+        currentIndex = index;
+        loadAndPlayCurrent();
+    }
+
+    function highlightCurrentSong() {
+        document.querySelectorAll('.song.playing').forEach(el => el.classList.remove('playing'));
+        if (currentEra !== null && currentIndex !== null) {
+            const songId = `song-${currentEra.replace(/ /g, '_')}-${currentIndex}`;
+            const songEl = document.getElementById(songId);
+            if (songEl) songEl.classList.add('playing');
+        }
+    }
+
+    function loadAndPlayCurrent() {
+        if (!playlist || currentIndex === null || !playlist[currentIndex]) return;
+        const song = playlist[currentIndex];
+        player.src = song.stream_url;
+        playerTitle.textContent = song.name;
+        playerCover.src = song.cover || 'https://via.placeholder.com/60x60?text=No+Cover';
+        currentSong = song.stream_url;
+        player.play();
+        updateSkipButtons();
+        updateMediaSession(song);
+        highlightCurrentSong();
+    }
+
+    function updateSkipButtons() {
+        prevBtn.disabled = (currentIndex <= 0);
+        nextBtn.disabled = (currentIndex >= playlist.length - 1);
+    }
+
+    playBtn.onclick = function() {
+        if (player.src) {
+            if (player.paused) player.play();
+            else player.pause();
+        }
+    };
+
+    prevBtn.onclick = function() {
+        if (playlist && currentIndex > 0) {
+            currentIndex -= 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    nextBtn.onclick = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    player.onplay = function() {
+        playIcon.style.display = "none";
+        pauseIcon.style.display = "";
+    };
+    player.onpause = function() {
+        playIcon.style.display = "";
+        pauseIcon.style.display = "none";
+    };
+
+    player.ontimeupdate = function() {
+        seekBar.value = player.currentTime || 0;
+        currentTimeEl.textContent = formatTime(player.currentTime);
+    };
+    player.onloadedmetadata = function() {
+        seekBar.max = player.duration || 0;
+        durationEl.textContent = formatTime(player.duration);
+    };
+    seekBar.oninput = function() {
+        player.currentTime = seekBar.value;
+    };
+
+    player.onended = function() {
+        if (playlist && currentIndex < playlist.length - 1) {
+            currentIndex += 1;
+            loadAndPlayCurrent();
+        }
+    };
+
+    function formatTime(sec) {
+        sec = Math.floor(sec);
+        return Math.floor(sec/60) + ":" + String(sec%60).padStart(2, '0');
+    }
+    function updateMediaSession(song) {
+        if ('mediaSession' in navigator && song) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.name,
+                artist: song.era,
+                album: "Unreleased",
+                artwork: [
+                    { src: song.cover || 'https://via.placeholder.com/90x90?text=No+Cover', sizes: '90x90', type: 'image/png' }
+                ]
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                if (playlist && currentIndex > 0) {
+                    currentIndex -= 1;
+                    loadAndPlayCurrent();
+                }
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                if (playlist && currentIndex < playlist.length - 1) {
+                    currentIndex += 1;
+                    loadAndPlayCurrent();
+                }
+            });
+        }
+    }
+
+    // --- Collapsible Eras ---
+    function toggleEra(idx) {
+        const songList = document.getElementById('song-list-' + idx);
+        const chevron = document.getElementById('chevron-' + idx);
+        const isOpen = songList.classList.contains('open');
+        if (isOpen) {
+            songList.classList.remove('open');
+            chevron.classList.remove('open');
+        } else {
+            songList.classList.add('open');
+            chevron.classList.add('open');
+        }
+    }
+    // Collapse all on load
+    window.addEventListener('DOMContentLoaded', function() {
+        
+            document.getElementById('song-list-0').classList.remove('open');
+            document.getElementById('chevron-0').classList.remove('open');
+        
+
+        // Tooltip logic
+        let tooltip = null;
+        let tooltipTimeout = null;
+
+        document.querySelectorAll('.song').forEach(song => {
+            song.addEventListener('mouseenter', function(e) {
+                const desc = song.getAttribute('data-description');
+                if (!desc) return;
+                if (tooltip) tooltip.remove();
+                tooltip = document.createElement('div');
+                tooltip.className = 'floating-song-description';
+                tooltip.innerHTML = desc;
+                document.body.appendChild(tooltip);
+
+                // Position tooltip
+                const rect = song.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 6) + 'px';
+                tooltip.style.minWidth = rect.width + 'px';
+
+                // Fade in
+                setTimeout(() => {
+                    if (tooltip) tooltip.classList.add('visible');
+                }, 10);
+            });
+            song.addEventListener('mouseleave', function(e) {
+                if (tooltip) {
+                    tooltip.classList.remove('visible');
+                    setTimeout(() => {
+                        if (tooltip) tooltip.remove();
+                        tooltip = null;
+                    }, 120);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>
